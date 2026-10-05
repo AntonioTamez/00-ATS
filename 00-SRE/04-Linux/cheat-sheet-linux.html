@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Linux · Cheat sheet de comandos</title>
+  <style>
+    :root{--ink:#162b39;--muted:#5d7080;--paper:#f4f6f4;--card:#fff;--line:#dce5e4;--navy:#102d3c;--teal:#087f77;--mint:#d9f2ea;--amber:#9a5a0a;--amber-bg:#fff0d5;--code:#edf4f2}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 Inter,Segoe UI,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+    button,input{font:inherit}button{cursor:pointer}.page{max-width:1240px;margin:auto;padding:0 32px 60px}
+    .hero{position:relative;overflow:hidden;background:var(--navy);color:white;padding:38px 42px 34px;border-radius:0 0 28px 28px}
+    .hero:after{content:"$_";position:absolute;right:30px;top:-76px;color:#ffffff0b;font:700 250px/1 Consolas,monospace;pointer-events:none}
+    .eyebrow{margin:0 0 8px;color:#8ce0cd;font-size:12px;font-weight:800;letter-spacing:.17em;text-transform:uppercase}
+    h1{position:relative;margin:0;font-size:clamp(34px,5vw,60px);line-height:1.03;letter-spacing:-.045em}h1 span{color:#83dec8}
+    .hero p:last-child{position:relative;max-width:700px;margin:15px 0 0;color:#d0e1e5;font-size:16px}
+    .toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:24px 0 18px}.search{display:flex;align-items:center;gap:10px;flex:1;max-width:620px;padding:10px 14px;background:white;border:1px solid var(--line);border-radius:12px;box-shadow:0 3px 12px #102d3c09}.search svg{flex:none;color:var(--teal)}.search input{width:100%;border:0;outline:0;color:var(--ink);background:transparent}.search input::placeholder{color:#83939c}.actions{display:flex;gap:8px;align-items:center}.count{color:var(--muted);font-size:13px;white-space:nowrap}.print-btn{border:0;background:var(--teal);color:#fff;border-radius:10px;padding:10px 15px;font-weight:700;white-space:nowrap}.print-btn:hover,.print-btn:focus-visible{background:#066a64}.print-btn:focus-visible,.search:focus-within,.toc a:focus-visible{outline:3px solid #7ddac7;outline-offset:2px}
+    .intro{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:22px}.intro-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px}.intro-card h2{margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--teal)}.intro-card p{margin:0;color:var(--muted);font-size:13px}.intro-card code{font-size:12px}.safety{background:#fff8ec;border-color:#f0dfbd}.safety h2{color:var(--amber)}
+    .toc{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 24px}.toc a{text-decoration:none;color:var(--ink);font-size:12px;font-weight:700;padding:6px 10px;border:1px solid var(--line);background:white;border-radius:999px}.toc a:hover{border-color:var(--teal);color:var(--teal)}
+    .catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}.group{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:17px;box-shadow:0 4px 16px #102d3c08;overflow:hidden}.group-head{display:flex;align-items:baseline;gap:12px;padding:17px 19px 12px;border-bottom:1px solid var(--line)}.number{color:var(--teal);font:800 12px/1 Consolas,monospace}.group h2{margin:0;font-size:19px;line-height:1.25;letter-spacing:-.025em}.group-note{margin:0;padding:10px 19px;color:var(--muted);background:#f8fbfa;font-size:12px;border-bottom:1px solid var(--line)}.commands{margin:0;padding:3px 19px 9px}.command{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:12px;align-items:baseline;padding:8px 0;border-bottom:1px solid #edf1f0;break-inside:avoid}.command:last-child{border-bottom:0}.command dt,.command dd{margin:0;min-width:0}.command code,.intro code,.footer code{font-family:Consolas,"Liberation Mono",monospace;background:var(--code);color:#065b55;border-radius:5px;padding:2px 5px;overflow-wrap:anywhere}.command code{font-size:12px;line-height:1.45;box-decoration-break:clone;-webkit-box-decoration-break:clone}.command dd{color:#536674;font-size:12px;line-height:1.4}.command strong{color:var(--ink)}.tag{display:inline-block;margin-left:4px;background:var(--amber-bg);color:var(--amber);padding:1px 5px;border-radius:4px;font-size:10px;font-weight:800;vertical-align:1px}.group[hidden],.command[hidden],.empty[hidden]{display:none!important}.empty{text-align:center;padding:50px;color:var(--muted)}
+    .footer{margin:28px 0 0;padding:18px 20px;border-left:4px solid var(--teal);background:#eaf3f0;border-radius:0 12px 12px 0;color:#415765;font-size:13px}.footer strong{color:var(--ink)}
+    @media(max-width:800px){.page{padding:0 16px 32px}.hero{padding:30px 24px;border-radius:0 0 20px 20px}.intro,.catalog{grid-template-columns:1fr}.toolbar{align-items:stretch;flex-direction:column}.search{max-width:none}.actions{justify-content:space-between}.toc{margin-bottom:18px}}
+    @media(max-width:440px){.command{grid-template-columns:1fr;gap:3px}.hero:after{display:none}.group-head{padding:15px}.commands{padding:3px 15px 9px}}
+    @page{size:A4 portrait;margin:11mm}
+    @media print{html{scroll-behavior:auto}body{background:white;color:#111;font-size:9px;line-height:1.3;-webkit-print-color-adjust:exact;print-color-adjust:exact}.page{max-width:none;padding:0}.hero{padding:13px 15px 11px;border-radius:0;break-after:avoid}.hero:after{font-size:120px;top:-30px}h1{font-size:27px}.eyebrow{font-size:8px;margin-bottom:3px}.hero p:last-child{font-size:9px;margin-top:5px}.toolbar,.toc{display:none}.intro{grid-template-columns:1fr 1fr;gap:5px;margin:6px 0 8px}.intro-card{border-radius:5px;padding:7px 9px}.intro-card h2{font-size:8px;margin-bottom:3px}.intro-card p{font-size:7.4px}.intro-card code{font-size:7px}.catalog{display:block;columns:2;column-gap:8px}.group{display:inline-block;width:100%;margin:0 0 7px;border-radius:5px;box-shadow:none;break-inside:avoid;page-break-inside:avoid}.group-head{padding:7px 9px 5px;gap:5px}.group h2{font-size:12px}.number{font-size:8px}.group-note{padding:5px 9px;font-size:7px}.commands{padding:1px 9px 4px}.command{grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:5px;padding:4px 0}.command code{font-size:7.2px;padding:1px 2px}.command dd{font-size:7.2px;line-height:1.25}.tag{font-size:6px;padding:0 2px}.footer{margin:5px 0 0;padding:6px 8px;border-radius:0;font-size:7.5px;break-inside:avoid}.footer code{font-size:7px}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">Referencia práctica · Bash / GNU Linux</p>
+      <h1>Linux <span>cheat sheet</span></h1>
+      <p>Comandos esenciales agrupados por tarea, con ejemplos listos para adaptar y recordatorios para trabajar con seguridad.</p>
+    </header>
+
+    <div class="toolbar" role="search">
+      <label class="search" for="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><input id="search" type="search" placeholder="Buscar comando o tarea…" autocomplete="off" aria-label="Buscar comandos"></label>
+      <div class="actions"><span class="count" id="count" aria-live="polite"></span><button class="print-btn" type="button" onclick="window.print()">Imprimir / guardar PDF</button></div>
+    </div>
+
+    <div class="intro">
+      <section class="intro-card"><h2>Cómo leer los ejemplos</h2><p>Sustituye <code>archivo</code>, <code>ruta/</code>, <code>usuario</code> y <code>servicio</code> por valores reales. <code>#</code> introduce comentarios; <code>~</code> es tu directorio personal. Los ejemplos asumen Bash y herramientas GNU; algunas opciones cambian en macOS o BusyBox.</p></section>
+      <section class="intro-card safety"><h2>Antes de ejecutar</h2><p>Revisa la ruta con <code>pwd</code> y <code>ls</code>. Prueba búsquedas antes de añadir <code>-delete</code>. Evita pegar comandos con <code>sudo</code> sin entenderlos; los cambios y borrados pueden ser irreversibles.</p></section>
+    </div>
+
+    <nav class="toc" aria-label="Ir a una categoría">
+      <a href="#navegacion">Navegación</a><a href="#archivos">Archivos</a><a href="#texto">Texto</a><a href="#busqueda">Búsqueda</a><a href="#permisos">Permisos</a><a href="#procesos">Procesos</a><a href="#sistema">Sistema</a><a href="#red">Red</a><a href="#ssh">SSH</a><a href="#paquetes">Paquetes</a><a href="#compresion">Compresión</a><a href="#shell">Shell</a>
+    </nav>
+
+    <div class="catalog" id="catalog">
+      <section class="group" id="navegacion"><div class="group-head"><span class="number">01 /</span><h2>Navegación y ayuda</h2></div><dl class="commands">
+        <div class="command"><dt><code>pwd</code></dt><dd>Muestra la ruta actual.</dd></div>
+        <div class="command"><dt><code>ls -lah</code></dt><dd>Lista archivos, incluidos ocultos, con tamaños legibles.</dd></div>
+        <div class="command"><dt><code>cd ruta/</code> · <code>cd ..</code> · <code>cd -</code></dt><dd>Entra, sube un nivel o vuelve al directorio anterior.</dd></div>
+        <div class="command"><dt><code>tree -L 2</code></dt><dd>Árbol de directorios a dos niveles; puede requerir instalación.</dd></div>
+        <div class="command"><dt><code>man comando</code></dt><dd>Abre el manual; sal con <strong>q</strong>.</dd></div>
+        <div class="command"><dt><code>comando --help</code></dt><dd>Consulta las opciones resumidas.</dd></div>
+        <div class="command"><dt><code>type comando</code> · <code>command -v comando</code></dt><dd>Identifica si es alias, función o ejecutable; localiza el comando.</dd></div>
+      </dl></section>
+
+      <section class="group" id="archivos"><div class="group-head"><span class="number">02 /</span><h2>Archivos y directorios</h2></div><dl class="commands">
+        <div class="command"><dt><code>mkdir -p ruta/subdir</code></dt><dd>Crea directorios intermedios si faltan.</dd></div>
+        <div class="command"><dt><code>touch archivo.txt</code></dt><dd>Crea un archivo vacío o actualiza su fecha.</dd></div>
+        <div class="command"><dt><code>cp -i origen destino</code></dt><dd>Copia y pide confirmación si sobrescribe.</dd></div>
+        <div class="command"><dt><code>cp -a carpeta/ copia/</code></dt><dd>Copia un árbol preservando permisos y marcas de tiempo.</dd></div>
+        <div class="command"><dt><code>mv -i origen destino</code></dt><dd>Mueve o renombra; pregunta antes de sobrescribir.</dd></div>
+        <div class="command"><dt><code>ln -s /ruta/real enlace</code></dt><dd>Crea un enlace simbólico.</dd></div>
+        <div class="command"><dt><code>stat archivo</code> · <code>file archivo</code></dt><dd>Consulta metadatos o detecta el tipo de archivo.</dd></div>
+        <div class="command"><dt><code>rm -i archivo</code> <span class="tag">CUIDADO</span></dt><dd>Borra con confirmación. No hay papelera estándar.</dd></div>
+        <div class="command"><dt><code>rmdir carpeta_vacia</code></dt><dd>Elimina únicamente un directorio vacío.</dd></div>
+      </dl></section>
+
+      <section class="group" id="texto"><div class="group-head"><span class="number">03 /</span><h2>Leer y transformar texto</h2></div><dl class="commands">
+        <div class="command"><dt><code>less archivo.log</code></dt><dd>Lee por páginas; busca con <strong>/texto</strong> y sal con <strong>q</strong>.</dd></div>
+        <div class="command"><dt><code>head -n 20 archivo</code> · <code>tail -n 20 archivo</code></dt><dd>Muestra las primeras o últimas 20 líneas.</dd></div>
+        <div class="command"><dt><code>tail -f archivo.log</code></dt><dd>Sigue nuevas líneas; detén con <strong>Ctrl+C</strong>.</dd></div>
+        <div class="command"><dt><code>wc -l archivo</code></dt><dd>Cuenta líneas.</dd></div>
+        <div class="command"><dt><code>sort archivo | uniq -c</code></dt><dd>Ordena y cuenta líneas repetidas contiguas.</dd></div>
+        <div class="command"><dt><code>cut -d, -f1 datos.csv</code></dt><dd>Extrae la primera columna separada por comas; no interpreta CSV con comillas.</dd></div>
+        <div class="command"><dt><code>sed -n '10,20p' archivo</code></dt><dd>Muestra de la línea 10 a la 20.</dd></div>
+        <div class="command"><dt><code>awk '{print $1}' archivo</code></dt><dd>Imprime el primer campo separado por espacios.</dd></div>
+        <div class="command"><dt><code>diff -u antes despues</code></dt><dd>Compara dos archivos en formato unificado.</dd></div>
+      </dl></section>
+
+      <section class="group" id="busqueda"><div class="group-head"><span class="number">04 /</span><h2>Buscar y filtrar</h2></div><dl class="commands">
+        <div class="command"><dt><code>grep -n 'texto' archivo</code></dt><dd>Busca coincidencias y muestra números de línea.</dd></div>
+        <div class="command"><dt><code>grep -Rni 'texto' ruta/</code></dt><dd>Busca recursivamente sin distinguir mayúsculas.</dd></div>
+        <div class="command"><dt><code>grep -E 'error|warn' archivo</code></dt><dd>Busca con expresión regular extendida.</dd></div>
+        <div class="command"><dt><code>find ruta/ -type f -name '*.log'</code></dt><dd>Encuentra archivos por nombre; las comillas evitan expansión previa.</dd></div>
+        <div class="command"><dt><code>find ruta/ -type f -mtime -7</code></dt><dd>Archivos modificados en los últimos siete días.</dd></div>
+        <div class="command"><dt><code>find ruta/ -type f -size +100M</code></dt><dd>Archivos mayores de 100 MiB.</dd></div>
+        <div class="command"><dt><code>find ruta/ -type f -name '*.tmp' -print</code></dt><dd>Previsualiza resultados antes de cualquier borrado.</dd></div>
+        <div class="command"><dt><code>rg -n 'texto' ruta/</code></dt><dd>Búsqueda rápida si <strong>ripgrep</strong> está instalado; respeta exclusiones habituales.</dd></div>
+      </dl></section>
+
+      <section class="group" id="permisos"><div class="group-head"><span class="number">05 /</span><h2>Permisos y usuarios</h2></div><p class="group-note">En <code>rwx</code>: lectura = 4, escritura = 2, ejecución = 1; orden: propietario, grupo, otros.</p><dl class="commands">
+        <div class="command"><dt><code>ls -l archivo</code></dt><dd>Muestra propietario, grupo y permisos.</dd></div>
+        <div class="command"><dt><code>chmod u+x script.sh</code></dt><dd>Da ejecución al propietario.</dd></div>
+        <div class="command"><dt><code>chmod 644 archivo</code></dt><dd>Lectura general y escritura solo del propietario.</dd></div>
+        <div class="command"><dt><code>chmod 755 script.sh</code></dt><dd>Ejecución general; escritura solo del propietario.</dd></div>
+        <div class="command"><dt><code>chown usuario:grupo archivo</code></dt><dd>Cambia propietario y grupo; suele requerir <code>sudo</code>.</dd></div>
+        <div class="command"><dt><code>id</code> · <code>whoami</code></dt><dd>Muestra identidad, grupos o usuario actual.</dd></div>
+        <div class="command"><dt><code>sudo -l</code></dt><dd>Lista las operaciones permitidas con <code>sudo</code>.</dd></div>
+      </dl></section>
+
+      <section class="group" id="procesos"><div class="group-head"><span class="number">06 /</span><h2>Procesos y servicios</h2></div><dl class="commands">
+        <div class="command"><dt><code>ps aux</code></dt><dd>Lista procesos y consumo de recursos.</dd></div>
+        <div class="command"><dt><code>top</code></dt><dd>Monitor interactivo; sal con <strong>q</strong>.</dd></div>
+        <div class="command"><dt><code>pgrep -af nombre</code></dt><dd>Busca PID y línea de comando.</dd></div>
+        <div class="command"><dt><code>kill -TERM PID</code></dt><dd>Solicita una parada ordenada.</dd></div>
+        <div class="command"><dt><code>jobs</code> · <code>fg %1</code> · <code>bg %1</code></dt><dd>Consulta trabajos y pásalos a primer o segundo plano.</dd></div>
+        <div class="command"><dt><code>systemctl status servicio</code></dt><dd>Estado de un servicio en sistemas con systemd.</dd></div>
+        <div class="command"><dt><code>sudo systemctl restart servicio</code> <span class="tag">CUIDADO</span></dt><dd>Reinicia el servicio; puede interrumpir conexiones.</dd></div>
+        <div class="command"><dt><code>journalctl -u servicio -n 50 --no-pager</code></dt><dd>Últimas 50 entradas del diario del servicio.</dd></div>
+      </dl></section>
+
+      <section class="group" id="sistema"><div class="group-head"><span class="number">07 /</span><h2>Sistema, disco y memoria</h2></div><dl class="commands">
+        <div class="command"><dt><code>uname -a</code> · <code>cat /etc/os-release</code></dt><dd>Kernel y distribución.</dd></div>
+        <div class="command"><dt><code>uptime</code></dt><dd>Tiempo activo y carga media.</dd></div>
+        <div class="command"><dt><code>free -h</code></dt><dd>Uso de memoria en unidades legibles.</dd></div>
+        <div class="command"><dt><code>df -h</code> · <code>df -i</code></dt><dd>Espacio libre o inodos por sistema de archivos.</dd></div>
+        <div class="command"><dt><code>du -sh ruta/</code></dt><dd>Tamaño total de una carpeta.</dd></div>
+        <div class="command"><dt><code>lsblk -f</code></dt><dd>Discos, particiones y sistemas de archivos.</dd></div>
+        <div class="command"><dt><code>date -Is</code> · <code>timedatectl</code></dt><dd>Fecha ISO y configuración de hora si usa systemd.</dd></div>
+        <div class="command"><dt><code>dmesg -T | tail -n 30</code></dt><dd>Mensajes recientes del kernel; puede requerir permisos.</dd></div>
+      </dl></section>
+
+      <section class="group" id="red"><div class="group-head"><span class="number">08 /</span><h2>Red y diagnóstico</h2></div><dl class="commands">
+        <div class="command"><dt><code>ip -br addr</code> · <code>ip route</code></dt><dd>Interfaces e IP; tabla de rutas.</dd></div>
+        <div class="command"><dt><code>ping -c 4 ejemplo.com</code></dt><dd>Prueba conectividad ICMP; algunos destinos la bloquean.</dd></div>
+        <div class="command"><dt><code>getent hosts ejemplo.com</code></dt><dd>Resuelve un nombre con la configuración del sistema.</dd></div>
+        <div class="command"><dt><code>ss -tuln</code></dt><dd>Puertos TCP/UDP en escucha, sin resolver nombres.</dd></div>
+        <div class="command"><dt><code>curl -I https://ejemplo.com</code></dt><dd>Solicita cabeceras HTTP.</dd></div>
+        <div class="command"><dt><code>curl -fL -o archivo URL</code></dt><dd>Descarga a un archivo y falla ante errores HTTP.</dd></div>
+        <div class="command"><dt><code>traceroute ejemplo.com</code></dt><dd>Rastrea saltos; puede requerir instalación.</dd></div>
+      </dl></section>
+
+      <section class="group" id="ssh"><div class="group-head"><span class="number">09 /</span><h2>SSH y transferencia</h2></div><dl class="commands">
+        <div class="command"><dt><code>ssh usuario@servidor</code></dt><dd>Conecta por SSH; verifica la huella del host la primera vez.</dd></div>
+        <div class="command"><dt><code>ssh -i ~/.ssh/clave usuario@servidor</code></dt><dd>Conecta con una clave privada concreta.</dd></div>
+        <div class="command"><dt><code>scp archivo usuario@servidor:/ruta/</code></dt><dd>Copia un archivo al servidor.</dd></div>
+        <div class="command"><dt><code>rsync -avh --progress origen/ destino/</code></dt><dd>Sincroniza el contenido de <code>origen/</code> hacia <code>destino/</code>.</dd></div>
+        <div class="command"><dt><code>rsync -avhn --delete origen/ destino/</code> <span class="tag">CUIDADO</span></dt><dd>Simula una sincronización con borrados; revisa antes de quitar <code>-n</code>.</dd></div>
+      </dl></section>
+
+      <section class="group" id="paquetes"><div class="group-head"><span class="number">10 /</span><h2>Gestores de paquetes</h2></div><p class="group-note">Usa el gestor de tu distribución. Las instalaciones y actualizaciones suelen requerir <code>sudo</code>.</p><dl class="commands">
+        <div class="command"><dt><code>apt search nombre</code></dt><dd>Busca paquetes en Debian / Ubuntu.</dd></div>
+        <div class="command"><dt><code>sudo apt update</code></dt><dd>Actualiza el índice de paquetes.</dd></div>
+        <div class="command"><dt><code>sudo apt install paquete</code></dt><dd>Instala un paquete en Debian / Ubuntu.</dd></div>
+        <div class="command"><dt><code>dnf search nombre</code></dt><dd>Busca paquetes en Fedora / RHEL recientes.</dd></div>
+        <div class="command"><dt><code>sudo dnf install paquete</code></dt><dd>Instala con DNF.</dd></div>
+        <div class="command"><dt><code>pacman -Ss nombre</code></dt><dd>Busca paquetes en Arch Linux.</dd></div>
+        <div class="command"><dt><code>sudo pacman -Syu</code></dt><dd>Sincroniza repositorios y actualiza Arch.</dd></div>
+      </dl></section>
+
+      <section class="group" id="compresion"><div class="group-head"><span class="number">11 /</span><h2>Archivos comprimidos</h2></div><dl class="commands">
+        <div class="command"><dt><code>tar -czf copia.tar.gz carpeta/</code></dt><dd>Crea un archivo tar comprimido con gzip.</dd></div>
+        <div class="command"><dt><code>tar -tzf copia.tar.gz</code></dt><dd>Lista su contenido antes de extraer.</dd></div>
+        <div class="command"><dt><code>tar -xzf copia.tar.gz -C destino/</code></dt><dd>Extrae en un directorio existente; revisa antes rutas del archivo.</dd></div>
+        <div class="command"><dt><code>gzip -k archivo</code></dt><dd>Comprime y conserva el original.</dd></div>
+        <div class="command"><dt><code>unzip -l archivo.zip</code></dt><dd>Lista un ZIP sin extraer; puede requerir instalación.</dd></div>
+        <div class="command"><dt><code>unzip archivo.zip -d destino/</code></dt><dd>Extrae un ZIP en la carpeta indicada.</dd></div>
+      </dl></section>
+
+      <section class="group" id="shell"><div class="group-head"><span class="number">12 /</span><h2>Shell y composición</h2></div><dl class="commands">
+        <div class="command"><dt><code>fecha=$(date +%F)</code></dt><dd>Guarda la fecha de un comando en una variable de Bash.</dd></div>
+        <div class="command"><dt><code>comando1 | comando2</code></dt><dd>Envía la salida estándar del primero al segundo.</dd></div>
+        <div class="command"><dt><code>comando &gt; salida.txt</code> · <code>comando &gt;&gt; salida.txt</code></dt><dd>Sobrescribe o añade a un archivo.</dd></div>
+        <div class="command"><dt><code>comando 2&gt; error.log</code></dt><dd>Redirige solo los errores.</dd></div>
+        <div class="command"><dt><code>comando &amp;&amp; siguiente</code></dt><dd>Ejecuta el siguiente solo si el primero termina bien.</dd></div>
+        <div class="command"><dt><code>echo "$VARIABLE"</code> · <code>export VARIABLE=valor</code></dt><dd>Lee o exporta una variable; cita expansiones en rutas y texto.</dd></div>
+        <div class="command"><dt><code>printf '%s\n' "$VARIABLE"</code></dt><dd>Imprime texto de forma predecible.</dd></div>
+        <div class="command"><dt><code>Ctrl+C</code> · <code>Ctrl+L</code> · <code>Ctrl+R</code></dt><dd>Interrumpe, limpia pantalla o busca en el historial.</dd></div>
+      </dl></section>
+    </div>
+    <p class="empty" id="empty" hidden>No hay comandos que coincidan. Prueba con otra palabra.</p>
+    <footer class="footer"><strong>Regla útil:</strong> primero inspecciona, después modifica. Para operaciones sensibles, consulta <code>man comando</code>, valida la ruta y prueba con opciones como <code>-n</code> cuando estén disponibles. Para crear el PDF, usa «Imprimir / guardar PDF» y selecciona A4 con gráficos de fondo activados.</footer>
+  </main>
+  <script>
+    const input = document.getElementById('search');
+    const groups = [...document.querySelectorAll('.group')];
+    const rows = [...document.querySelectorAll('.command')];
+    const count = document.getElementById('count');
+    const empty = document.getElementById('empty');
+    function updateSearch() {
+      const term = input.value.trim().toLocaleLowerCase('es');
+      let visible = 0;
+      for (const group of groups) {
+        const groupMatch = group.querySelector('h2').textContent.toLocaleLowerCase('es').includes(term);
+        let groupVisible = 0;
+        for (const row of group.querySelectorAll('.command')) {
+          row.hidden = !(groupMatch || row.textContent.toLocaleLowerCase('es').includes(term));
+          if (!row.hidden) groupVisible++;
+        }
+        group.hidden = groupVisible === 0;
+        visible += groupVisible;
+      }
+      count.textContent = `${visible} de ${rows.length} comandos`;
+      empty.hidden = visible !== 0;
+    }
+    input.addEventListener('input', updateSearch);
+    window.addEventListener('beforeprint', () => { groups.forEach(group => { group.hidden = false; group.querySelectorAll('.command').forEach(row => row.hidden = false); }); });
+    window.addEventListener('afterprint', updateSearch);
+    updateSearch();
+  </script>
+</body>
+</html>
