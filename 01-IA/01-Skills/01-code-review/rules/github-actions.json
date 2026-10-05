@@ -1,0 +1,38 @@
+{
+  "pack": "github-actions",
+  "ai_hints": "GitHub Actions: untrusted input interpolated into run: scripts, pull_request_target checking out PR code, over-broad permissions, third-party actions not pinned to a commit SHA, secrets exposed to forks, missing concurrency/timeouts, self-hosted runners on public repos.",
+  "rules": [
+    {
+      "id": "GHA-SEC-001", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["github-actions"],
+      "pattern": "\\bpull_request_target\\b",
+      "title": {"es": "Trigger pull_request_target", "en": "pull_request_target trigger"},
+      "message": {"es": "Corre con secretos y permisos de escritura. No hagas checkout ni ejecutes código del PR en este contexto.", "en": "Runs with secrets and write permissions. Do not checkout or execute PR code in this context."},
+      "examples": {"match": ["  pull_request_target:"], "nomatch": ["  pull_request:"]}
+    },
+    {
+      "id": "GHA-SEC-002", "severity": "low", "category": "security", "confidence": "high",
+      "stacks": ["github-actions"],
+      "pattern": "^\\s*-?\\s*uses:\\s*(?!\\./|docker://)[\\w.-]+/[\\w./-]+@(?![0-9a-f]{40}\\b)\\S+",
+      "title": {"es": "Action sin fijar a SHA", "en": "Action not pinned to a SHA"},
+      "message": {"es": "Un tag es mutable (supply chain). Fija el commit SHA completo.", "en": "A tag is mutable (supply chain). Pin the full commit SHA."},
+      "examples": {"match": ["      - uses: actions/checkout@v4"], "nomatch": ["uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab", "uses: ./local-action"]}
+    },
+    {
+      "id": "GHA-SEC-003", "severity": "high", "category": "security", "confidence": "medium",
+      "stacks": ["github-actions"],
+      "pattern": "\\$\\{\\{\\s*github\\.(?:event\\.(?:issue|pull_request|comment|review|review_comment|head_commit|commits(?:\\[[^\\]]*\\])?|pages)\\b[^}]*\\.(?:title|body|message|name|label|ref|email)|head_ref)\\s*\\}\\}",
+      "title": {"es": "Entrada no confiable interpolada (inyección de scripts)", "en": "Untrusted input interpolated (script injection)"},
+      "message": {"es": "Si se usa dentro de run:, el atacante controla el comando. Pásalo por una variable de entorno y cítalo.", "en": "If used inside run:, the attacker controls the command. Pass it through an env var and quote it."},
+      "examples": {"match": ["run: echo \"${{ github.event.pull_request.title }}\"", "run: git checkout ${{ github.head_ref }}"], "nomatch": ["run: echo ${{ github.sha }}", "token: ${{ secrets.TOKEN }}"]}
+    },
+    {
+      "id": "GHA-SEC-004", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["github-actions"],
+      "pattern": "^\\s*permissions:\\s*write-all\\b",
+      "title": {"es": "permissions: write-all", "en": "permissions: write-all"},
+      "message": {"es": "Concede escritura total al GITHUB_TOKEN. Declara solo los permisos necesarios.", "en": "Grants full write to GITHUB_TOKEN. Declare only the permissions needed."},
+      "examples": {"match": ["permissions: write-all"], "nomatch": ["permissions: read-all"]}
+    }
+  ]
+}

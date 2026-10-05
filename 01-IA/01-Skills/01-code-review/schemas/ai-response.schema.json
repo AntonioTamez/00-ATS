@@ -1,0 +1,28 @@
+{
+  "$comment": "Contract every AI lens must satisfy. Lenient on unknown keys, strict on required ones.",
+  "type": "object",
+  "required": ["lens", "findings"],
+  "properties": {
+    "lens": {"type": "string", "minLength": 3},
+    "findings": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": ["file", "line", "severity", "category", "title", "explanation", "evidence", "confidence"],
+        "properties": {
+          "file": {"type": "string", "minLength": 1},
+          "line": {"type": "integer", "minimum": 1},
+          "end_line": {"type": "integer", "minimum": 1},
+          "severity": {"type": "string", "enum": ["blocker", "high", "medium", "low", "info"]},
+          "category": {"type": "string", "enum": ["security", "correctness", "reliability", "maintainability", "performance", "testing", "hygiene", "infra"]},
+          "title": {"type": "string", "minLength": 3, "maxLength": 120},
+          "explanation": {"type": "string", "minLength": 10, "maxLength": 1200},
+          "suggestion": {"type": "string", "maxLength": 800},
+          "evidence": {"type": "string", "minLength": 3, "maxLength": 300},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "pack": "powershell",
+  "ai_hints": "PowerShell: Invoke-Expression with variable data, plain-text secrets, missing $ErrorActionPreference/-ErrorAction Stop so failures continue silently, unquoted paths with spaces, destructive Remove-Item -Recurse -Force on computed paths, certificate validation bypass.",
+  "rules": [
+    {
+      "id": "PS-SEC-001", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["powershell"], "flags": "i",
+      "pattern": "\\b(?:iwr|irm|Invoke-WebRequest|Invoke-RestMethod)\\b[^|]*\\|\\s*(?:iex|Invoke-Expression)\\b",
+      "title": {"es": "Descarga y ejecución directa (iwr | iex)", "en": "Download-and-execute (iwr | iex)"},
+      "message": {"es": "Ejecuta código remoto sin verificar. Descarga, valida hash/firma y luego ejecuta.", "en": "Executes remote code unverified. Download, validate hash/signature, then run."},
+      "examples": {"match": ["iwr https://x/install.ps1 | iex", "Invoke-RestMethod https://x | Invoke-Expression"], "nomatch": ["iwr https://x -OutFile a.zip"]}
+    },
+    {
+      "id": "PS-SEC-002", "severity": "medium", "category": "security", "confidence": "medium",
+      "stacks": ["powershell"], "flags": "i",
+      "pattern": "\\b(?:Invoke-Expression|iex)\\s+[\\$(]",
+      "title": {"es": "Invoke-Expression con datos variables", "en": "Invoke-Expression with variable data"},
+      "message": {"es": "Inyección de comandos si el contenido es externo. Usa el operador & con parámetros.", "en": "Command injection if content is external. Use the & operator with parameters."},
+      "examples": {"match": ["Invoke-Expression $cmd", "iex (Get-Content x)"], "nomatch": ["# iex is dangerous"]}
+    },
+    {
+      "id": "PS-SEC-003", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["powershell"], "flags": "i",
+      "pattern": "ConvertTo-SecureString\\b[^|#]*-AsPlainText",
+      "title": {"es": "Secreto en texto plano", "en": "Plain-text secret"},
+      "message": {"es": "Convertir texto plano a SecureString anula su protección. Usa SecretManagement/Key Vault.", "en": "Converting plain text to SecureString defeats its protection. Use SecretManagement/Key Vault."},
+      "examples": {"match": ["ConvertTo-SecureString \"x\" -AsPlainText -Force"], "nomatch": ["ConvertTo-SecureString $enc"]}
+    },
+    {
+      "id": "PS-SEC-004", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["powershell"], "flags": "i",
+      "pattern": "-SkipCertificateCheck\\b|ServerCertificateValidationCallback\\s*=\\s*\\{\\s*\\$true",
+      "title": {"es": "Validación de certificado desactivada", "en": "Certificate validation disabled"},
+      "message": {"es": "Permite man-in-the-middle. Confía en la CA correcta.", "en": "Allows man-in-the-middle. Trust the right CA."},
+      "examples": {"match": ["Invoke-RestMethod $u -SkipCertificateCheck"], "nomatch": ["Invoke-RestMethod $u"]}
+    },
+    {
+      "id": "PS-SEC-005", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["powershell"], "flags": "i",
+      "pattern": "(?:Set-ExecutionPolicy\\s+|-ExecutionPolicy\\s+)(?:-\\w+\\s+)*(?:Bypass|Unrestricted)\\b",
+      "title": {"es": "ExecutionPolicy Bypass/Unrestricted", "en": "ExecutionPolicy Bypass/Unrestricted"},
+      "message": {"es": "Desactiva una capa de protección. Firma los scripts o usa RemoteSigned.", "en": "Disables a protection layer. Sign scripts or use RemoteSigned."},
+      "examples": {"match": ["Set-ExecutionPolicy Bypass -Scope Process", "powershell -ExecutionPolicy Bypass -File x.ps1"], "nomatch": ["Set-ExecutionPolicy RemoteSigned"]}
+    }
+  ]
+}

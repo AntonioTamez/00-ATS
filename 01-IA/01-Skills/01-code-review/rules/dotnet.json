@@ -1,0 +1,112 @@
+{
+  "pack": "dotnet",
+  "ai_hints": "C#/.NET: missing await or sync-over-async, IDisposable not disposed, EF Core N+1 and tracking on read paths, DI lifetime mismatches (singleton capturing scoped), nullable-reference holes, shared mutable state across requests, new endpoints without [Authorize]/validation, CancellationToken not propagated, exceptions swallowed or rethrown with `throw ex`.",
+  "rules": [
+    {
+      "id": "NET-REL-001", "severity": "medium", "category": "reliability", "confidence": "medium",
+      "stacks": ["dotnet"],
+      "pattern": "\\w+Async\\s*\\([^;]*\\)\\s*\\.(?:Result\\b|Wait\\(\\))|\\.GetAwaiter\\(\\)\\.GetResult\\(\\)",
+      "title": {"es": "Bloqueo síncrono sobre código async", "en": "Sync-over-async blocking"},
+      "message": {"es": ".Result/.Wait()/GetResult() bloquea el hilo y puede causar deadlocks y agotar el thread pool. Usa await de punta a punta.", "en": ".Result/.Wait()/GetResult() blocks the thread and can deadlock or starve the thread pool. Use await end to end."},
+      "examples": {"match": ["var x = client.GetAsync(url).Result;", "task.GetAwaiter().GetResult();"], "nomatch": ["var r = await client.GetAsync(url);", "var result = response.Result;"]}
+    },
+    {
+      "id": "NET-REL-002", "severity": "medium", "category": "reliability", "confidence": "medium",
+      "stacks": ["dotnet"],
+      "pattern": "\\basync\\s+void\\s+\\w+\\s*\\((?![^)]*(?:object\\s+sender|EventArgs))",
+      "title": {"es": "async void fuera de un event handler", "en": "async void outside an event handler"},
+      "message": {"es": "Las excepciones de async void no se pueden capturar y tumban el proceso. Devuelve Task.", "en": "Exceptions from async void cannot be caught and crash the process. Return Task."},
+      "examples": {"match": ["public async void DoWork()"], "nomatch": ["private async void Btn_Click(object sender, EventArgs e)", "public async Task DoWork()"]}
+    },
+    {
+      "id": "NET-REL-003", "severity": "medium", "category": "reliability", "confidence": "high",
+      "stacks": ["dotnet"],
+      "pattern": "\\bcatch\\b\\s*(?:\\([^)]*\\))?\\s*\\{\\s*\\}",
+      "title": {"es": "catch vacío", "en": "Empty catch block"},
+      "message": {"es": "Se traga la excepción sin registrar ni manejar; oculta fallos. Registra, relanza o maneja explícitamente.", "en": "Swallows the exception without logging or handling; hides failures. Log, rethrow or handle explicitly."},
+      "examples": {"match": ["catch (Exception) { }", "catch { }"], "nomatch": ["catch (Exception ex) { _log.Error(ex); }"]}
+    },
+    {
+      "id": "NET-REL-004", "severity": "medium", "category": "performance", "confidence": "high",
+      "stacks": ["dotnet"],
+      "pattern": "\\bnew\\s+HttpClient\\s*\\(",
+      "exclude_paths": ["**/tests/**", "**/*Tests*/**"],
+      "title": {"es": "new HttpClient() directo", "en": "Direct new HttpClient()"},
+      "message": {"es": "Crear HttpClient por uso agota sockets y no respeta cambios de DNS. Usa IHttpClientFactory o una instancia compartida.", "en": "Creating HttpClient per use exhausts sockets and ignores DNS changes. Use IHttpClientFactory or a shared instance."},
+      "examples": {"match": ["using var c = new HttpClient();"], "nomatch": ["services.AddHttpClient();"]}
+    },
+    {
+      "id": "NET-COR-001", "severity": "medium", "category": "correctness", "confidence": "high",
+      "stacks": ["dotnet"],
+      "pattern": "\\bthrow\\s+(?:ex|e|exception|err)\\s*;",
+      "title": {"es": "throw ex pierde el stack trace", "en": "throw ex loses the stack trace"},
+      "message": {"es": "Usa `throw;` para relanzar conservando la traza original.", "en": "Use `throw;` to rethrow while preserving the original trace."},
+      "examples": {"match": ["catch (Exception ex) { throw ex; }"], "nomatch": ["throw;", "throw new InvalidOperationException();"]}
+    },
+    {
+      "id": "NET-SEC-001", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["dotnet"],
+      "pattern": "\\b(?:FromSqlRaw|ExecuteSqlRaw|ExecuteSqlCommand|SqlQuery)\\s*\\(\\s*\\$@?\"|\\bnew\\s+(?:Sql|Npgsql|MySql|Oracle)Command\\s*\\(\\s*\\$@?\"",
+      "title": {"es": "SQL con interpolación de strings", "en": "SQL built with string interpolation"},
+      "message": {"es": "Interpolar valores en SQL permite inyección. Usa parámetros o FromSqlInterpolated/ExecuteSqlInterpolated.", "en": "Interpolating values into SQL enables injection. Use parameters or FromSqlInterpolated/ExecuteSqlInterpolated."},
+      "examples": {"match": ["ctx.Users.FromSqlRaw($\"select * from u where id={id}\")", "new SqlCommand($\"delete from t where id={i}\", c)"], "nomatch": ["ctx.Users.FromSqlInterpolated($\"select 1\")", "ctx.Users.FromSqlRaw(\"select 1\")"]}
+    },
+    {
+      "id": "NET-SEC-002", "severity": "high", "category": "security", "confidence": "medium",
+      "stacks": ["dotnet"], "flags": "i",
+      "pattern": "\"[^\"]*\\b(?:select\\b[^\"]*\\bfrom|insert\\s+into|update\\b[^\"]*\\bset|delete\\s+from)\\b[^\"]*\"\\s*\\+\\s*[A-Za-z_]",
+      "title": {"es": "SQL concatenado", "en": "Concatenated SQL"},
+      "message": {"es": "Concatenar valores en una consulta SQL permite inyección. Parametriza.", "en": "Concatenating values into a SQL query enables injection. Parameterize."},
+      "examples": {"match": ["var q = \"SELECT * FROM Users WHERE Id = \" + id;"], "nomatch": ["var m = \"Select the item \" + name;"]}
+    },
+    {
+      "id": "NET-SEC-003", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["dotnet"],
+      "pattern": "ServerCertificateCustomValidationCallback\\s*=\\s*(?:\\([^)]*\\)\\s*=>\\s*true|HttpClientHandler\\.DangerousAcceptAnyServerCertificateValidator)|ServicePointManager\\.ServerCertificateValidationCallback\\s*\\+?=",
+      "title": {"es": "Validación de certificado TLS desactivada", "en": "TLS certificate validation disabled"},
+      "message": {"es": "Aceptar cualquier certificado permite man-in-the-middle. Confía en la CA correcta en su lugar.", "en": "Accepting any certificate allows man-in-the-middle. Trust the right CA instead."},
+      "examples": {"match": ["handler.ServerCertificateCustomValidationCallback = (m, c, ch, e) => true;", "ServicePointManager.ServerCertificateValidationCallback += Ok;"], "nomatch": ["handler.ServerCertificateCustomValidationCallback = MyValidator;"]}
+    },
+    {
+      "id": "NET-SEC-004", "severity": "medium", "category": "security", "confidence": "medium",
+      "stacks": ["dotnet"],
+      "pattern": "\\b(?:MD5|SHA1)\\.Create\\s*\\(|\\bnew\\s+(?:MD5|SHA1)(?:CryptoServiceProvider|Managed|Cng)?\\s*\\(|\\b(?:DES|TripleDES|RC2)\\.Create\\s*\\(",
+      "title": {"es": "Criptografía débil", "en": "Weak cryptography"},
+      "message": {"es": "MD5/SHA1/DES están rotos para uso criptográfico. Usa SHA-256+/AES-GCM (y PBKDF2/Argon2 para contraseñas).", "en": "MD5/SHA1/DES are broken for cryptographic use. Use SHA-256+/AES-GCM (and PBKDF2/Argon2 for passwords)."},
+      "examples": {"match": ["using var h = MD5.Create();", "var s = new SHA1Managed();"], "nomatch": ["using var h = SHA256.Create();"]}
+    },
+    {
+      "id": "NET-SEC-005", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["dotnet"],
+      "pattern": "\\bBinaryFormatter\\b|\\bTypeNameHandling\\s*=\\s*TypeNameHandling\\.(?:All|Auto|Objects|Arrays)\\b",
+      "title": {"es": "Deserialización insegura", "en": "Insecure deserialization"},
+      "message": {"es": "BinaryFormatter y TypeNameHandling != None permiten ejecución de código con datos no confiables.", "en": "BinaryFormatter and TypeNameHandling != None allow code execution with untrusted data."},
+      "examples": {"match": ["var f = new BinaryFormatter();", "s.TypeNameHandling = TypeNameHandling.All;"], "nomatch": ["s.TypeNameHandling = TypeNameHandling.None;"]}
+    },
+    {
+      "id": "NET-SEC-006", "severity": "low", "category": "security", "confidence": "high",
+      "stacks": ["dotnet"],
+      "pattern": "\\[AllowAnonymous\\]",
+      "title": {"es": "[AllowAnonymous] añadido", "en": "[AllowAnonymous] added"},
+      "message": {"es": "Se expone un endpoint sin autenticación. Confirma que es intencional y que no devuelve datos sensibles.", "en": "An endpoint is exposed without authentication. Confirm it is intentional and returns nothing sensitive."},
+      "examples": {"match": ["    [AllowAnonymous]"], "nomatch": ["    [Authorize]"]}
+    },
+    {
+      "id": "NET-HYG-001", "severity": "low", "category": "hygiene", "confidence": "high",
+      "stacks": ["dotnet"],
+      "pattern": "\\bConsole\\.(?:Write|WriteLine)\\s*\\(",
+      "exclude_paths": ["**/tests/**", "**/*Tests*/**", "**/Program.cs"],
+      "title": {"es": "Console.WriteLine en código de aplicación", "en": "Console.WriteLine in application code"},
+      "message": {"es": "Usa ILogger para que la salida sea estructurada y configurable.", "en": "Use ILogger so output is structured and configurable."},
+      "examples": {"match": ["Console.WriteLine(\"x\");"], "nomatch": ["_logger.LogInformation(\"x\");"]}
+    },
+    {
+      "id": "NET-HYG-002", "severity": "low", "category": "maintainability", "confidence": "high",
+      "stacks": ["dotnet"],
+      "pattern": "^\\s*#pragma\\s+warning\\s+disable",
+      "title": {"es": "#pragma warning disable", "en": "#pragma warning disable"},
+      "message": {"es": "Silencia advertencias del compilador; justifica en un comentario y acota con restore.", "en": "Silences compiler warnings; justify in a comment and scope it with restore."},
+      "examples": {"match": ["#pragma warning disable CS8618"], "nomatch": ["#pragma warning restore CS8618"]}
+    }
+  ]
+}

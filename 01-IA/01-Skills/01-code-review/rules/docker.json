@@ -1,0 +1,55 @@
+{
+  "pack": "docker",
+  "ai_hints": "Docker/Compose: running as root, unpinned or :latest base images, secrets baked into layers/ENV/ARG, large attack surface (build tools in the final stage, missing multi-stage), missing HEALTHCHECK, COPY . . pulling in .env/.git, exposed ports and mounted docker.sock.",
+  "rules": [
+    {
+      "id": "DKR-REL-001", "severity": "medium", "category": "reliability", "confidence": "high",
+      "stacks": ["docker"], "flags": "i",
+      "pattern": "^\\s*FROM\\s+(?:--\\S+\\s+)?\\S+:latest\\b",
+      "title": {"es": "Imagen base :latest", "en": ":latest base image"},
+      "message": {"es": "Builds no reproducibles y cambios inesperados. Fija versión (y idealmente digest).", "en": "Non-reproducible builds and surprise changes. Pin a version (ideally a digest)."},
+      "examples": {"match": ["FROM node:latest", "FROM --platform=linux/amd64 node:latest AS build"], "nomatch": ["FROM node:20-alpine"]}
+    },
+    {
+      "id": "DKR-SEC-001", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["docker"], "flags": "i",
+      "pattern": "^\\s*USER\\s+(?:root|0)(?::\\S+)?\\s*$",
+      "title": {"es": "Contenedor ejecutado como root", "en": "Container runs as root"},
+      "message": {"es": "Crea y usa un usuario sin privilegios en la etapa final.", "en": "Create and use an unprivileged user in the final stage."},
+      "examples": {"match": ["USER root", "USER 0"], "nomatch": ["USER app"]}
+    },
+    {
+      "id": "DKR-SEC-002", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["docker"], "flags": "i",
+      "pattern": "^\\s*ADD\\s+(?:--\\S+\\s+)?https?://",
+      "title": {"es": "ADD desde URL remota", "en": "ADD from remote URL"},
+      "message": {"es": "Descarga sin verificación de integridad. Usa curl/wget con checksum o COPY de un artefacto verificado.", "en": "Downloads without integrity verification. Use curl/wget with a checksum or COPY a verified artifact."},
+      "examples": {"match": ["ADD https://x.com/a.tgz /opt/"], "nomatch": ["ADD app.tgz /opt/"]}
+    },
+    {
+      "id": "DKR-SEC-003", "severity": "high", "category": "security", "confidence": "medium",
+      "stacks": ["docker"], "flags": "i",
+      "pattern": "^\\s*(?:ENV|ARG)\\s+\\w*(?:PASSWORD|SECRET|TOKEN|API_?KEY|PRIVATE_?KEY)\\w*(?:\\s*=\\s*|\\s+)\\S+",
+      "exclude_pattern": "(?:_FILE|_PATH|_URL|_NAME)\\b|=\\s*\\$",
+      "title": {"es": "Secreto en ENV/ARG", "en": "Secret in ENV/ARG"},
+      "message": {"es": "Queda en las capas/historial de la imagen. Usa BuildKit --mount=type=secret o secretos en runtime.", "en": "It stays in image layers/history. Use BuildKit --mount=type=secret or runtime secrets."},
+      "examples": {"match": ["ENV DB_PASSWORD=Sup3rS3cret", "ARG NPM_TOKEN=abc123"], "nomatch": ["ARG NPM_TOKEN", "ENV TOKEN_FILE=/run/x", "ENV DB_PASSWORD=$DB_PASS"]}
+    },
+    {
+      "id": "DKR-MNT-001", "severity": "low", "category": "maintainability", "confidence": "medium",
+      "stacks": ["docker"],
+      "pattern": "\\bapt-get\\s+install\\b(?!.*--no-install-recommends)",
+      "title": {"es": "apt-get install sin --no-install-recommends", "en": "apt-get install without --no-install-recommends"},
+      "message": {"es": "Instala paquetes innecesarios y agranda la imagen.", "en": "Installs unneeded packages and bloats the image."},
+      "examples": {"match": ["RUN apt-get update && apt-get install -y curl"], "nomatch": ["RUN apt-get install -y --no-install-recommends curl"]}
+    },
+    {
+      "id": "DKR-SEC-004", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["docker", "kubernetes"],
+      "pattern": "/var/run/docker\\.sock",
+      "title": {"es": "Socket de Docker montado", "en": "Docker socket mounted"},
+      "message": {"es": "Equivale a acceso root al host. Evita montarlo o usa un proxy restringido.", "en": "Equivalent to root access on the host. Avoid mounting it or use a restricted proxy."},
+      "examples": {"match": ["- /var/run/docker.sock:/var/run/docker.sock"], "nomatch": ["- /var/log:/var/log"]}
+    }
+  ]
+}

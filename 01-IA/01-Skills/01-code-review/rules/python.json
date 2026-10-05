@@ -1,0 +1,121 @@
+{
+  "pack": "python",
+  "ai_hints": "Python: mutable default args, blocking calls inside async def, resource leaks (files/sockets without context managers), broad except hiding errors, timezone-naive datetimes, SQL/shell/path built from user input, missing input validation at API boundaries, N+1 queries in ORM loops, thread-safety of module-level state.",
+  "rules": [
+    {
+      "id": "PY-SEC-001", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "(?<![\\w.])(?<!def )(?:eval|exec)\\s*\\(",
+      "title": {"es": "eval/exec", "en": "eval/exec"},
+      "message": {"es": "Ejecuta código arbitrario si la entrada no es de confianza. Usa ast.literal_eval o una tabla de despacho.", "en": "Runs arbitrary code if input is untrusted. Use ast.literal_eval or a dispatch table."},
+      "examples": {"match": ["result = eval(user_input)", "exec(code)"], "nomatch": ["model.eval()", "ast.literal_eval(s)", "def exec(self):"]}
+    },
+    {
+      "id": "PY-SEC-002", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "\\bsubprocess\\.\\w+\\([^)]*shell\\s*=\\s*True|\\bos\\.(?:system|popen)\\s*\\(",
+      "title": {"es": "Ejecución de shell", "en": "Shell execution"},
+      "message": {"es": "shell=True/os.system con datos externos permite inyección de comandos. Pasa una lista de argumentos sin shell.", "en": "shell=True/os.system with external data enables command injection. Pass an argument list without a shell."},
+      "examples": {"match": ["subprocess.run(cmd, shell=True)", "os.system(\"ls \" + x)"], "nomatch": ["subprocess.run([\"ls\"], check=True)"]}
+    },
+    {
+      "id": "PY-SEC-003", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "\\b(?:c?[pP]ickle|marshal)\\.loads?\\s*\\(|\\byaml\\.load\\s*\\((?![^)]*Safe)",
+      "title": {"es": "Deserialización insegura", "en": "Unsafe deserialization"},
+      "message": {"es": "pickle/marshal/yaml.load ejecutan código con datos manipulados. Usa json o yaml.safe_load.", "en": "pickle/marshal/yaml.load execute code on crafted data. Use json or yaml.safe_load."},
+      "examples": {"match": ["pickle.loads(data)", "cfg = yaml.load(f)"], "nomatch": ["yaml.load(f, Loader=yaml.SafeLoader)", "yaml.safe_load(f)"]}
+    },
+    {
+      "id": "PY-SEC-004", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "\\.execute(?:many)?\\s*\\(\\s*(?:f[\"']|[\"'][^\"']*[\"']\\s*(?:%|\\.format\\s*\\(|\\+))",
+      "title": {"es": "SQL construido con formato de strings", "en": "SQL built with string formatting"},
+      "message": {"es": "Interpolar valores en SQL permite inyección. Usa parámetros del driver (%s / ? / :name).", "en": "Interpolating values into SQL enables injection. Use driver parameters (%s / ? / :name)."},
+      "examples": {"match": ["cur.execute(f\"select * from t where id={i}\")", "cur.execute(\"select * from t where id=%s\" % i)"], "nomatch": ["cur.execute(\"select * from t where id=%s\", (i,))"]}
+    },
+    {
+      "id": "PY-SEC-005", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "\\bverify\\s*=\\s*False\\b",
+      "exclude_paths": ["**/tests/**"],
+      "title": {"es": "Verificación TLS desactivada", "en": "TLS verification disabled"},
+      "message": {"es": "verify=False habilita man-in-the-middle. Configura el bundle de CA correcto.", "en": "verify=False enables man-in-the-middle. Configure the right CA bundle."},
+      "examples": {"match": ["requests.get(u, verify=False)"], "nomatch": ["requests.get(u, verify=True)"]}
+    },
+    {
+      "id": "PY-SEC-006", "severity": "low", "category": "security", "confidence": "medium",
+      "stacks": ["python"],
+      "pattern": "\\bhashlib\\.(?:md5|sha1)\\s*\\(",
+      "title": {"es": "Hash débil (md5/sha1)", "en": "Weak hash (md5/sha1)"},
+      "message": {"es": "No uses md5/sha1 para seguridad. Si es solo checksum, pasa usedforsecurity=False.", "en": "Do not use md5/sha1 for security. For checksums only, pass usedforsecurity=False."},
+      "examples": {"match": ["hashlib.md5(x)"], "nomatch": ["hashlib.sha256(x)"]}
+    },
+    {
+      "id": "PY-SEC-007", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "\\btempfile\\.mktemp\\s*\\(",
+      "title": {"es": "tempfile.mktemp", "en": "tempfile.mktemp"},
+      "message": {"es": "Vulnerable a condiciones de carrera. Usa NamedTemporaryFile o mkstemp.", "en": "Race-prone. Use NamedTemporaryFile or mkstemp."},
+      "examples": {"match": ["p = tempfile.mktemp()"], "nomatch": ["p = tempfile.mkstemp()"]}
+    },
+    {
+      "id": "PY-SEC-008", "severity": "medium", "category": "security", "confidence": "medium",
+      "stacks": ["python"],
+      "pattern": "\\.run\\s*\\([^)]*\\bdebug\\s*=\\s*True|^\\s*DEBUG\\s*=\\s*True\\b",
+      "exclude_paths": ["**/tests/**"],
+      "title": {"es": "Modo debug activado", "en": "Debug mode enabled"},
+      "message": {"es": "Debug en producción expone consola interactiva y trazas. Léelo de configuración por entorno.", "en": "Debug in production exposes an interactive console and traces. Read it from per-environment config."},
+      "examples": {"match": ["app.run(debug=True)", "DEBUG = True"], "nomatch": ["DEBUG = False"]}
+    },
+    {
+      "id": "PY-COR-001", "severity": "medium", "category": "correctness", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "\\bdef\\s+\\w+\\s*\\([^)]*=\\s*(?:\\[\\s*\\]|\\{\\s*\\}|set\\s*\\(\\s*\\)|dict\\s*\\(\\s*\\)|list\\s*\\(\\s*\\))",
+      "title": {"es": "Argumento por defecto mutable", "en": "Mutable default argument"},
+      "message": {"es": "El valor se comparte entre llamadas. Usa None y crea el objeto dentro de la función.", "en": "The value is shared across calls. Use None and create the object inside the function."},
+      "examples": {"match": ["def f(a, items=[]):", "def g(x={}):"], "nomatch": ["def f(a, items=None):"]}
+    },
+    {
+      "id": "PY-REL-001", "severity": "medium", "category": "reliability", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "^\\s*except\\s*:",
+      "title": {"es": "except desnudo", "en": "Bare except"},
+      "message": {"es": "Captura incluso KeyboardInterrupt/SystemExit. Captura excepciones concretas.", "en": "Catches even KeyboardInterrupt/SystemExit. Catch specific exceptions."},
+      "examples": {"match": ["    except:"], "nomatch": ["except ValueError:"]}
+    },
+    {
+      "id": "PY-REL-002", "severity": "medium", "category": "reliability", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "^\\s*except\\b[^:]*:\\s*pass\\s*(?:#.*)?$",
+      "title": {"es": "Excepción silenciada con pass", "en": "Exception swallowed with pass"},
+      "message": {"es": "Oculta fallos. Registra la excepción o maneja el caso explícitamente.", "en": "Hides failures. Log the exception or handle the case explicitly."},
+      "examples": {"match": ["except Exception: pass", "except KeyError: pass  # ignore"], "nomatch": ["except KeyError:", "pass"]}
+    },
+    {
+      "id": "PY-COR-002", "severity": "low", "category": "correctness", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "[=!]=\\s*None\\b",
+      "title": {"es": "Comparación con None usando ==", "en": "Comparing to None with =="},
+      "message": {"es": "Usa `is None` / `is not None`.", "en": "Use `is None` / `is not None`."},
+      "examples": {"match": ["if x == None:", "if y != None:"], "nomatch": ["if x is None:"]}
+    },
+    {
+      "id": "PY-HYG-001", "severity": "low", "category": "hygiene", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "^\\s*print\\s*\\(",
+      "exclude_paths": ["**/tests/**", "**/scripts/**", "**/__main__.py", "**/manage.py", "**/cli*.py"],
+      "title": {"es": "print() en código de librería/servicio", "en": "print() in library/service code"},
+      "message": {"es": "Usa logging para tener niveles y destino configurables.", "en": "Use logging for configurable levels and destinations."},
+      "examples": {"match": ["    print(\"x\")"], "nomatch": ["logger.info(\"x\")", "pprint(x)"]}
+    },
+    {
+      "id": "PY-HYG-002", "severity": "medium", "category": "hygiene", "confidence": "high",
+      "stacks": ["python"],
+      "pattern": "\\bbreakpoint\\s*\\(\\s*\\)|^\\s*import\\s+pdb\\b|\\bpdb\\.set_trace\\s*\\(",
+      "title": {"es": "Debugger olvidado", "en": "Debugger left in"},
+      "message": {"es": "Detendrá la ejecución en producción. Elimínalo.", "en": "Will halt execution in production. Remove it."},
+      "examples": {"match": ["breakpoint()", "import pdb", "pdb.set_trace()"], "nomatch": ["# set a breakpoint here"]}
+    }
+  ]
+}

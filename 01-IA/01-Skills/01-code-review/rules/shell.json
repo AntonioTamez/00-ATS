@@ -1,0 +1,47 @@
+{
+  "pack": "shell",
+  "ai_hints": "Shell: unquoted variables, missing `set -euo pipefail`, commands that behave differently when a variable is empty (rm -rf $DIR/), parsing ls output, unsafe temp files, curl|sh, secrets echoed to logs, non-portable bashisms under #!/bin/sh.",
+  "rules": [
+    {
+      "id": "CMD-SEC-001", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["shell", "docker", "github-actions"],
+      "pattern": "\\b(?:curl|wget)\\b[^|;&]*\\|\\s*(?:sudo\\s+)?(?:ba|z)?sh\\b",
+      "title": {"es": "Descarga y ejecución directa (curl | sh)", "en": "Download-and-execute (curl | sh)"},
+      "message": {"es": "Ejecuta código remoto sin verificar. Descarga, verifica checksum/firma y luego ejecuta.", "en": "Executes remote code unverified. Download, verify checksum/signature, then run."},
+      "examples": {"match": ["curl -fsSL https://x.sh | sh", "RUN wget -qO- https://x | sudo bash"], "nomatch": ["curl -o out.txt https://x"]}
+    },
+    {
+      "id": "CMD-SEC-002", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["shell", "docker", "github-actions"],
+      "pattern": "\\bcurl\\b[^|;&#]*\\s(?:-k|--insecure)\\b|\\bwget\\b[^|;&#]*--no-check-certificate\\b",
+      "title": {"es": "Verificación TLS desactivada", "en": "TLS verification disabled"},
+      "message": {"es": "Permite man-in-the-middle. Instala la CA correspondiente.", "en": "Allows man-in-the-middle. Install the right CA."},
+      "examples": {"match": ["curl -k https://x", "wget --no-check-certificate https://x"], "nomatch": ["curl -sSL https://x"]}
+    },
+    {
+      "id": "SH-REL-001", "severity": "high", "category": "reliability", "confidence": "medium",
+      "stacks": ["shell"],
+      "pattern": "\\brm\\s+-[a-zA-Z]*[rR][a-zA-Z]*\\s+(?:--\\s+)?(?:/|/\\*|~|~/\\*|[\"']?\\$\\{?\\w+\\}?(?:/\\*?)?[\"']?)\\s*(?:;|&&|\\|\\||$)",
+      "title": {"es": "rm -rf sobre ruta peligrosa o variable sin proteger", "en": "rm -rf on dangerous path or unguarded variable"},
+      "message": {"es": "Si la variable está vacía borra / o el directorio equivocado. Usa \"${VAR:?}\" y rutas explícitas.", "en": "If the variable is empty it deletes / or the wrong directory. Use \"${VAR:?}\" and explicit paths."},
+      "examples": {"match": ["rm -rf /", "rm -rf $DIR/", "rm -rf \"$DIR\""], "nomatch": ["rm -rf build/", "rm -rf \"${DIR:?}\"", "rm -rf /tmp/x"]}
+    },
+    {
+      "id": "SH-SEC-001", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["shell", "docker"],
+      "pattern": "\\bchmod\\s+(?:-[a-zA-Z]+\\s+)*0?777\\b",
+      "title": {"es": "chmod 777", "en": "chmod 777"},
+      "message": {"es": "Permisos de escritura para todos. Usa el mínimo necesario (750/640).", "en": "World-writable permissions. Use the minimum needed (750/640)."},
+      "examples": {"match": ["chmod 777 /data", "chmod -R 777 ."], "nomatch": ["chmod 750 /data"]}
+    },
+    {
+      "id": "SH-SEC-002", "severity": "medium", "category": "security", "confidence": "medium",
+      "stacks": ["shell"],
+      "pattern": "\\beval\\s+[\"']?\\$",
+      "exclude_pattern": "\\beval\\s+[\"']?\\$\\(",
+      "title": {"es": "eval con variable", "en": "eval with a variable"},
+      "message": {"es": "Inyección de comandos si el valor es externo. Evita eval; usa arrays.", "en": "Command injection if the value is external. Avoid eval; use arrays."},
+      "examples": {"match": ["eval \"$cmd\"", "eval $CMD"], "nomatch": ["eval \"$(ssh-agent -s)\""]}
+    }
+  ]
+}

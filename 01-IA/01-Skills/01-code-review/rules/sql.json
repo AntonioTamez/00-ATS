@@ -1,0 +1,30 @@
+{
+  "pack": "sql",
+  "ai_hints": "SQL/migrations: destructive DDL without backup/rollback, locking ALTERs on large tables, missing indexes for new foreign keys/filters, non-idempotent scripts, data fixes without WHERE, changes that break running application versions (rename/drop column).",
+  "rules": [
+    {
+      "id": "SQL-REL-001", "severity": "high", "category": "reliability", "confidence": "high",
+      "stacks": ["sql"], "flags": "i",
+      "pattern": "\\b(?:drop\\s+(?:table|database|schema|index)|truncate\\s+table)\\b",
+      "title": {"es": "DDL destructivo", "en": "Destructive DDL"},
+      "message": {"es": "Pérdida de datos irreversible. Verifica backup, orden de despliegue y compatibilidad con la versión en ejecución.", "en": "Irreversible data loss. Verify backup, deployment order and compatibility with the running version."},
+      "examples": {"match": ["DROP TABLE users;", "truncate table audit"], "nomatch": ["CREATE TABLE users (id int);"]}
+    },
+    {
+      "id": "SQL-REL-002", "severity": "high", "category": "reliability", "confidence": "high",
+      "stacks": ["sql"], "flags": "i",
+      "pattern": "^\\s*delete\\s+from\\s+[\\w.\\[\\]\"`]+\\s*;?\\s*$",
+      "title": {"es": "DELETE sin WHERE", "en": "DELETE without WHERE"},
+      "message": {"es": "Borra todas las filas. Si es intencional, usa TRUNCATE y documéntalo; si no, añade WHERE.", "en": "Deletes every row. If intentional, use TRUNCATE and document it; otherwise add WHERE."},
+      "examples": {"match": ["DELETE FROM users;", "delete from dbo.Users"], "nomatch": ["DELETE FROM users WHERE id = 1;"]}
+    },
+    {
+      "id": "SQL-PRF-001", "severity": "low", "category": "performance", "confidence": "high",
+      "stacks": ["sql"], "flags": "i",
+      "pattern": "\\bselect\\s+\\*",
+      "title": {"es": "SELECT *", "en": "SELECT *"},
+      "message": {"es": "Trae columnas innecesarias y rompe ante cambios de esquema. Lista las columnas.", "en": "Fetches unneeded columns and breaks on schema changes. List the columns."},
+      "examples": {"match": ["select * from t"], "nomatch": ["select count(*) from t"]}
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "pack": "terraform",
+  "ai_hints": "Terraform: resources reachable from the internet, missing encryption/logging/backups, IAM wildcards, replacements that destroy stateful resources (changed names/ids/forces-new attributes), missing lifecycle/prevent_destroy on databases, unpinned provider/module versions, secrets in variables/outputs without sensitive = true, count/for_each changes that reshuffle addresses.",
+  "rules": [
+    {
+      "id": "TF-SEC-001", "severity": "high", "category": "infra", "confidence": "medium",
+      "stacks": ["terraform"],
+      "pattern": "[\"'](?:0\\.0\\.0\\.0/0|::/0)[\"']",
+      "title": {"es": "Abierto a todo Internet (0.0.0.0/0)", "en": "Open to the whole Internet (0.0.0.0/0)"},
+      "message": {"es": "Una regla/ACL abierta a todos expone el recurso. Restringe a rangos concretos (en egress puede ser aceptable).", "en": "An open-to-all rule/ACL exposes the resource. Restrict to specific ranges (may be acceptable for egress)."},
+      "examples": {"match": ["cidr_blocks = [\"0.0.0.0/0\"]", "ipv6_cidr_blocks = [\"::/0\"]"], "nomatch": ["cidr_blocks = [\"10.0.0.0/8\"]"]}
+    },
+    {
+      "id": "TF-SEC-002", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["terraform"],
+      "pattern": "\\bacl\\s*=\\s*[\"']public-read(?:-write)?[\"']",
+      "title": {"es": "Bucket con ACL pública", "en": "Bucket with public ACL"},
+      "message": {"es": "Datos legibles/escribibles por cualquiera. Usa ACL privada y políticas explícitas.", "en": "Data readable/writable by anyone. Use a private ACL and explicit policies."},
+      "examples": {"match": ["acl = \"public-read\""], "nomatch": ["acl = \"private\""]}
+    },
+    {
+      "id": "TF-SEC-003", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["terraform"],
+      "pattern": "\\b(?:storage_encrypted|encrypted|enable_https_traffic_only|https_only)\\s*=\\s*false\\b",
+      "title": {"es": "Cifrado/HTTPS desactivado", "en": "Encryption/HTTPS disabled"},
+      "message": {"es": "Desactivar cifrado o HTTPS expone datos en reposo/tránsito.", "en": "Disabling encryption or HTTPS exposes data at rest/in transit."},
+      "examples": {"match": ["storage_encrypted = false", "enable_https_traffic_only = false"], "nomatch": ["encrypted = true"]}
+    },
+    {
+      "id": "TF-SEC-004", "severity": "medium", "category": "infra", "confidence": "medium",
+      "stacks": ["terraform"],
+      "pattern": "\\b(?:publicly_accessible|public_network_access_enabled|map_public_ip_on_launch|associate_public_ip_address)\\s*=\\s*true\\b",
+      "title": {"es": "Recurso con acceso público", "en": "Publicly accessible resource"},
+      "message": {"es": "Confirma que debe ser público; si no, usa red privada/endpoints privados.", "en": "Confirm it must be public; otherwise use private networking/endpoints."},
+      "examples": {"match": ["publicly_accessible = true", "public_network_access_enabled = true"], "nomatch": ["publicly_accessible = false"]}
+    },
+    {
+      "id": "TF-SEC-005", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["terraform"],
+      "pattern": "[\"']?\\b[Aa]ctions?[\"']?\\s*[:=]\\s*\\[?\\s*[\"']\\*[\"']",
+      "title": {"es": "IAM con Action \"*\"", "en": "IAM with Action \"*\""},
+      "message": {"es": "Permisos comodín violan mínimo privilegio. Enumera solo las acciones necesarias.", "en": "Wildcard permissions violate least privilege. List only the needed actions."},
+      "examples": {"match": ["actions = [\"*\"]", "\"Action\": \"*\","], "nomatch": ["actions = [\"s3:GetObject\"]", "\"Action\": \"s3:*\""]}
+    },
+    {
+      "id": "TF-SEC-006", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["terraform"],
+      "pattern": "\\bmin_tls_version\\s*=\\s*[\"']TLS1_[01][\"']|\\bssl_enforcement(?:_enabled)?\\s*=\\s*(?:false|[\"']Disabled[\"'])",
+      "title": {"es": "TLS débil o desactivado", "en": "Weak or disabled TLS"},
+      "message": {"es": "Exige TLS 1.2+ y SSL obligatorio.", "en": "Require TLS 1.2+ and enforced SSL."},
+      "examples": {"match": ["min_tls_version = \"TLS1_0\"", "ssl_enforcement_enabled = false"], "nomatch": ["min_tls_version = \"TLS1_2\""]}
+    },
+    {
+      "id": "TF-REL-001", "severity": "medium", "category": "reliability", "confidence": "high",
+      "stacks": ["terraform"],
+      "pattern": "\\bsource\\s*=\\s*\"[^\"]*\\?ref=(?:main|master|HEAD)\"",
+      "title": {"es": "Módulo sin versión fija", "en": "Unpinned module"},
+      "message": {"es": "Referenciar una rama hace los planes no reproducibles. Fija un tag o commit.", "en": "Referencing a branch makes plans non-reproducible. Pin a tag or commit."},
+      "examples": {"match": ["source = \"git::https://x/y.git?ref=main\""], "nomatch": ["source = \"git::https://x/y.git?ref=v1.2.3\""]}
+    },
+    {
+      "id": "TF-REL-002", "severity": "low", "category": "reliability", "confidence": "medium",
+      "stacks": ["terraform"],
+      "pattern": "\\b(?:deletion_protection|prevent_destroy)\\s*=\\s*false\\b|\\bskip_final_snapshot\\s*=\\s*true\\b|\\bforce_destroy\\s*=\\s*true\\b",
+      "title": {"es": "Protección contra borrado desactivada", "en": "Delete protection disabled"},
+      "message": {"es": "Un destroy/replace podría perder datos sin respaldo. Aceptable solo en entornos efímeros.", "en": "A destroy/replace could lose data without backup. Acceptable only in ephemeral environments."},
+      "examples": {"match": ["deletion_protection = false", "skip_final_snapshot = true"], "nomatch": ["deletion_protection = true"]}
+    }
+  ]
+}

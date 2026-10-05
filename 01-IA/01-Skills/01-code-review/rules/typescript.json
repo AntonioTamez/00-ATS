@@ -1,0 +1,104 @@
+{
+  "pack": "typescript",
+  "ai_hints": "TypeScript/JavaScript: unhandled promise rejections and missing await, async callbacks in forEach, stale closures/hook dependency arrays in React, unsafe HTML sinks, secrets or tokens in client bundles, any/unknown leaking through public types, missing input validation on API handlers, memory leaks from unremoved listeners/subscriptions, race conditions in effects.",
+  "rules": [
+    {
+      "id": "TS-SEC-001", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["typescript"],
+      "pattern": "(?<![\\w.$])eval\\s*\\(|\\bnew\\s+Function\\s*\\(",
+      "title": {"es": "eval / new Function", "en": "eval / new Function"},
+      "message": {"es": "Ejecuta código arbitrario si interviene entrada externa. Evítalo.", "en": "Runs arbitrary code if external input is involved. Avoid it."},
+      "examples": {"match": ["eval(code)", "const f = new Function(\"a\", body);"], "nomatch": ["retrieval(x)", "obj.eval(x)"]}
+    },
+    {
+      "id": "TS-SEC-002", "severity": "medium", "category": "security", "confidence": "medium",
+      "stacks": ["typescript"],
+      "pattern": "\\.innerHTML\\s*=(?!=)|\\bdangerouslySetInnerHTML\\b|\\bdocument\\.write(?:ln)?\\s*\\(|\\.outerHTML\\s*=(?!=)|\\bbypassSecurityTrust(?:Html|Script|Url|ResourceUrl|Style)\\s*\\(",
+      "title": {"es": "Sink HTML sin sanitizar (XSS)", "en": "Unsanitized HTML sink (XSS)"},
+      "message": {"es": "Insertar HTML dinámico habilita XSS. Usa textContent o sanitiza (DOMPurify).", "en": "Inserting dynamic HTML enables XSS. Use textContent or sanitize (DOMPurify)."},
+      "examples": {"match": ["el.innerHTML = html;", "<div dangerouslySetInnerHTML={{__html: x}} />", "this.s.bypassSecurityTrustHtml(x)"], "nomatch": ["el.textContent = t;", "if (a.innerHTML == b) {}"]}
+    },
+    {
+      "id": "TS-SEC-003", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["typescript"],
+      "pattern": "rejectUnauthorized\\s*:\\s*false|NODE_TLS_REJECT_UNAUTHORIZED\\s*=\\s*['\"]?0",
+      "title": {"es": "Verificación TLS desactivada", "en": "TLS verification disabled"},
+      "message": {"es": "Desactiva la validación de certificados (MITM). Configura la CA correcta.", "en": "Disables certificate validation (MITM). Configure the right CA."},
+      "examples": {"match": ["https.request({ rejectUnauthorized: false })", "process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';"], "nomatch": ["rejectUnauthorized: true"]}
+    },
+    {
+      "id": "TS-SEC-004", "severity": "high", "category": "security", "confidence": "medium",
+      "stacks": ["typescript"],
+      "pattern": "\\b(?:exec|execSync)\\s*\\(\\s*(?:\\x60[^\\x60]*\\$\\{|[^)]*[\"']\\s*\\+)",
+      "title": {"es": "Comando de shell con datos concatenados", "en": "Shell command built from concatenated data"},
+      "message": {"es": "Concatenar/interpolar en exec permite inyección de comandos. Usa execFile con array de argumentos.", "en": "Concatenating/interpolating into exec enables command injection. Use execFile with an argument array."},
+      "examples": {"match": ["exec(`ls ${dir}`)", "execSync(\"ls \" + dir)"], "nomatch": ["exec(\"ls -la\")", "regex.exec(str)"]}
+    },
+    {
+      "id": "TS-SEC-005", "severity": "medium", "category": "security", "confidence": "medium",
+      "stacks": ["typescript"], "flags": "i",
+      "pattern": "(?:local|session)Storage\\.setItem\\s*\\(\\s*[\"'][^\"']*(?:token|jwt|password|secret)",
+      "title": {"es": "Token/secreto en Web Storage", "en": "Token/secret in Web Storage"},
+      "message": {"es": "Accesible por cualquier XSS. Prefiere cookies HttpOnly + SameSite.", "en": "Readable by any XSS. Prefer HttpOnly + SameSite cookies."},
+      "examples": {"match": ["localStorage.setItem('authToken', t);"], "nomatch": ["localStorage.setItem('theme', 'dark');"]}
+    },
+    {
+      "id": "TS-COR-001", "severity": "medium", "category": "correctness", "confidence": "high",
+      "stacks": ["typescript"],
+      "pattern": "\\.forEach\\s*\\(\\s*async\\b",
+      "title": {"es": "Callback async en forEach", "en": "Async callback in forEach"},
+      "message": {"es": "forEach no espera las promesas; errores y orden se pierden. Usa for...of con await o Promise.all(map).", "en": "forEach does not await promises; errors and ordering are lost. Use for...of with await or Promise.all(map)."},
+      "examples": {"match": ["items.forEach(async (i) => {"], "nomatch": ["items.forEach((i) => {"]}
+    },
+    {
+      "id": "TS-HYG-001", "severity": "medium", "category": "hygiene", "confidence": "high",
+      "stacks": ["typescript"],
+      "pattern": "^\\s*debugger\\s*;?\\s*$",
+      "title": {"es": "debugger olvidado", "en": "debugger statement left in"},
+      "message": {"es": "Detiene la ejecución con DevTools abiertas. Elimínalo.", "en": "Pauses execution when DevTools is open. Remove it."},
+      "examples": {"match": ["  debugger;", "debugger"], "nomatch": ["// debugger is useful"]}
+    },
+    {
+      "id": "TS-HYG-002", "severity": "low", "category": "hygiene", "confidence": "high",
+      "stacks": ["typescript"],
+      "pattern": "\\bconsole\\.(?:log|debug)\\s*\\(",
+      "exclude_paths": ["**/tests/**", "**/*.test.*", "**/*.spec.*", "**/*.config.*", "**/scripts/**", "**/cli/**"],
+      "title": {"es": "console.log en código de producción", "en": "console.log in production code"},
+      "message": {"es": "Usa el logger del proyecto; evita filtrar datos en la consola del cliente.", "en": "Use the project logger; avoid leaking data to the client console."},
+      "examples": {"match": ["console.log(user);"], "nomatch": ["logger.info(user);"]}
+    },
+    {
+      "id": "TS-MNT-001", "severity": "low", "category": "maintainability", "confidence": "high",
+      "stacks": ["typescript"],
+      "pattern": "@ts-(?:ignore|nocheck)\\b",
+      "title": {"es": "@ts-ignore / @ts-nocheck", "en": "@ts-ignore / @ts-nocheck"},
+      "message": {"es": "Oculta errores de tipos. Prefiere @ts-expect-error con motivo, o corrige el tipo.", "en": "Hides type errors. Prefer @ts-expect-error with a reason, or fix the type."},
+      "examples": {"match": ["// @ts-ignore", "// @ts-nocheck"], "nomatch": ["// @ts-expect-error legacy API"]}
+    },
+    {
+      "id": "TS-MNT-002", "severity": "low", "category": "maintainability", "confidence": "medium",
+      "stacks": ["typescript"],
+      "paths": ["**/*.ts", "**/*.tsx"], "exclude_paths": ["**/*.d.ts"],
+      "pattern": "(?::\\s*any\\b|\\bas\\s+any\\b|<any>)",
+      "title": {"es": "Uso de any", "en": "Use of any"},
+      "message": {"es": "any desactiva el chequeo de tipos. Usa un tipo concreto o unknown con narrowing.", "en": "any disables type checking. Use a concrete type or unknown with narrowing."},
+      "examples": {"match": ["const x: any = 1;", "(y as any).z"], "nomatch": ["const company = 1;", "// many items"]}
+    },
+    {
+      "id": "TS-TST-001", "severity": "high", "category": "testing", "confidence": "high",
+      "stacks": ["typescript"],
+      "pattern": "\\b(?:it|describe|test)\\.only\\s*\\(|\\b(?:fdescribe|fit)\\s*\\(",
+      "title": {"es": "Test enfocado (.only)", "en": "Focused test (.only)"},
+      "message": {"es": "Hace que el runner ignore el resto de la suite y CI pase en falso. Quítalo.", "en": "Makes the runner skip the rest of the suite so CI passes falsely. Remove it."},
+      "examples": {"match": ["it.only(\"x\", () => {});", "fdescribe(\"s\", () => {});"], "nomatch": ["it(\"x\", () => {});", "const profit(1)"]}
+    },
+    {
+      "id": "TS-TST-002", "severity": "low", "category": "testing", "confidence": "high",
+      "stacks": ["typescript"],
+      "pattern": "\\b(?:it|describe|test)\\.skip\\s*\\(|\\b(?:xit|xdescribe)\\s*\\(",
+      "title": {"es": "Test deshabilitado (.skip)", "en": "Disabled test (.skip)"},
+      "message": {"es": "Un test omitido deja de proteger. Arréglalo o enlaza un ticket.", "en": "A skipped test stops protecting. Fix it or link a ticket."},
+      "examples": {"match": ["it.skip(\"x\", () => {});", "xdescribe(\"s\", () => {});"], "nomatch": ["it(\"x\", () => {});"]}
+    }
+  ]
+}

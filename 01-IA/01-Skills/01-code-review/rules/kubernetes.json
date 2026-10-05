@@ -1,0 +1,38 @@
+{
+  "pack": "kubernetes",
+  "ai_hints": "Kubernetes: missing resource requests/limits, probes absent or too aggressive, securityContext gaps (runAsNonRoot, readOnlyRootFilesystem, dropped capabilities), secrets in plain manifests, selectors/labels that no longer match, replica/PDB settings that reduce availability, RBAC wildcards, rolling-update settings that cause downtime.",
+  "rules": [
+    {
+      "id": "K8S-SEC-001", "severity": "high", "category": "security", "confidence": "high",
+      "stacks": ["kubernetes", "docker"],
+      "pattern": "^\\s*privileged:\\s*true\\b",
+      "title": {"es": "Contenedor privilegiado", "en": "Privileged container"},
+      "message": {"es": "Da acceso casi total al host. Elimina privileged o concede solo capabilities concretas.", "en": "Gives near-total host access. Remove privileged or grant only specific capabilities."},
+      "examples": {"match": ["      privileged: true"], "nomatch": ["      privileged: false"]}
+    },
+    {
+      "id": "K8S-SEC-002", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["kubernetes"],
+      "pattern": "^\\s*(?:hostNetwork|hostPID|hostIPC):\\s*true\\b|^\\s*hostPath:",
+      "title": {"es": "Namespaces del host / hostPath", "en": "Host namespaces / hostPath"},
+      "message": {"es": "Rompe el aislamiento del pod. Justifica y limita su alcance.", "en": "Breaks pod isolation. Justify and limit its scope."},
+      "examples": {"match": ["  hostNetwork: true", "      hostPath:"], "nomatch": ["  hostNetwork: false"]}
+    },
+    {
+      "id": "K8S-SEC-003", "severity": "medium", "category": "security", "confidence": "high",
+      "stacks": ["kubernetes"],
+      "pattern": "^\\s*runAsUser:\\s*0\\b|^\\s*allowPrivilegeEscalation:\\s*true\\b|^\\s*runAsNonRoot:\\s*false\\b",
+      "title": {"es": "Ejecución como root / escalada permitida", "en": "Runs as root / escalation allowed"},
+      "message": {"es": "Usa runAsNonRoot: true y allowPrivilegeEscalation: false.", "en": "Use runAsNonRoot: true and allowPrivilegeEscalation: false."},
+      "examples": {"match": ["runAsUser: 0", "allowPrivilegeEscalation: true"], "nomatch": ["runAsUser: 1000"]}
+    },
+    {
+      "id": "K8S-REL-001", "severity": "medium", "category": "reliability", "confidence": "high",
+      "stacks": ["kubernetes", "docker"],
+      "pattern": "^\\s*-?\\s*image:\\s*[\"']?[^\\s\"'#]+:latest\\b",
+      "title": {"es": "Imagen :latest", "en": ":latest image"},
+      "message": {"es": "Despliegues no reproducibles. Fija un tag inmutable o digest.", "en": "Non-reproducible deployments. Pin an immutable tag or digest."},
+      "examples": {"match": ["        image: nginx:latest", "- image: \"x:latest\""], "nomatch": ["image: nginx:1.25"]}
+    }
+  ]
+}

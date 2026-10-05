@@ -1,0 +1,49 @@
+{
+  "language": "es",
+  "diff": {
+    "context_lines": 5,
+    "max_files_before_asking": 40,
+    "max_lines_before_asking": 2500
+  },
+  "ignore_paths": [
+    "**/package-lock.json", "**/yarn.lock", "**/pnpm-lock.yaml", "**/poetry.lock",
+    "**/Pipfile.lock", "**/packages.lock.json", "**/.terraform.lock.hcl", "**/composer.lock",
+    "**/*.min.js", "**/*.min.css", "**/*.map", "**/*.snap",
+    "**/dist/**", "**/node_modules/**", "**/bin/**", "**/obj/**", "**/vendor/**",
+    "**/.terraform/**", "**/__pycache__/**", "**/.code-review/reviews/**",
+    "**/*.Designer.cs", "**/*.g.cs", "**/*.g.i.cs", "**/*.generated.*",
+    "**/Migrations/*.Designer.cs", "**/*ModelSnapshot.cs"
+  ],
+  "disable_rules": [],
+  "severity_overrides": {},
+  "rule_dirs": [],
+  "max_findings_per_rule_per_file": 10,
+  "gate": {
+    "blocked_if": {"blocker": 1},
+    "changes_requested_if": {"high": 1, "medium": 6},
+    "warnings_if": {"medium": 1, "low": 1}
+  },
+  "analyzers": {
+    "tests_required_min_added_lines": 20,
+    "max_files": 50,
+    "max_changed_lines": 1500
+  },
+  "linters": {
+    "enabled": true,
+    "timeout_seconds": 120
+  },
+  "ai": {
+    "enabled": true,
+    "lenses": ["correctness", "security", "maintainability", "tests"],
+    "max_chars_per_request": 60000,
+    "max_requests": 24,
+    "min_confidence": 0.6,
+    "max_findings_per_request": 15,
+    "allow_context_lines": false,
+    "max_severity": "high",
+    "max_attempts": 2
+  },
+  "report": {
+    "max_top_findings": 10
+  }
+}
