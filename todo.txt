@@ -1,0 +1,4 @@
+ls: cannot access '/noexiste': No such file or directory
+/home:
+anton
+linuxbrew
