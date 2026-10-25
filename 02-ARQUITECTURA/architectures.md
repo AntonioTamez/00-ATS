@@ -13,10 +13,10 @@ Cada arquitectura se documenta con el mismo formato: **guía paso a paso**, **pr
 | 5 | DDD táctico | Modelado del dominio | Hecha | `DDD/` |
 | 6 | Modular Monolith | Modularidad / despliegue | Hecha | `MODULAR-MONOLITH/` |
 | 7 | CQRS (con o sin Event Sourcing) | Modelado del dominio | Hecha | `CQRS/` |
-| 8 | Microservicios | Distribuidas | Pendiente | |
-| 9 | Event-Driven Architecture | Distribuidas | Pendiente | |
-| 10 | Layered / N-Tier | Clásicas (punto de comparación) | Pendiente | |
-| 11 | MVC / MVVM | Patrones de presentación | Pendiente | |
+| 8 | Microservicios | Distribuidas | Hecha | `MICROSERVICIOS/` |
+| 9 | Event-Driven Architecture | Distribuidas | Hecha | `EVENT-DRIVEN/` |
+| 10 | Layered / N-Tier | Clásicas (punto de comparación) | Hecha | `LAYERED/` |
+| 11 | MVC / MVVM | Patrones de presentación | Hecha | `MVC-MVVM/` |
 
 ## Detalle
 

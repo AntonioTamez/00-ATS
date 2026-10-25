@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MVC depends on the Model. The Model never depends on MVC. -->
+    <ProjectReference Include="..\Shop.Model\Shop.Model.csproj" />
+  </ItemGroup>
+
+</Project>

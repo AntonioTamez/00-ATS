@@ -1,0 +1,24 @@
+@model ProductsIndexViewModel
+
+<h1>Products</h1>
+<p>Items in your cart: <strong id="cart-count">@Model.CartItemCount</strong></p>
+
+<table>
+    <thead><tr><th>Name</th><th>Price</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var product in Model.Products)
+    {
+        <tr>
+            <td>@product.Name</td>
+            <td>@product.PriceText</td>
+            <td>
+                <form method="post" asp-controller="Cart" asp-action="Add">
+                    <input type="hidden" name="sku" value="@product.Sku" />
+                    <input type="number" name="quantity" value="1" min="1" aria-label="Quantity" />
+                    <button type="submit">Add</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

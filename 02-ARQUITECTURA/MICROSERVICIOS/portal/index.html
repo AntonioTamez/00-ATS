@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microservicios para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --ord:#3a8fd9;--cat:#2e8b57;--net:#d9622b;--ok:#2e8b57;--bad:#c0392b;--warn:#b7791f;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:64ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
+.scroll{overflow-x:auto}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+select,input[type=number]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 8px;max-width:100%}
+input[type=number]{width:4.5em}
+label.opt{display:block;cursor:pointer;margin:4px 0}
+/* diagram */
+.topo{display:grid;gap:8px;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;text-align:center;margin:12px 0}
+@media(max-width:640px){.topo{grid-template-columns:1fr;}.topo .arrow{transform:rotate(90deg)}}
+.node{border:2px solid var(--line);border-radius:12px;padding:10px;background:var(--card);font-weight:600}
+.node.gw{border-color:var(--muted)}.node.ord{border-color:var(--ord)}.node.cat{border-color:var(--cat)}
+.node small{display:block;font-weight:400;color:var(--muted)}
+.arrow{color:var(--net);font-weight:700;white-space:nowrap}
+/* sim */
+.sim{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:860px){.sim{grid-template-columns:1fr 1.15fr}}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;border:2px solid var(--cat);font-size:.85rem;font-weight:600;margin:2px 4px 2px 0}
+.trace{list-style:none;margin:0;padding:0;font-family:ui-monospace,Consolas,monospace;font-size:.8rem}
+.trace li{padding:4px 8px;border-left:4px solid var(--line);margin:3px 0;background:var(--code);border-radius:0 6px 6px 0}
+.trace li.ord{border-left-color:var(--ord)}.trace li.cat{border-left-color:var(--cat)}.trace li.net{border-left-color:var(--net)}.trace li.bad{border-left-color:var(--bad)}
+.msg{min-height:3em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}.msg.warn{border-left:4px solid var(--warn)}
+.small{font-size:.85rem;color:var(--muted)}
+.seg button.on,.steps button.on{background:var(--fg);color:var(--bg)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--ord)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#sim">Simulador de red</a><a href="#reglas">Reglas</a>
+  <a href="#cuando">¿Cuándo?</a><a href="#vs">vs otras</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>Microservicios<br>para novatos</h1>
+  <p class="lead">Partes del negocio que viven en <b>procesos separados</b>, con sus propios datos y su propio despliegue. Lo difícil no es el código: es que <b>la red falla</b>.</p>
+</header>
+
+<h2 id="que">1. La idea</h2>
+<div class="topo" aria-label="Diagrama">
+  <div class="node gw">Gateway<small>solo enruta</small></div><div class="arrow">→ HTTP →</div>
+  <div class="node ord">Orders.Service<small>datos: pedidos</small></div><div class="arrow">→ HTTP →</div>
+  <div class="node cat">Catalog.Service<small>datos: stock</small></div>
+</div>
+<div class="grid">
+  <div class="card"><h3>Despliegue independiente</h3><p>Cada servicio es su propio programa. Cambias Catalog sin tocar Orders.</p></div>
+  <div class="card"><h3>Datos privados</h3><p>Nadie lee la base de otro. Si necesitas algo, se lo pides por su API.</p></div>
+  <div class="card"><h3>Fallos parciales</h3><p>Catalog puede caer mientras Orders sigue vivo. Hay que diseñar para eso.</p></div>
+  <div class="card"><h3>Sin transacciones entre servicios</h3><p>Para deshacer algo se llama otra vez al otro servicio: <b>compensación</b>.</p></div>
+</div>
+
+<h2 id="sim">2. Simulador: un pedido con la red rota</h2>
+<p>Orders pide a Catalog reservar stock de dos productos. Elige qué le pasa a la red y qué defensas están activas, y mira qué ocurre con el stock.</p>
+<div class="sim">
+  <div class="card">
+    <h3>La red entre Orders y Catalog</h3>
+    <select id="scn" aria-label="Escenario de red">
+      <option value="normal">Todo normal</option>
+      <option value="lost">La respuesta de la 1.ª llamada se pierde (Catalog sí la ejecutó)</option>
+      <option value="transient">La 1.ª llamada recibe un 503 transitorio</option>
+      <option value="down">Catalog está caído</option>
+      <option value="dies">Catalog cae tras la 1.ª línea (también falla deshacer)</option>
+    </select>
+    <h3 style="margin-top:12px">Defensas de Orders</h3>
+    <label class="opt"><input type="checkbox" id="retry" checked> Reintentar una vez ante fallos de red / 5xx</label>
+    <label class="opt"><input type="checkbox" id="idem" checked> Reserva idempotente (mismo id → no reserva dos veces)</label>
+    <label class="opt"><input type="checkbox" id="comp" checked> Compensar (liberar lo reservado si algo falla)</label>
+    <h3 style="margin-top:12px">Pedido</h3>
+    <div class="row">BOOK-1 ×<input type="number" id="q1" value="2" min="0"> MUG-1 ×<input type="number" id="q2" value="1" min="0"></div>
+    <div class="row"><button id="go">Hacer pedido</button><button id="reset">Reiniciar</button></div>
+    <h3 style="margin-top:12px">Stock en Catalog</h3>
+    <div id="stock"></div>
+    <div class="small" id="resv"></div>
+  </div>
+  <div class="card">
+    <h3>Resultado</h3>
+    <div class="msg" id="result" aria-live="polite">Pulsa "Hacer pedido".</div>
+    <h3 style="margin-top:12px">Qué pasó</h3>
+    <ol class="trace" id="trace" aria-live="polite"><li>Sin actividad.</li></ol>
+  </div>
+</div>
+<p class="small" style="margin-top:8px">Pruébalo: "respuesta perdida" con la idempotencia <b>desactivada</b> reserva el doble. "Catalog cae tras la 1.ª línea" deja una reserva huérfana aunque compenses: por eso en producción hace falta reconciliación.</p>
+
+<h2 id="reglas">3. Las reglas de independencia</h2>
+<div class="scroll"><table>
+<tr><th>Regla</th><th>Por qué</th><th>Cómo se comprueba en el ejemplo</th></tr>
+<tr><td>Un servicio no referencia a otro</td><td>Si se referencian, se despliegan juntos: ya no son independientes</td><td>Test de arquitectura y análisis del binario con REA</td></tr>
+<tr><td>Sin librería compartida de negocio</td><td>Compartir tipos acopla versiones y despliegues</td><td>Cada servicio solo referencia ensamblados del framework</td></tr>
+<tr><td>Cada uno tiene su copia del contrato del vecino</td><td>Se comparte el protocolo (HTTP+JSON), no el código</td><td><code>CatalogClient</code> define sus DTOs</td></tr>
+<tr><td>Datos privados</td><td>Una base compartida es un monolito disfrazado</td><td>Los <code>*Store</code> no son visibles fuera de su ensamblado</td></tr>
+<tr><td>El gateway no tiene negocio</td><td>"Tuberías tontas, extremos inteligentes"</td><td>Solo expone su clase de entrada</td></tr>
+</table></div>
+
+<h3 style="margin-top:24px">Las cinco defensas al llamar a otro servicio</h3>
+<pre><code>1. Timeout            → client.Timeout = 2 s
+2. Reintento limitado → solo fallos de red / timeout / 5xx (nunca 4xx)
+3. Idempotencia       → POST /reservations lleva reservationId: repetir no repite el efecto
+4. Compensación       → DELETE /reservations/{id} (también idempotente)
+5. Fallar con claridad→ 503 + Retry-After (Orders) · 502 / 504 (Gateway)</code></pre>
+
+<h2 id="cuando">4. ¿Los necesito ya?</h2>
+<p>Fowler: <i>"you shouldn't start a new project with microservices"</i>. Marca lo que se parece a tu caso:</p>
+<div class="card" id="check"></div>
+<div class="msg" id="checkMsg" style="margin-top:10px"></div>
+
+<h2 id="vs">5. Cómo se compara</h2>
+<div class="scroll"><table>
+<tr><th></th><th>Monolito modular</th><th>Microservicios</th></tr>
+<tr><td>Llamada entre partes</td><td>En proceso</td><td>Por red: puede fallar, tardar o duplicarse</td></tr>
+<tr><td>Despliegue</td><td>Uno</td><td>Uno por servicio</td></tr>
+<tr><td>Datos</td><td>Esquema por módulo</td><td>Base por servicio</td></tr>
+<tr><td>Fallos</td><td>Todo o nada</td><td>Parciales</td></tr>
+<tr><td>Coste operativo</td><td>Bajo</td><td>Alto</td></tr>
+<tr><td>Cuándo</td><td>Casi siempre al empezar</td><td>Equipos/escala que lo exigen</td></tr>
+</table></div>
+<p style="margin-top:10px">Se combina: cada servicio puede ser un Vertical Slice, Clean/Hexagonal o CQRS por dentro, y entre servicios puedes usar HTTP o eventos. Un sistema real mezcla estilos.</p>
+
+<h2 id="errores">6. Errores típicos</h2>
+<div class="grid">
+  <div class="card"><h3>Monolito distribuido</h3><p>Servicios que se llaman en cadena y se despliegan siempre juntos: todos los costes, ninguna ventaja.</p></div>
+  <div class="card"><h3>Base de datos compartida</h3><p>Acopla los servicios por las tablas.</p></div>
+  <div class="card"><h3>Sin timeouts</h3><p>Un servicio lento congela a todos los que lo llaman.</p></div>
+  <div class="card"><h3>Reintentar sin idempotencia</h3><p>Dobles cobros y doble stock (pruébalo en el simulador).</p></div>
+  <div class="card"><h3>Cadenas síncronas largas</h3><p>La disponibilidad se multiplica: 4 servicios al 99 % dan ≈ 96 %.</p></div>
+  <div class="card"><h3>Empezar con microservicios</h3><p>Las fronteras equivocadas cuestan caro y operar la flota frena al equipo.</p></div>
+</div>
+
+<h2 id="quiz">7. Quiz</h2>
+<div class="card quiz" id="quiz"></div>
+
+<footer>Kit completo: <code>docs/GUIA-MICROSERVICIOS.md</code>, <code>docs/MICROSERVICIOS-VS-OTRAS.md</code> y <code>sample/</code>.</footer>
+</div>
+
+<script>
+(function(){
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function $(id){return document.getElementById(id);}
+
+  try{var t=localStorage.getItem('ms-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}
+  $('theme').addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('ms-theme',next);}catch(e){}
+  });
+
+  /* ---------- network failure simulator (mirrors the sample's behavior) ---------- */
+  var PRODUCTS={'BOOK-1':10,'MUG-1':5};
+  var stock,reservations,okIds,trace,calls,seq;
+  function NetError(msg){this.msg=msg;}
+
+  function reset(){
+    stock={};for(var k in PRODUCTS)stock[k]=PRODUCTS[k];
+    reservations=[];okIds={};trace=[];calls=0;seq=0;
+    $('result').className='msg';$('result').textContent='Pulsa "Hacer pedido".';
+    render();
+  }
+  function log(cls,text){trace.push({c:cls,t:text});}
+
+  /* what Catalog really does */
+  function catalogReserve(id,sku,qty,idempotent){
+    var existing=reservations.filter(function(r){return r.id===id;})[0];
+    if(existing&&idempotent){
+      if(existing.sku===sku&&existing.qty===qty&&!existing.released){log('cat','Catalog: reserva '+id+' ya existía → 200 (no reserva otra vez)');return {status:200};}
+      return {status:409,code:'id_conflict'};
+    }
+    if(stock[sku]===undefined)return {status:404};
+    if(stock[sku]<qty){log('cat','Catalog: sin stock de '+sku+' → 409');return {status:409,code:'out_of_stock'};}
+    stock[sku]-=qty;reservations.push({id:id,sku:sku,qty:qty,released:false});
+    log('cat','Catalog: reserva '+id+' → '+qty+' de '+sku+' (stock '+stock[sku]+') → 201');
+    return {status:201};
+  }
+  function catalogRelease(id){
+    var found=reservations.filter(function(r){return r.id===id;});
+    if(!found.length){log('cat','Catalog: liberar '+id+' → 404 (no había nada)');return {status:404};}
+    var freed=0;found.forEach(function(r){if(!r.released){r.released=true;stock[r.sku]+=r.qty;freed++;}});
+    log('cat','Catalog: liberar '+id+' → 204'+(freed?' (stock devuelto)':' (ya estaba liberada)'));
+    return {status:204};
+  }
+
+  /* the unreliable link: may execute, may lose the answer, may refuse */
+  function send(kind,id,sku,qty,scn,idempotent){
+    calls++;
+    var label=kind==='POST'?'POST /reservations ('+id+', '+sku+' ×'+qty+')':'DELETE /reservations/'+id;
+    log('net','Orders → Catalog: '+label+'  [llamada #'+calls+']');
+    var isFirstPost=(kind==='POST'&&postCount===1);
+    if(scn==='down'){log('bad','  ✖ conexión rechazada (Catalog no responde)');throw new NetError('Catalog no responde');}
+    if(scn==='dies'&&!(kind==='POST'&&postCount===1)){log('bad','  ✖ conexión rechazada (Catalog cayó)');throw new NetError('Catalog no responde');}
+    if(scn==='transient'&&calls===1){log('bad','  ✖ Catalog respondió 503 (no llegó a ejecutar nada)');return {status:503};}
+    var res=kind==='POST'?catalogReserve(id,sku,qty,idempotent):catalogRelease(id);
+    if(scn==='lost'&&calls===1){log('bad','  ✖ la respuesta se perdió por el camino (pero Catalog SÍ ejecutó la reserva)');throw new NetError('respuesta perdida');}
+    return res;
+  }
+
+  var postCount=0;
+  function placeOrder(){
+    var scn=$('scn').value,retry=$('retry').checked,idem=$('idem').checked,comp=$('comp').checked;
+    var lines=[['BOOK-1',parseInt($('q1').value,10)||0],['MUG-1',parseInt($('q2').value,10)||0]].filter(function(l){return l[1]>0;});
+    trace=[];calls=0;postCount=0;
+    var res=$('result');
+    if(!lines.length){res.className='msg err';res.textContent='422 · Un pedido necesita al menos una línea.';log('ord','Orders: validación → sin líneas, ni se llama a Catalog');render();return;}
+    log('ord','Orders: POST /orders ('+lines.map(function(l){return l[0]+' ×'+l[1];}).join(', ')+')');
+    var attempted=[],failure=null,unavailable=false;
+
+    for(var i=0;i<lines.length&&!failure;i++){
+      var id='r'+(++seq),sku=lines[i][0],qty=lines[i][1];
+      attempted.push(id);
+      var max=retry?2:1,answer=null;
+      for(var a=1;a<=max;a++){
+        postCount++;
+        try{
+          var r=send('POST',id,sku,qty,scn,idem);
+          if(r.status>=500){ if(a<max){log('ord','Orders: 5xx → reintento');continue;} unavailable=true;failure='Catalog respondió '+r.status;break; }
+          answer=r;break;
+        }catch(e){
+          if(a<max){log('ord','Orders: fallo de red → reintento con el MISMO reservationId');continue;}
+          unavailable=true;failure=e.msg;break;
+        }
+      }
+      if(unavailable)break;
+      if(answer.status===409||answer.status===404){failure=answer.code==='out_of_stock'?'Sin stock suficiente de '+sku+'.':'Catalog rechazó la reserva.';break;}
+    }
+
+    if(!failure){
+      attempted.forEach(function(id){okIds[id]=true;});
+      log('ord','Orders: pedido guardado en su propia base');
+      res.className='msg ok';res.textContent='201 · Pedido creado.';
+    }else{
+      if(comp){
+        log('ord','Orders: compensar → liberar '+attempted.length+' reserva(s)');
+        attempted.forEach(function(id){try{send('DELETE',id,null,null,scn,idem);}catch(e){log('bad','  ✖ no se pudo liberar '+id+' (queda huérfana)');}});
+      }else{
+        log('bad','Orders: sin compensación → lo reservado se queda bloqueado');
+      }
+      if(unavailable){res.className='msg err';res.textContent='503 + Retry-After · No se pudo completar: '+failure+'. No se creó ningún pedido.';}
+      else{res.className='msg err';res.textContent='422 · '+failure+' No se creó ningún pedido.';}
+    }
+    render();
+  }
+
+  function render(){
+    $('stock').innerHTML=Object.keys(stock).map(function(k){return '<span class="pill">'+esc(k)+': '+stock[k]+' (inicial '+PRODUCTS[k]+')</span>';}).join('');
+    var active=reservations.filter(function(r){return !r.released;});
+    var orphans=active.filter(function(r){return !okIds[r.id];});
+    var dup={};active.forEach(function(r){dup[r.id]=(dup[r.id]||0)+1;});
+    var dups=Object.keys(dup).filter(function(k){return dup[k]>1;}).length;
+    var msgs=[];
+    if(orphans.length)msgs.push('⚠ '+orphans.length+' reserva(s) huérfana(s): stock bloqueado sin pedido.');
+    if(dups)msgs.push('⚠ '+dups+' reserva(s) duplicada(s): se reservó dos veces lo mismo.');
+    $('resv').textContent=msgs.length?msgs.join(' '):(reservations.length?'Reservas consistentes con los pedidos.':'');
+    $('trace').innerHTML=trace.length?trace.map(function(x){return '<li class="'+x.c+'">'+esc(x.t)+'</li>';}).join(''):'<li>Sin actividad.</li>';
+  }
+  $('go').addEventListener('click',placeOrder);
+  $('reset').addEventListener('click',reset);
+  reset();
+
+  /* checklist */
+  var CH=[
+    ['Varios equipos necesitan desplegar de forma independiente',2],
+    ['Partes concretas necesitan escalar o ser más disponibles que el resto',2],
+    ['Las fronteras de negocio están claras y llevan tiempo estables',1],
+    ['Tenemos CI/CD, monitorización y guardias maduras',1],
+    ['Es un proyecto nuevo y todavía estamos descubriendo el dominio',-3],
+    ['Somos un solo equipo pequeño',-2],
+    ['Lo queremos porque "es lo moderno"',-3]
+  ];
+  var ck=$('check');
+  CH.forEach(function(c,i){
+    var l=document.createElement('label');l.className='opt';
+    l.innerHTML='<input type="checkbox" data-i="'+i+'"> '+esc(c[0]);ck.appendChild(l);
+  });
+  ck.addEventListener('change',function(){
+    var s=0;[].forEach.call(ck.querySelectorAll('input:checked'),function(x){s+=CH[parseInt(x.dataset.i,10)][1];});
+    $('checkMsg').className='msg '+(s>=4?'ok':s>=1?'warn':'err');
+    $('checkMsg').textContent=s>=4?'Hay motivos reales. Extrae primero el servicio que más duele, no todo.':s>=1?'Dudoso: un monolito modular probablemente te da lo que buscas sin pagar la red.':'Empieza con un monolito modular. Divide cuando tengas un dolor concreto.';
+  });
+
+  /* quiz */
+  var Q=[
+    ['Orders reintenta una reserva porque la respuesta se perdió. ¿Qué evita el doble stock?',['Un timeout más largo','Que la reserva sea idempotente (mismo id, mismo efecto)','Desactivar los reintentos'],1,'Catalog reconoce el reservationId y no reserva otra vez. Sin idempotencia, reintentar duplica el efecto.'],
+    ['¿Qué comparten dos microservicios?',['Una librería con el dominio','La base de datos','Un protocolo (HTTP + JSON)'],2,'Se comparte el protocolo, no código ni datos. Si no, se despliegan juntos y dejan de ser independientes.'],
+    ['Falla la 2.ª línea del pedido. ¿Cómo se deshace la 1.ª?',['Rollback de una transacción distribuida','Llamando de nuevo a Catalog para liberarla (compensación)','No se deshace'],1,'No hay transacciones entre servicios: se compensa con otra llamada, que también puede fallar.'],
+    ['¿Qué debe responder Orders si Catalog no contesta?',['200 con un pedido incompleto','503 con Retry-After y sin crear el pedido','Crear el pedido igualmente'],1,'Fallar con claridad y sin dejar estado a medias.'],
+    ['¿Qué tiene que hacer un gateway?',['Aplicar reglas de negocio','Enrutar','Guardar los pedidos'],1,'Smart endpoints, dumb pipes: la inteligencia vive en los servicios.'],
+    ['Proyecto nuevo, un equipo, dominio sin descubrir. ¿Qué recomienda Fowler?',['Microservicios desde el día 1','Empezar con un monolito (modular)','Una función serverless por endpoint'],1,'"You shouldn’t start a new project with microservices": las fronteras se aprenden con el tiempo.'],
+    ['Cuatro servicios en cadena, cada uno al 99 % de disponibilidad. ¿Disponibilidad total aproximada?',['99 %','≈ 96 %','≈ 90 %'],1,'0,99⁴ ≈ 0,96: la disponibilidad se multiplica en cadenas síncronas.']
+  ];
+  var qi=0,score=0,qbox=$('quiz');
+  function showQ(){
+    if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: ya piensas en fallos parciales.':score>=4?'Bien. Repasa idempotencia y compensación.':'Vuelve al simulador y prueba cada escenario.')+'</p><button id="again">Reintentar</button>';
+      $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}
+    var q=Q[qi];
+    qbox.innerHTML='<p><b>'+(qi+1)+'/'+Q.length+'</b> '+esc(q[0])+'</p>'+q[1].map(function(o,i){return '<button class="opt" data-i="'+i+'">'+esc(o)+'</button>';}).join('')+'<div class="msg" id="qmsg" aria-live="polite"></div>';
+    [].forEach.call(qbox.querySelectorAll('.opt'),function(b){
+      b.addEventListener('click',function(){
+        var i=parseInt(b.dataset.i,10);
+        [].forEach.call(qbox.querySelectorAll('.opt'),function(x){x.disabled=true;});
+        b.classList.add(i===q[2]?'right':'wrong');
+        if(i!==q[2])qbox.querySelectorAll('.opt')[q[2]].classList.add('right'); else score++;
+        $('qmsg').innerHTML=esc(q[3])+' <button id="next">Siguiente</button>';
+        $('next').addEventListener('click',function(){qi++;showQ();});
+      });
+    });
+  }
+  showQ();
+})();
+</script>
+</body>
+</html>

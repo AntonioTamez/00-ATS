@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event-Driven para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --ord:#3a8fd9;--inv:#2e8b57;--not:#7a5cc7;--net:#d9622b;--ok:#2e8b57;--bad:#c0392b;--warn:#b7791f;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:66ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.go{border-color:var(--net)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
+.scroll{overflow-x:auto}
+label.opt{display:block;cursor:pointer;margin:3px 0;font-size:.93rem}
+input[type=number],select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+input[type=number]{width:4.5em}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+/* actors */
+.actors{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:860px){.actors{grid-template-columns:repeat(3,1fr)}}
+.actor{border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card)}
+.actor.ord{border-color:var(--ord)}.actor.inv{border-color:var(--inv)}.actor.not{border-color:var(--not)}
+.actor h3{margin:0 0 4px}
+.box{margin:6px 0;padding:6px 8px;border-radius:8px;background:var(--code);font-size:.82rem;min-height:2.2em}
+.box b{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:2px}
+.msg{display:inline-block;font-family:ui-monospace,Consolas,monospace;font-size:.74rem;padding:1px 6px;margin:2px 3px 2px 0;border-radius:6px;background:var(--card);border:1px solid var(--net)}
+.msg.dup{border-style:dashed}
+.msg.bad{border-color:var(--bad)}
+.dlq{border:2px dashed var(--bad);border-radius:12px;padding:8px 12px;margin-top:12px}
+.broker{border:2px solid var(--net);border-radius:12px;padding:8px 12px;margin:12px 0;text-align:center;font-weight:600}
+.broker.off{border-color:var(--bad);color:var(--bad)}
+.status{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.8rem;font-weight:700;color:#fff}
+.status.Pending{background:var(--warn)}.status.Confirmed{background:var(--ok)}.status.Rejected{background:var(--bad)}.status.Cancelled{background:var(--muted)}
+.logbox{max-height:210px;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:.78rem}
+.logbox div{padding:2px 6px;border-left:3px solid var(--line);margin:2px 0}
+.logbox .n{border-left-color:var(--net)}.logbox .o{border-left-color:var(--ord)}.logbox .i{border-left-color:var(--inv)}.logbox .u{border-left-color:var(--not)}.logbox .x{border-left-color:var(--bad)}
+.small{font-size:.85rem;color:var(--muted)}
+.seg button.on,.steps button.on{background:var(--fg);color:var(--bg)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.note{min-height:2.6em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.note.err{border-left:4px solid var(--bad)}.note.ok{border-left:4px solid var(--ok)}.note.warn{border-left:4px solid var(--warn)}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--ord)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#sim">Simulador</a><a href="#defensas">Defensas</a>
+  <a href="#cuando">¿Cuándo?</a><a href="#vs">vs otras</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>Event-Driven<br>para novatos</h1>
+  <p class="lead">En vez de pedirle algo a otro y esperar, cada parte <b>cuenta lo que pasó</b> y sigue. Los interesados reaccionan cuando pueden. Ganas independencia; pagas con duplicados, desorden y respuestas que llegan después.</p>
+</header>
+
+<h2 id="que">1. La idea</h2>
+<div class="grid">
+  <div class="card"><h3>Llamada directa</h3><p>Orders: "Inventory, reserva stock" y <b>espera</b>. Si Inventory está caído, Orders falla.</p></div>
+  <div class="card"><h3>Evento</h3><p>Orders: "se hizo el pedido #5". Lo deja en el broker y <b>sigue</b>. Inventory lo recoge cuando pueda.</p></div>
+  <div class="card"><h3>El precio</h3><p>El cliente recibe <code>202 Pending</code>, no el resultado. Y el broker puede entregar el mismo mensaje <b>dos veces</b>.</p></div>
+</div>
+
+<h2 id="sim">2. Simulador: mira viajar los mensajes</h2>
+<p>Haz un pedido y avanza <b>paso a paso</b>. Cada paso = "los participantes pasan sus mensajes del outbox al broker, y el broker entrega lo que tiene en cola". Activa fallos y mira qué defensa actúa.</p>
+
+<div class="grid" style="margin-bottom:12px">
+  <div class="card">
+    <h3>Fallos</h3>
+    <label class="opt"><input type="checkbox" id="fPause"> Inventory está caído (pausado)</label>
+    <label class="opt"><input type="checkbox" id="fOff"> El broker no responde</label>
+    <label class="opt"><input type="checkbox" id="fDup"> El broker entrega cada mensaje dos veces</label>
+  </div>
+  <div class="card">
+    <h3>Defensas</h3>
+    <label class="opt"><input type="checkbox" id="dInbox" checked> Consumidores idempotentes (inbox)</label>
+    <p class="small" style="margin:6px 0 0">Con duplicados y sin inbox, Notifications enviará dos avisos.</p>
+  </div>
+  <div class="card">
+    <h3>Pedido</h3>
+    <div class="row"><select id="sku" aria-label="Producto"><option>BOOK-1</option><option>MUG-1</option><option>NOPE</option></select> ×<input type="number" id="qty" min="1" value="2" aria-label="Cantidad"></div>
+    <div class="row"><button class="go" id="place">Hacer pedido</button><button id="poison">Inyectar mensaje venenoso</button></div>
+    <div class="row"><button id="step">Un paso</button><button id="run">Hasta que se calme</button><button id="cancel">Cancelar el último</button><button id="reset">Reiniciar</button></div>
+  </div>
+</div>
+
+<div class="note" id="note" aria-live="polite">Pulsa "Hacer pedido".</div>
+<div class="broker" id="broker">Broker (entrega al menos una vez)</div>
+
+<div class="actors">
+  <div class="actor ord">
+    <h3 style="color:var(--ord)">Orders</h3>
+    <div class="box"><b>Pedido</b><span id="oStatus">—</span></div>
+    <div class="box"><b>Outbox (pendiente de enviar)</b><span id="oOut">vacío</span></div>
+    <div class="box"><b>Cola de entrada</b><span id="oQ">vacía</span></div>
+  </div>
+  <div class="actor inv">
+    <h3 style="color:var(--inv)">Inventory</h3>
+    <div class="box"><b>Stock</b><span id="iStock"></span></div>
+    <div class="box"><b>Outbox</b><span id="iOut">vacío</span></div>
+    <div class="box"><b>Cola de entrada</b><span id="iQ">vacía</span></div>
+  </div>
+  <div class="actor not">
+    <h3 style="color:var(--not)">Notifications</h3>
+    <div class="box"><b>Avisos enviados</b><span id="nMail">ninguno</span></div>
+    <div class="box"><b>Cola de entrada</b><span id="nQ">vacía</span></div>
+  </div>
+</div>
+<div class="dlq"><b>Dead-letter (mensajes que fallaron demasiadas veces)</b><div id="dlq" class="small">vacío</div></div>
+<h3 style="margin-top:14px">Registro</h3>
+<div class="card logbox" id="log" aria-live="polite"></div>
+
+<h2 id="defensas">3. Las defensas, una por fallo</h2>
+<div class="scroll"><table>
+<tr><th>Fallo</th><th>Defensa</th><th>Pruébalo en el simulador</th></tr>
+<tr><td>Guardé el pedido pero no pude avisar</td><td><b>Outbox</b>: estado y mensaje se guardan juntos; un relay lo envía después</td><td>Activa "El broker no responde", haz un pedido y avanza: el mensaje se queda en el outbox. Desactívalo y avanza</td></tr>
+<tr><td>Un participante está caído</td><td>El broker <b>acumula</b>; los demás siguen</td><td>"Inventory está caído": el pedido se acepta y queda Pending; al reanudar se procesa</td></tr>
+<tr><td>Llega el mismo mensaje dos veces</td><td><b>Inbox</b>: ignora ids ya procesados</td><td>Activa duplicados; desactiva y activa el inbox y mira los avisos</td></tr>
+<tr><td>Un mensaje malformado</td><td>Reintentos y luego <b>dead-letter</b>, sin bloquear al resto</td><td>"Inyectar mensaje venenoso", luego "Hasta que se calme"</td></tr>
+<tr><td>Mensaje tardío o contradictorio</td><td><b>Máquina de estados</b>: solo transiciones válidas</td><td>Un pedido Rejected no pasa a Confirmed</td></tr>
+</table></div>
+
+<h3 style="margin-top:24px">Cómo se ve en código</h3>
+<pre><code>// Orders: el cambio y el aviso se guardan JUNTOS; nada se envía todavía
+outbox.Atomically(() =>
+{
+    store.Save(order);
+    outbox.Add(Message.Create("orders.order-placed.v1", new { orderId, sku, quantity }, ...));
+});
+return Results.Accepted(...);              // 202: "lo recibí", no "está hecho"
+
+// Inventory: escucha sin duplicar efectos, con SU copia del mensaje
+subscriptions.SubscribeOnce("inventory", "orders.order-placed.v1", inbox, OnOrderPlaced);
+internal sealed record OrderPlacedMessage(Guid OrderId, string? Sku, int Quantity);</code></pre>
+
+<h2 id="cuando">4. ¿Lo necesito?</h2>
+<p>Microsoft: no conviene cuando <i>"synchronous calls meet your latency and throughput requirements"</i> ni cuando se exige consistencia fuerte. Marca lo que se parece a tu caso:</p>
+<div class="card" id="check"></div>
+<div class="note" id="checkMsg" style="margin-top:10px"></div>
+
+<h2 id="vs">5. Cómo se compara</h2>
+<div class="scroll"><table>
+<tr><th></th><th>Modular Monolith</th><th>Microservicios (HTTP)</th><th>Event-Driven</th></tr>
+<tr><td>Orders → Inventory</td><td>Llamada en proceso</td><td>HTTP, esperas la respuesta</td><td>Mensaje, no esperas</td></tr>
+<tr><td>Si Inventory cae</td><td>Falla todo</td><td>503</td><td>Se acepta y se procesa luego</td></tr>
+<tr><td>Respuesta al cliente</td><td>Final</td><td>Final</td><td>"Pendiente"</td></tr>
+<tr><td>Duplicados</td><td>No</td><td>Evitar con idempotencia</td><td>Normales: inbox obligatorio</td></tr>
+<tr><td>Entender el flujo</td><td>Leer código</td><td>Seguir llamadas</td><td>Seguir mensajes (más difícil)</td></tr>
+</table></div>
+<p style="margin-top:10px">No es lo mismo que microservicios, ni que Event Sourcing, ni que CQRS: se combinan. Un sistema real mezcla llamadas (cuando necesitas la respuesta) y eventos (cuando basta con avisar).</p>
+
+<h2 id="errores">6. Errores típicos</h2>
+<div class="grid">
+  <div class="card"><h3>Guardar y luego publicar, sin outbox</h3><p>Si el proceso cae entre medio, el cambio queda sin aviso.</p></div>
+  <div class="card"><h3>Consumidores sin idempotencia</h3><p>Doble email, doble cobro (pruébalo arriba).</p></div>
+  <div class="card"><h3>Confiar en el orden</h3><p>Los reintentos y la dead-letter reordenan. Diseña para cualquier orden.</p></div>
+  <div class="card"><h3>Eventos compartidos en una librería</h3><p>Todos se despliegan juntos. Cada consumidor, su copia.</p></div>
+  <div class="card"><h3>Nadie mira la dead-letter</h3><p>Los fallos se acumulan en silencio.</p></div>
+  <div class="card"><h3>Usarlo en un CRUD simple</h3><p>Coste operativo sin beneficio.</p></div>
+</div>
+
+<h2 id="quiz">7. Quiz</h2>
+<div class="card quiz" id="quiz"></div>
+
+<footer>Kit completo: <code>docs/GUIA-EVENT-DRIVEN.md</code>, <code>docs/EVENT-DRIVEN-VS-OTRAS.md</code> y <code>sample/</code>.</footer>
+</div>
+
+<script>
+(function(){
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function $(id){return document.getElementById(id);}
+
+  try{var t=localStorage.getItem('eda-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}
+  $('theme').addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('eda-theme',next);}catch(e){}
+  });
+
+  /* ---------- message flow simulator (mirrors the sample) ---------- */
+  var MAX_ATTEMPTS=3;
+  var SUBS={ // which queue gets which message type
+    'order-placed':['inventory'],'order-cancelled':['inventory','notifications'],
+    'stock-reserved':['orders'],'stock-rejected':['orders'],
+    'order-confirmed':['notifications'],'order-rejected':['notifications']
+  };
+  var S;
+  function fresh(){return {
+    orders:{},lastOrder:null,seq:0,msgSeq:0,
+    stock:{'BOOK-1':10,'MUG-1':5},reserved:{},
+    outbox:{orders:[],inventory:[]},
+    queue:{orders:[],inventory:[],notifications:[]},
+    inbox:{orders:{},inventory:{},notifications:{}},
+    mail:[],dlq:[],log:[]
+  };}
+  function log(c,t){S.log.push({c:c,t:t});}
+  function mk(type,data){return {id:'m'+(++S.msgSeq),type:type,data:data,attempt:0};}
+
+  function place(){
+    var sku=$('sku').value,qty=parseInt($('qty').value,10);
+    if(!(qty>0)){say('err','La cantidad debe ser positiva (422, no se guarda nada).');return;}
+    var id='#'+(++S.seq);
+    S.orders[id]={id:id,status:'Pending',sku:sku,qty:qty,reason:null};S.lastOrder=id;
+    S.outbox.orders.push(mk('order-placed',{orderId:id,sku:sku,qty:qty}));
+    log('o','Orders: pedido '+id+' guardado como Pending + mensaje order-placed en SU outbox (mismo paso atómico) → responde 202');
+    say('ok','202 Accepted · el pedido '+id+' está Pending. Todavía no ha pasado nada más: avanza paso a paso.');
+    render();
+  }
+
+  function relay(owner){
+    var out=S.outbox[owner],moved=0;
+    if(!out.length)return 0;
+    if($('fOff').checked){log('x','Relay de '+owner+': el broker no responde → los mensajes siguen en el outbox');return 0;}
+    out.splice(0).forEach(function(m){
+      (SUBS[m.type]||[]).forEach(function(q){
+        S.queue[q].push(m);
+        if($('fDup').checked)S.queue[q].push(Object.assign({},m,{dup:true}));
+      });
+      log('n','Relay de '+owner+': publica '+m.type+' '+m.id+' al broker → colas: '+(SUBS[m.type]||[]).join(', '));moved++;
+    });
+    return moved;
+  }
+
+  /* handlers: return nothing or throw */
+  function handle(q,m){
+    var useInbox=$('dInbox').checked;
+    if(useInbox){ if(S.inbox[q][m.id]){log(q[0],cap(q)+': '+m.type+' '+m.id+' ya procesado (inbox) → se ignora');return;} }
+    if(m.poison)throw new Error('payload malformado');
+    var d=m.data;
+    if(q==='inventory'&&m.type==='order-placed'){
+      if(S.reserved[d.orderId]){log('i','Inventory: ya había reservado '+d.orderId+' → nada');}
+      else if(S.stock[d.sku]===undefined){S.outbox.inventory.push(mk('stock-rejected',{orderId:d.orderId,reason:'Unknown product '+d.sku}));log('i','Inventory: producto desconocido → stock-rejected en su outbox');}
+      else if(S.stock[d.sku]<d.qty){S.outbox.inventory.push(mk('stock-rejected',{orderId:d.orderId,reason:'Not enough stock for '+d.sku}));log('i','Inventory: sin stock → stock-rejected en su outbox');}
+      else{S.stock[d.sku]-=d.qty;S.reserved[d.orderId]={sku:d.sku,qty:d.qty,released:false};S.outbox.inventory.push(mk('stock-reserved',{orderId:d.orderId}));log('i','Inventory: reserva '+d.qty+' de '+d.sku+' (queda '+S.stock[d.sku]+') + stock-reserved en su outbox');}
+    }else if(q==='inventory'&&m.type==='order-cancelled'){
+      var r=S.reserved[d.orderId];
+      if(r&&!r.released){r.released=true;S.stock[r.sku]+=r.qty;log('i','Inventory: libera la reserva de '+d.orderId+' (stock '+S.stock[r.sku]+')');}
+    }else if(q==='orders'&&m.type==='stock-reserved'){
+      var o=S.orders[d.orderId];
+      if(o&&o.status==='Pending'){o.status='Confirmed';S.outbox.orders.push(mk('order-confirmed',{orderId:o.id}));log('o','Orders: '+o.id+' Pending → Confirmed + order-confirmed en su outbox');}
+      else log('o','Orders: stock-reserved para un pedido que ya no está Pending → se ignora (máquina de estados)');
+    }else if(q==='orders'&&m.type==='stock-rejected'){
+      var o2=S.orders[d.orderId];
+      if(o2&&o2.status==='Pending'){o2.status='Rejected';o2.reason=d.reason;S.outbox.orders.push(mk('order-rejected',{orderId:o2.id,reason:d.reason}));log('o','Orders: '+o2.id+' Pending → Rejected ('+d.reason+')');}
+    }else if(q==='notifications'){
+      var text=m.type==='order-confirmed'?'Pedido '+d.orderId+' confirmado':m.type==='order-rejected'?'Pedido '+d.orderId+' no se pudo completar':'Pedido '+d.orderId+' cancelado';
+      S.mail.push(text);log('u','Notifications: envía aviso «'+text+'»');
+    }
+    if(useInbox)S.inbox[q][m.id]=true;
+  }
+  function cap(q){return q.charAt(0).toUpperCase()+q.slice(1);}
+
+  function deliver(){
+    var n=0;
+    ['orders','inventory','notifications'].forEach(function(q){
+      if(q==='inventory'&&$('fPause').checked){if(S.queue[q].length)log('x','Inventory está caído: '+S.queue[q].length+' mensaje(s) esperan en su cola');return;}
+      var waiting=S.queue[q].splice(0);
+      waiting.forEach(function(m){
+        n++;
+        try{handle(q,m);}
+        catch(e){
+          m.attempt=(m.attempt||0)+1;
+          if(m.attempt>=MAX_ATTEMPTS){S.dlq.push({q:q,m:m,err:e.message});log('x',cap(q)+': '+m.type+' '+m.id+' falló '+m.attempt+' veces ('+e.message+') → dead-letter');}
+          else{S.queue[q].push(m);log('x',cap(q)+': falló '+m.type+' '+m.id+' (intento '+m.attempt+') → vuelve a la cola');}
+        }
+      });
+    });
+    return n;
+  }
+
+  function step(){
+    var moved=relay('orders')+relay('inventory');
+    var delivered=deliver();
+    if(!moved&&!delivered)say('warn','Nada que mover ahora mismo (¿hay algo pausado o el broker no responde?).');
+    else say('ok','Paso: '+moved+' mensaje(s) publicados, '+delivered+' entrega(s) intentadas.');
+    render();return moved+delivered;
+  }
+  function run(){
+    var total=0,i=0;
+    while(i++<50){var before=S.log.length;var moved=relay('orders')+relay('inventory');var delivered=deliver();total+=moved+delivered;if(!moved&&!delivered)break;}
+    say('ok','Hasta que se calme: '+total+' movimientos. Lo que sigue pendiente espera a que se arregle el fallo.');
+    render();
+  }
+  function poison(){
+    S.queue.inventory.push({id:'m'+(++S.msgSeq),type:'order-placed',data:{},attempt:0,poison:true});
+    log('x','Se inyecta un order-placed malformado en la cola de Inventory');
+    say('warn','Mensaje venenoso en la cola de Inventory. Avanza: se reintenta 3 veces y acaba en la dead-letter, sin bloquear al resto.');render();
+  }
+  function cancel(){
+    var o=S.lastOrder&&S.orders[S.lastOrder];
+    if(!o){say('err','No hay pedido.');return;}
+    if(o.status!=='Confirmed'){say('err','409 · Solo se puede cancelar un pedido Confirmed (este está '+o.status+').');return;}
+    o.status='Cancelled';S.outbox.orders.push(mk('order-cancelled',{orderId:o.id}));
+    log('o','Orders: '+o.id+' → Cancelled + order-cancelled en su outbox (el stock vuelve DESPUÉS, cuando Inventory reciba el mensaje)');
+    say('ok','204 · Cancelado. El stock todavía no ha vuelto: avanza.');render();
+  }
+
+  function say(kind,text){var n=$('note');n.className='note '+kind;n.textContent=text;}
+  function list(arr,dupFlag){return arr.length?arr.map(function(m){return '<span class="msg'+(m.dup?' dup':'')+(m.poison?' bad':'')+'">'+esc(m.type)+' '+esc(m.id)+(m.dup?' (dup)':'')+'</span>';}).join(''):'vacío';}
+  function render(){
+    var o=S.lastOrder&&S.orders[S.lastOrder];
+    $('oStatus').innerHTML=o?esc(o.id)+' <span class="status '+o.status+'">'+o.status+'</span>'+(o.reason?' '+esc(o.reason):''):'—';
+    $('oOut').innerHTML=list(S.outbox.orders);$('oQ').innerHTML=list(S.queue.orders);
+    $('iStock').textContent=Object.keys(S.stock).map(function(k){return k+': '+S.stock[k];}).join(' · ');
+    $('iOut').innerHTML=list(S.outbox.inventory);$('iQ').innerHTML=list(S.queue.inventory);
+    $('nMail').innerHTML=S.mail.length?S.mail.map(function(x){return '<div>✉ '+esc(x)+'</div>';}).join(''):'ninguno';
+    $('nQ').innerHTML=list(S.queue.notifications);
+    $('dlq').innerHTML=S.dlq.length?S.dlq.map(function(d){return '<span class="msg bad">'+esc(d.q)+': '+esc(d.m.type)+' '+esc(d.m.id)+' — '+esc(d.err)+'</span>';}).join(''):'vacío';
+    $('log').innerHTML=S.log.map(function(l){return '<div class="'+l.c+'">'+esc(l.t)+'</div>';}).join('');
+    $('log').scrollTop=$('log').scrollHeight;
+    var b=$('broker');b.className='broker'+($('fOff').checked?' off':'');b.textContent=$('fOff').checked?'Broker NO responde':'Broker (entrega al menos una vez)';
+  }
+  function reset(){S=fresh();say('','Pulsa "Hacer pedido".');render();}
+  ['place','poison','step','run','cancel','reset'].forEach(function(id){$(id).addEventListener('click',{place:place,poison:poison,step:step,run:run,cancel:cancel,reset:reset}[id]);});
+  ['fPause','fOff','fDup','dInbox'].forEach(function(id){$(id).addEventListener('change',render);});
+  reset();
+  window.__eda={get state(){return S;},place:place,run:run,step:step,cancel:cancel,poison:poison,reset:reset};
+
+  /* checklist */
+  var CH=[
+    ['Varios subsistemas deben reaccionar al mismo hecho',2],
+    ['Quiero que un participante caído no pare a los demás',2],
+    ['Quiero añadir consumidores sin tocar al productor',1],
+    ['El equipo sabe operar mensajería, DLQ y consistencia eventual',1],
+    ['Es una petición-respuesta simple y la llamada directa me basta',-3],
+    ['Necesito consistencia fuerte inmediata entre las partes',-3],
+    ['Nadie del equipo ha operado sistemas asíncronos',-2]
+  ];
+  var ck=$('check');
+  CH.forEach(function(c,i){var l=document.createElement('label');l.className='opt';l.innerHTML='<input type="checkbox" data-i="'+i+'"> '+esc(c[0]);ck.appendChild(l);});
+  ck.addEventListener('change',function(){
+    var s=0;[].forEach.call(ck.querySelectorAll('input:checked'),function(x){s+=CH[parseInt(x.dataset.i,10)][1];});
+    var n=$('checkMsg');n.className='note '+(s>=4?'ok':s>=1?'warn':'err');
+    n.textContent=s>=4?'Hay buenos motivos. Empieza por un flujo concreto, con outbox e inbox desde el primer día.':s>=1?'Dudoso: quizá una llamada directa con buenos timeouts te sirva y sea más simple.':'Probablemente no lo necesitas todavía.';
+  });
+
+  /* quiz */
+  var Q=[
+    ['El POST /orders responde 202 con estado Pending. ¿Qué significa?',['El pedido ya está confirmado','Lo recibí y se procesará después','El pedido falló'],1,'202 Accepted: aceptado para procesar. El resultado llega más tarde (consistencia eventual).'],
+    ['¿Para qué sirve el outbox?',['Para guardar el cambio y su aviso de forma atómica, y enviar el aviso después','Para acelerar el broker','Para evitar autenticarse'],0,'Evita guardar sin avisar (o avisar de algo que no se guardó) si el proceso cae entre ambas cosas.'],
+    ['El broker entrega dos veces el mismo mensaje. ¿Qué defensa lo hace inofensivo?',['Un timeout','Un consumidor idempotente (inbox)','Más réplicas'],1,'El inbox recuerda los ids procesados y el duplicado no hace nada.'],
+    ['Inventory está caído. ¿Qué pasa con los pedidos nuevos?',['Orders los rechaza','Se aceptan (Pending) y se procesan cuando vuelva','Se pierden'],1,'El broker acumula los mensajes: Orders no depende de que Inventory esté vivo.'],
+    ['¿Qué hace un mensaje que falla en todos los reintentos?',['Bloquea la cola para siempre','Va a la dead-letter y el resto sigue','Se borra sin dejar rastro'],1,'Se aísla para que alguien lo revise; no debe bloquear a los demás.'],
+    ['¿Pueden dos participantes compartir una librería con la clase del evento?',['Sí, es lo más cómodo','Mejor no: cada consumidor lleva su copia con los campos que necesita','Solo si es internal'],1,'Se comparte el formato del mensaje, no el código; así se despliegan por separado y toleran campos nuevos.'],
+    ['Necesitas saber en el mismo instante si hay stock para decirlo al usuario. ¿Qué encaja mejor?',['Eventos','Una llamada directa (request/response)','Dead-letter'],1,'Si necesitas la respuesta ya, los eventos no aportan: usa una llamada.']
+  ];
+  var qi=0,score=0,qbox=$('quiz');
+  function showQ(){
+    if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: ya piensas en mensajes y fallos.':score>=4?'Bien. Repasa outbox e inbox.':'Vuelve al simulador y prueba cada fallo.')+'</p><button id="again">Reintentar</button>';
+      $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}
+    var q=Q[qi];
+    qbox.innerHTML='<p><b>'+(qi+1)+'/'+Q.length+'</b> '+esc(q[0])+'</p>'+q[1].map(function(o,i){return '<button class="opt" data-i="'+i+'">'+esc(o)+'</button>';}).join('')+'<div class="note" id="qmsg" aria-live="polite"></div>';
+    [].forEach.call(qbox.querySelectorAll('.opt'),function(b){
+      b.addEventListener('click',function(){
+        var i=parseInt(b.dataset.i,10);
+        [].forEach.call(qbox.querySelectorAll('.opt'),function(x){x.disabled=true;});
+        b.classList.add(i===q[2]?'right':'wrong');
+        if(i!==q[2])qbox.querySelectorAll('.opt')[q[2]].classList.add('right'); else score++;
+        $('qmsg').innerHTML=esc(q[3])+' <button id="next">Siguiente</button>';
+        $('next').addEventListener('click',function(){qi++;showQ();});
+      });
+    });
+  }
+  showQ();
+})();
+</script>
+</body>
+</html>
