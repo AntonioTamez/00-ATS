@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shop.SharedKernel\Shop.SharedKernel.csproj" />
+    <ProjectReference Include="..\Modules\Catalog\Catalog.Core\Catalog.Core.csproj" />
+    <ProjectReference Include="..\Modules\Ordering\Ordering.Core\Ordering.Core.csproj" />
+    <ProjectReference Include="..\Modules\Notifications\Notifications.Core\Notifications.Core.csproj" />
+  </ItemGroup>
+
+</Project>

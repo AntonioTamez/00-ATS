@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DDD táctico para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --ent:#3a8fd9;--vo:#e8a21a;--agg:#d9622b;--evt:#7a5cc7;--svc:#2e8b57;--ok:#2e8b57;--bad:#c0392b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:64ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:99px;color:#fff;font-weight:600}
+ul.tight{margin:6px 0 12px;padding-left:20px}ul.tight li{margin:3px 0}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--bad);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top}
+.scroll{overflow-x:auto}
+.blocks{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:8px 0}
+.block{font-weight:600;text-align:center;border-width:2px}
+.block.on{color:var(--bg)!important}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.steps button.on,.seg button.on{background:var(--fg);color:var(--bg)}
+.flowbox{min-height:110px}
+/* aggregate diagram */
+.agg{display:grid;gap:14px;grid-template-columns:1fr;align-items:center}
+@media(min-width:720px){.agg{grid-template-columns:1.6fr auto 1fr}}
+.box{border:2px solid;border-radius:12px;padding:12px 14px}
+.box.root{border-color:var(--agg)}
+.box.other{border-color:var(--ent)}
+.box .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{font-size:.78rem;padding:2px 8px;border-radius:99px;border:1px solid var(--line);background:var(--code)}
+.chip.vo{border-color:var(--vo)}.chip.en{border-color:var(--ent)}
+.link{text-align:center;color:var(--muted);font-size:.85rem}
+/* simulator */
+.sim{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:760px){.sim{grid-template-columns:1fr 1fr}}
+.state{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.pill{padding:3px 10px;border-radius:99px;border:2px solid var(--line);font-size:.85rem;font-weight:600;color:var(--muted)}
+.pill.on{border-color:var(--agg);color:var(--agg);background:color-mix(in srgb,var(--agg) 12%,transparent)}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.msg{min-height:3.2em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}
+.events li{font-family:ui-monospace,Consolas,monospace;font-size:.82rem}
+input[type=range]{width:100%}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.wiz label{display:block;margin:6px 0;cursor:pointer}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--ent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#bloques">Bloques</a><a href="#agregado">Agregado</a><a href="#sim">Simulador</a>
+  <a href="#flujo">Una petición</a><a href="#vs">vs Arquitecturas</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>DDD táctico<br>para novatos</h1>
+  <p class="lead">Domain-Driven Design no es una arquitectura de capas: es una forma de <b>modelar el negocio en código</b> para que las reglas vivan en un solo lugar, con los nombres del negocio y protegidas de modificaciones inválidas.</p>
+</header>
+
+<section id="que">
+  <h2>1. ¿Qué es y qué problema resuelve?</h2>
+  <div class="grid">
+    <div class="card"><h3>El problema</h3>
+      <p>Evans: cuando el código de dominio está mezclado con UI y base de datos, <i>“se vuelve extremadamente difícil de ver y de razonar”</i>. Cambiar una regla obliga a rastrear pantallas y scripts. Y si las reglas viven en clases de servicio con entidades que solo tienen getters y setters, tienes un <b>modelo anémico</b> (Microsoft).</p></div>
+    <div class="card"><h3>La idea</h3>
+      <p>Las reglas viven <b>dentro</b> del modelo: entidades que protegen su estado, objetos de valor siempre válidos y agregados que garantizan consistencia. El código usa el <b>lenguaje ubicuo</b> del negocio: <code>reservation.Cancel()</code>, no <code>SetStatus(4)</code>.</p></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Dos mitades</h3>
+    <div class="scroll"><table>
+      <tr><th>Estratégico</th><th>Táctico (este portal)</th></tr>
+      <tr><td>¿Cómo divido el problema y hablo con el negocio? Lenguaje ubicuo, bounded contexts.</td><td>¿Cómo expreso el modelo dentro de un contexto? Entidades, value objects, agregados, eventos, servicios, repositorios.</td></tr>
+    </table></div>
+    <p style="margin-top:10px;color:var(--muted)">Las arquitecturas (Clean, Hexagonal…) dicen dónde van las dependencias; DDD táctico dice cómo es el modelo del centro. Se combinan.</p>
+  </div>
+</section>
+
+<section id="bloques">
+  <h2>2. Los bloques tácticos (haz clic)</h2>
+  <div class="blocks" id="blocks"></div>
+  <div class="card" id="detail" aria-live="polite"></div>
+  <div class="card" style="margin-top:14px">
+    <h3>¿Dónde va esta regla?</h3>
+    <ol class="tight">
+      <li>¿Afecta a <b>un solo objeto</b>? → dentro de ese value object o entidad (<code>Money</code> no admite negativos).</li>
+      <li>¿Protege una <b>invariante del agregado</b>? → en la <b>raíz</b> (<code>Reservation.AddCharge</code>).</li>
+      <li>¿Involucra <b>varios agregados</b>? → <b>servicio de dominio</b> (<code>BookingService</code>).</li>
+      <li>¿Es <b>orquestar</b> (cargar, guardar, notificar)? → <b>servicio de aplicación</b>.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="agregado">
+  <h2>3. El agregado: una frontera de consistencia</h2>
+  <div class="agg">
+    <div class="box root">
+      <b>Agregado Reservation</b> <span class="tag" style="background:var(--agg)">raíz</span>
+      <div class="row"><span class="chip en">Reservation (raíz)</span><span class="chip en">Charge[] (entidades hijas)</span></div>
+      <div class="row"><span class="chip vo">GuestInfo</span><span class="chip vo">DateRange</span><span class="chip vo">Money</span><span class="chip vo">ReservationId</span></div>
+    </div>
+    <div class="link">RoomId<br>──────►<br>(solo el id)</div>
+    <div class="box other">
+      <b>Agregado Room</b> <span class="tag" style="background:var(--ent)">raíz</span>
+      <div class="row"><span class="chip en">Room (raíz)</span><span class="chip vo">Money NightlyRate</span></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Las reglas de diseño</h3>
+    <ol class="tight">
+      <li><b>Agregados pequeños</b>: solo lo que debe ser consistente en una transacción. <code>Room</code> no contiene sus reservas.</li>
+      <li><b>Referencia por identidad</b>: la reserva guarda <code>RoomId</code>, no un <code>Room</code>.</li>
+      <li><b>Dentro</b> de la frontera, consistencia inmediata; <b>entre</b> agregados, consistencia eventual (Evans: <i>“Across boundaries, handle updates asynchronously”</i>).</li>
+      <li><b>Una transacción modifica un agregado</b>; el resto reacciona a <b>eventos de dominio</b>.</li>
+      <li>Solo se accede por la <b>raíz</b>: constructor privado, setters privados, cambios por métodos.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="sim">
+  <h2>4. Simulador: el agregado protege sus invariantes</h2>
+  <p>Una reserva del <b>día 5 al 8</b>. Mueve “hoy” y prueba las acciones: el agregado acepta o rechaza según sus reglas (réplica en JavaScript de <code>Reservation</code>).</p>
+  <div class="card">
+    <label for="today"><b>Hoy es el día <span id="todayVal">1</span></b> del mes</label>
+    <input id="today" type="range" min="1" max="9" value="1">
+    <div class="sim">
+      <div>
+        <div class="state" id="state"></div>
+        <div class="actions" id="actions"></div>
+        <div class="msg" id="msg" aria-live="polite">Elige una acción.</div>
+      </div>
+      <div>
+        <p style="margin:0"><b>Total:</b> <span id="total"></span></p>
+        <p style="margin:6px 0 2px"><b>Cargos:</b> <span id="charges">ninguno</span></p>
+        <p style="margin:6px 0 2px"><b>Eventos de dominio registrados:</b></p>
+        <ul class="events tight" id="events"><li>(ninguno)</li></ul>
+        <button id="reset">Reiniciar</button>
+      </div>
+    </div>
+  </div>
+  <p class="legend" style="color:var(--muted);font-size:.9rem;margin-top:8px">Pruébalo: cancelar el día 5 → rechazado. Check-in el día 4 → rechazado. Añadir un cargo tras cancelar → rechazado.</p>
+</section>
+
+<section id="flujo">
+  <h2>5. Recorrido de un caso de uso</h2>
+  <p>Ejemplo: <code>POST /api/reservations/{id}/cancel</code>.</p>
+  <div class="steps" id="steps"></div>
+  <div class="card flowbox" id="flow" aria-live="polite"></div>
+</section>
+
+<section id="vs">
+  <h2>6. DDD frente a las arquitecturas</h2>
+  <p><b>DDD no compite con Clean, Hexagonal, Onion o Vertical Slice</b>: ellas organizan dependencias; DDD modela el dominio que va en el centro.</p>
+  <div class="scroll card"><table>
+    <tr><th>Arquitectura</th><th>Dónde viven los bloques DDD</th></tr>
+    <tr><td>Clean</td><td>Entities = agregados, entidades y VOs · Use Cases = servicios de aplicación</td></tr>
+    <tr><td>Onion</td><td>Anillo 1 = entidades y VOs · Anillo 2 = servicios de dominio + interfaces de repositorio · Anillo 3 = servicios de aplicación</td></tr>
+    <tr><td>Hexagonal</td><td>El hexágono es el dominio; los repositorios son puertos de salida</td></tr>
+    <tr><td>Vertical Slice</td><td>Agregado compartido en <code>Common</code> · cada handler = servicio de aplicación</td></tr>
+  </table></div>
+  <div class="card wiz" style="margin-top:14px">
+    <h3>¿Me conviene DDD táctico? Marca lo que te pasa</h3>
+    <label><input type="checkbox" data-w="y"> El dominio tiene reglas ricas y cambiantes (estados, transiciones, políticas)</label>
+    <label><input type="checkbox" data-w="y"> El sistema vivirá años y el negocio evolucionará</label>
+    <label><input type="checkbox" data-w="y"> Tengo acceso a expertos del dominio</label>
+    <label><input type="checkbox" data-w="n"> Es básicamente un CRUD de tablas y formularios</label>
+    <label><input type="checkbox" data-w="n"> Es un prototipo o un sistema de vida corta</label>
+    <p id="verdict" style="margin-top:10px;font-weight:600"></p>
+  </div>
+</section>
+
+<section id="errores">
+  <h2>7. Errores típicos</h2>
+  <div class="scroll card"><table>
+    <tr><th>Mal</th><th>Por qué</th><th>Bien</th></tr>
+    <tr><td class="no">Entidades con getters/setters y la lógica en servicios</td><td>Modelo anémico</td><td class="yes">Reglas dentro de la entidad o raíz</td></tr>
+    <tr><td class="no">Setters y constructores públicos</td><td>Cualquiera deja el objeto inválido</td><td class="yes">Setters privados, fábrica, métodos de comportamiento</td></tr>
+    <tr><td class="no">Agregado gigante (<code>Room</code> con todas sus reservas)</td><td>Contención de bloqueos</td><td class="yes">Agregados pequeños y referencia por id</td></tr>
+    <tr><td class="no">Value object mutable</td><td>Pierde igualdad por valor</td><td class="yes">Inmutable; operaciones devuelven valores nuevos</td></tr>
+    <tr><td class="no">Un repositorio por tabla o por entidad hija</td><td>Se salta la raíz</td><td class="yes">Un repositorio por raíz</td></tr>
+    <tr><td class="no">Modificar dos agregados en una transacción</td><td>Rompe la consistencia eventual</td><td class="yes">Eventos de dominio</td></tr>
+    <tr><td class="no">Evento llamado <code>RowInserted</code></td><td>No es del negocio</td><td class="yes"><code>ReservationCancelled</code> (pasado, lenguaje del dominio)</td></tr>
+  </table></div>
+  <div class="card" style="margin-top:14px">
+    <h3>Las reglas, como tests</h3>
+    <p>El proyecto de referencia verifica el diseño con reflection: entidades sin constructores ni setters públicos, agregados que se referencian por identidad, value objects inmutables, un repositorio por raíz (el compilador lo exige con <code>where TRoot : AggregateRoot&lt;TId&gt;</code>). Y los binarios compilados se inspeccionaron con REA (constructores y setters <code>private</code>/<code>internal</code>; el dominio sin referencias a otros proyectos).</p>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Límite honesto: concurrencia</h3>
+    <p><code>BookingService</code> comprueba la disponibilidad y luego se guarda: no es atómico. Dos reservas simultáneas del mismo hueco podrían pasar. Con una base real se respalda con una restricción o control de concurrencia optimista: es el precio de la consistencia eventual entre agregados.</p>
+  </div>
+</section>
+
+<section id="quiz">
+  <h2>8. Comprueba lo aprendido</h2>
+  <div id="quiz"></div>
+</section>
+
+<footer>
+  Fuentes: <a href="https://www.domainlanguage.com/wp-content/uploads/2016/05/DDD_Reference_2015-03.pdf">Domain-Driven Design Reference (E. Evans)</a>,
+  <a href="https://learn.microsoft.com/en-us/azure/architecture/microservices/model/tactical-domain-driven-design">Tactical DDD – Microsoft Learn</a>.
+  El proyecto de referencia está en <code>sample/</code>.
+</footer>
+</div>
+
+<script>
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const B={
+  Entidad:{c:"var(--ent)",d:"Se define por su <b>identidad</b>, no por sus atributos. Dos reservas con los mismos datos son reservas distintas. Encapsula comportamiento y protege su estado.",
+    code:`public abstract class Entity<TId> : IEquatable<Entity<TId>> where TId : notnull
+{
+    public TId Id { get; protected set; } = default!;
+    public bool Equals(Entity<TId>? other) =>
+        other is not null && GetType() == other.GetType() && EqualityComparer<TId>.Default.Equals(Id, other.Id);
+}`},
+  "Value Object":{c:"var(--vo)",d:"Sin identidad: se define por sus valores. <b>Inmutable</b>, válido desde su creación; las operaciones devuelven valores nuevos. Es la opción por defecto (Microsoft).",
+    code:`public readonly record struct DateRange : IValueObject
+{
+    public DateOnly CheckIn { get; }
+    public DateOnly CheckOut { get; }
+    public DateRange(DateOnly checkIn, DateOnly checkOut)
+    {
+        if (checkOut <= checkIn) throw new DomainException("Check-out must be after check-in.");
+        CheckIn = checkIn; CheckOut = checkOut;
+    }
+    public bool Overlaps(DateRange other) => CheckIn < other.CheckOut && other.CheckIn < CheckOut;
+}`},
+  Agregado:{c:"var(--agg)",d:"Un grupo de objetos que se trata como <b>unidad de consistencia</b>, con una raíz. Desde fuera solo se accede por la raíz, que protege las invariantes.",
+    code:`public void AddCharge(string description, Money amount)
+{
+    if (Status is not (ReservationStatus.Confirmed or ReservationStatus.CheckedIn))
+        throw new DomainException("Charges can only be added to an active reservation.");
+    if (amount.Currency != RoomCharge.Currency)
+        throw new DomainException($"Charges must be in {RoomCharge.Currency}.");
+    _charges.Add(new Charge(description.Trim(), amount));   // Charge: constructor internal
+}`},
+  "Evento de dominio":{c:"var(--evt)",d:"Algo que ocurrió y que al negocio le importa. <b>Inmutable</b>, en pasado. La raíz lo registra; la capa de aplicación lo entrega tras guardar.",
+    code:`public sealed record ReservationCancelled(ReservationId ReservationId, string GuestEmail, DateTimeOffset OccurredAt) : IDomainEvent;
+
+// en Reservation.Cancel(...)
+Raise(new ReservationCancelled(Id, Guest.Email, now));`},
+  "Servicio de dominio":{c:"var(--svc)",d:"Una regla que <b>no es responsabilidad natural</b> de una entidad ni de un value object, porque involucra varios agregados. Sin estado ni infraestructura.",
+    code:`public async Task<Reservation> BookAsync(Room room, GuestInfo guest, DateRange stay, DateOnly today, DateTimeOffset now, CancellationToken ct)
+{
+    var clashes = await reservations.FindActiveOverlappingAsync(room.Id, stay, ct);
+    if (clashes.Count > 0) throw new DomainException("The room is not available for those dates.");
+    return Reservation.Book(room.Id, guest, stay, PriceFor(room, stay), today, now);
+}`},
+  "Servicio de aplicación":{c:"var(--ent)",d:"Orquesta un caso de uso y <b>no contiene reglas de negocio</b>: cargar un agregado, llamar a su comportamiento, guardar, entregar sus eventos.",
+    code:`var reservation = await reservations.LoadAsync(id, ct);
+reservation.Cancel(clock.Today, clock.UtcNow);
+await reservations.UpdateAsync(reservation, ct);
+await events.DispatchAsync(reservation.PullEvents(), ct);`},
+  Repositorio:{c:"var(--svc)",d:"La ilusión de una colección en memoria de <b>agregados completos</b>. Uno por raíz. La interfaz la define el dominio; la implementa la infraestructura.",
+    code:`public interface IRepository<TRoot, TId>
+    where TRoot : AggregateRoot<TId>
+    where TId : notnull
+{
+    Task AddAsync(TRoot root, CancellationToken ct);
+    Task<TRoot?> GetByIdAsync(TId id, CancellationToken ct);
+    Task UpdateAsync(TRoot root, CancellationToken ct);
+}   // no se puede declarar un repositorio de Charge (no es raíz)`},
+  Fábrica:{c:"var(--agg)",d:"Encapsula la creación para que el objeto <b>nazca válido</b>. El constructor es privado.",
+    code:`public static Reservation Book(RoomId roomId, GuestInfo guest, DateRange stay, Money roomCharge, DateOnly today, DateTimeOffset now)
+{
+    if (stay.Nights > MaxNights) throw new DomainException($"A stay cannot exceed {MaxNights} nights.");
+    if (stay.CheckIn < today) throw new DomainException("Cannot book a stay that starts in the past.");
+    ...
+}`}
+};
+const blocksEl=document.getElementById("blocks"), detail=document.getElementById("detail");
+function showBlock(k){
+  [...blocksEl.children].forEach(b=>{const on=b.dataset.k===k;b.classList.toggle("on",on);b.style.background=on?B[b.dataset.k].c:"";});
+  const x=B[k];
+  detail.innerHTML=`<h3><span class="tag" style="background:${x.c}">${k}</span></h3><p>${x.d}</p><pre><code>${esc(x.code)}</code></pre>`;
+}
+Object.keys(B).forEach(k=>{const b=document.createElement("button");b.className="block card";b.dataset.k=k;b.textContent=k;b.style.borderColor=B[k].c;b.style.color=B[k].c;b.onclick=()=>showBlock(k);blocksEl.appendChild(b)});
+showBlock("Agregado");
+
+/* ---- Reservation simulator (mirrors Reservation.cs rules) ---- */
+const STAY={in:5,out:8}, RATE=300;
+let R, todayEl=document.getElementById("today");
+function fresh(){R={status:"Confirmed",charges:[],events:[{n:"ReservationConfirmed",d:"total 300.00 EUR"}]};}
+const today=()=>+todayEl.value;
+const total=()=>RATE+R.charges.reduce((s,c)=>s+c,0);
+class Rule extends Error{}
+const A={
+  "Cancelar":()=>{ if(R.status!=="Confirmed")throw new Rule("Only a confirmed reservation can be cancelled.");
+    if(today()>=STAY.in)throw new Rule("Cancellation is only possible before the check-in date.");
+    R.status="Cancelled";R.events.push({n:"ReservationCancelled",d:"guest ana@mail.com"});return "Cancelada. Se registró el evento ReservationCancelled."},
+  "Check-in":()=>{ if(R.status!=="Confirmed")throw new Rule("Only a confirmed reservation can check in.");
+    if(!(today()>=STAY.in&&today()<STAY.out))throw new Rule("Check-in is only possible during the stay dates.");
+    R.status="CheckedIn";return "Check-in realizado."},
+  "Añadir cargo 12 €":()=>{ if(!["Confirmed","CheckedIn"].includes(R.status))throw new Rule("Charges can only be added to an active reservation.");
+    R.charges.push(12);return "Cargo de 12,00 € añadido (entidad hija Charge)."},
+  "Check-out":()=>{ if(R.status!=="CheckedIn")throw new Rule("Only a checked-in reservation can check out.");
+    R.status="CheckedOut";R.events.push({n:"GuestCheckedOut",d:"total "+total().toFixed(2)+" EUR"});return "Check-out realizado. Evento GuestCheckedOut."}
+};
+const STATES=["Confirmed","CheckedIn","CheckedOut","Cancelled"];
+function drawSim(){
+  document.getElementById("todayVal").textContent=today();
+  document.getElementById("state").innerHTML=STATES.map(s=>`<span class="pill${R.status===s?" on":""}">${s}</span>`).join("");
+  document.getElementById("total").textContent=total().toFixed(2)+" EUR";
+  document.getElementById("charges").textContent=R.charges.length?R.charges.map(c=>c.toFixed(2)).join(" + ")+" EUR":"ninguno";
+  document.getElementById("events").innerHTML=R.events.map(e=>`<li>${e.n} · ${e.d}</li>`).join("")||"<li>(ninguno)</li>";
+}
+const actionsEl=document.getElementById("actions"), msg=document.getElementById("msg");
+Object.keys(A).forEach(k=>{const b=document.createElement("button");b.textContent=k;b.onclick=()=>{
+  try{const ok=A[k]();msg.className="msg ok";msg.textContent="✔ "+ok}
+  catch(e){if(e instanceof Rule){msg.className="msg err";msg.textContent="✘ DomainException: "+e.message}else throw e}
+  drawSim()};actionsEl.appendChild(b)});
+todayEl.oninput=()=>{drawSim()};
+document.getElementById("reset").onclick=()=>{fresh();msg.className="msg";msg.textContent="Elige una acción.";drawSim()};
+fresh();drawSim();
+
+const FLOW=[
+  {t:"1. Endpoint",c:"var(--ent)",h:"<code>POST /api/reservations/{id}/cancel</code> llama a <code>CancelReservation</code>. Sin reglas de negocio."},
+  {t:"2. Carga",c:"var(--ent)",h:"El servicio de aplicación pide la reserva al <code>IReservationRepository</code> (interfaz del dominio). Si no existe → <code>NotFoundException</code> → <b>404</b>."},
+  {t:"3. Comportamiento",c:"var(--agg)",h:"<code>reservation.Cancel(today, now)</code>: la raíz valida (solo si está confirmada y antes del check-in), cambia el estado y registra <code>ReservationCancelled</code>. Si se viola una regla → <code>DomainException</code> → <b>422</b>."},
+  {t:"4. Guardar",c:"var(--svc)",h:"<code>UpdateAsync</code> guarda el agregado completo: una transacción, un agregado."},
+  {t:"5. Eventos",c:"var(--evt)",h:"<code>PullEvents()</code> entrega los eventos una sola vez. El dispatcher llama a <code>NotifyGuestWhenReservationCancelled</code>, que usa el puerto <code>INotifier</code>. El aviso es una reacción, no parte de la transacción."},
+  {t:"6. Respuesta",c:"var(--ent)",h:"Se devuelve un <code>ReservationDto</code> (el agregado no sale de la capa de aplicación) → <b>200 OK</b>."}
+];
+const stepsEl=document.getElementById("steps"), flowEl=document.getElementById("flow");
+function showStep(i){
+  [...stepsEl.children].forEach((b,j)=>b.classList.toggle("on",i===j));
+  flowEl.innerHTML=`<h3><span class="tag" style="background:${FLOW[i].c}">${FLOW[i].t}</span></h3><p>${FLOW[i].h}</p>`;
+}
+FLOW.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.t;b.onclick=()=>showStep(i);stepsEl.appendChild(b)});
+showStep(0);
+
+const boxes=[...document.querySelectorAll(".wiz input")], verdict=document.getElementById("verdict");
+function judge(){
+  const c={y:0,n:0};boxes.forEach(b=>{if(b.checked)c[b.dataset.w]++});
+  verdict.textContent = c.y+c.n===0 ? "" :
+    c.n>0 && c.y===0 ? "Probablemente no: un proyecto ordenado basta. Como mucho, value objects donde haya validaciones repetidas." :
+    c.y>0 && c.n>0 ? "Aplícalo de forma ligera: empieza por value objects y lenguaje ubicuo; añade agregados y eventos donde aparezcan invariantes reales." :
+    c.y>=2 ? "Sí: DDD táctico dentro de la arquitectura que elijas (Clean, Onion, Hexagonal…)." :
+             "Empieza por el lenguaje ubicuo y los value objects; añade agregados cuando aparezcan invariantes.";
+}
+boxes.forEach(b=>b.onchange=judge);
+
+const QUIZ=[
+  {q:"¿DDD es una arquitectura de capas?",o:["Sí, la más estricta","No: es una forma de modelar el dominio; se combina con una arquitectura","Solo en microservicios"],a:1,w:"Las arquitecturas organizan dependencias; DDD modela el dominio del centro."},
+  {q:"Money(10, EUR) y otro Money(10, EUR) son…",o:["Dos entidades distintas","El mismo value object (se igualan por valor)","Dependen del id"],a:1,w:"Un value object no tiene identidad: se define por sus valores."},
+  {q:"¿Cómo referencia Reservation a su habitación?",o:["Con una propiedad Room","Con un RoomId (solo la identidad)","Con una clave foránea pública"],a:1,w:"Los agregados se referencian por identidad para mantener fronteras pequeñas."},
+  {q:"¿Dónde va la regla «no se cancela una reserva el día del check-in»?",o:["En el controller","En el servicio de aplicación","En la raíz del agregado (Reservation.Cancel)"],a:2,w:"Es una invariante del agregado: la protege la raíz."},
+  {q:"«¿Está libre la habitación esas fechas?» involucra a Room y a otras reservas. ¿Dónde va?",o:["En un servicio de dominio","En Room","En Infrastructure"],a:0,w:"Una regla que abarca varios agregados y no es natural en ninguno es un servicio de dominio."},
+  {q:"¿Qué es un buen nombre de evento de dominio?",o:["RowInserted","ReservationCancelled","UpdateReservation"],a:1,w:"En pasado y en el lenguaje del negocio."},
+  {q:"¿Cuántos agregados debería modificar una transacción?",o:["Todos los necesarios","Uno; los demás reaccionan con eventos","Ninguno"],a:1,w:"Dentro de la frontera hay consistencia inmediata; entre agregados, eventual."}
+];
+const quizEl=document.getElementById("quiz");
+QUIZ.forEach((it,qi)=>{
+  const d=document.createElement("div");d.className="card quiz";d.style.marginBottom="10px";
+  d.innerHTML=`<b>${qi+1}. ${it.q}</b>`;
+  const fb=document.createElement("p");fb.style.marginTop="8px";
+  it.o.forEach((t,oi)=>{
+    const b=document.createElement("button");b.className="opt";b.textContent=t;
+    b.onclick=()=>{d.querySelectorAll(".opt").forEach(x=>x.classList.remove("right","wrong"));
+      const ok=oi===it.a;b.classList.add(ok?"right":"wrong");fb.textContent=ok?"✔ Correcto. "+it.w:"✘ Intenta de nuevo."};
+    d.appendChild(b);
+  });
+  d.appendChild(fb);quizEl.appendChild(d);
+});
+
+const root=document.documentElement;
+try{const t=localStorage.getItem("theme");if(t)root.dataset.theme=t}catch(e){}
+document.getElementById("theme").onclick=()=>{
+  const dark=root.dataset.theme?root.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;
+  root.dataset.theme=dark?"light":"dark";
+  try{localStorage.setItem("theme",root.dataset.theme)}catch(e){}
+};
+</script>
+</body>
+</html>
