@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Library.Adapters.Cli/Library.Adapters.Cli.csproj" />
+    <Project Path="src/Library.Adapters.Outbound/Library.Adapters.Outbound.csproj" />
+    <Project Path="src/Library.Adapters.Rest/Library.Adapters.Rest.csproj" />
+    <Project Path="src/Library.Core/Library.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Library.Tests/Library.Tests.csproj" />
+  </Folder>
+</Solution>
