@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screaming Architecture para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --biz:#2e8b57;--tech:#c0392b;--a:#3a8fd9;--warn:#b7791f;--ok:#2e8b57;--bad:#c0392b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:66ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
+.scroll{overflow-x:auto}
+.small{font-size:.85rem;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.seg button.on,.steps button.on{background:var(--fg);color:var(--bg)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.msg{min-height:2.6em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}.msg.warn{border-left:4px solid var(--warn)}
+.tree{font-family:ui-monospace,Consolas,monospace;font-size:.9rem;white-space:pre;background:var(--code);border-radius:10px;padding:12px 14px;overflow-x:auto;min-height:11em}
+.two{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:760px){.two{grid-template-columns:1fr 1fr}}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;color:#fff;padding:1px 8px;border-radius:99px}
+.tag.biz{background:var(--biz)}.tag.tech{background:var(--tech)}
+.opts{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.cell{display:inline-block;margin:3px 4px 3px 0;padding:3px 10px;border-radius:8px;border:2px solid var(--line);font-size:.85rem;color:var(--muted)}
+.cell.hit{border-color:var(--bad);color:var(--fg);font-weight:600;background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.cell.one{border-color:var(--ok);color:var(--fg);font-weight:600;background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.matrix td,.matrix th{text-align:center}
+.matrix td.ok{background:color-mix(in srgb,var(--ok) 18%,transparent)}
+.matrix td.bad{background:color-mix(in srgb,var(--bad) 18%,transparent)}
+.matrix td button{width:100%}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--a)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#cinco">5 segundos</a><a href="#clasifica">Clasifica</a><a href="#cambio">Un cambio</a>
+  <a href="#deps">Dependencias</a><a href="#vs">vs otras</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>Screaming Architecture<br>para novatos</h1>
+  <p class="lead">Abre la carpeta de un proyecto. ¿Qué <b>grita</b>? "Soy una aplicación web con controladores" o "soy el sistema de una clínica". El framework es una herramienta; el árbol de carpetas debería hablar del <b>negocio</b>.</p>
+</header>
+
+<h2 id="que">1. La idea</h2>
+<div class="grid">
+  <div class="card"><h3>Uncle Bob</h3><p><i>"Your architectures should tell readers about the system, not about the frameworks you used in your system."</i></p></div>
+  <div class="card"><h3>No es una arquitectura nueva</h3><p>Es una <b>pregunta</b> que se le hace a cualquiera: ¿qué comunica tu estructura? Se aplica encima de capas, Clean, Vertical Slice o Modular Monolith.</p></div>
+  <div class="card"><h3>La consecuencia práctica</h3><p><i>"You shouldn’t need the web server running in order to run your tests."</i> Los casos de uso se prueban sin servidor.</p></div>
+</div>
+
+<h2 id="cinco">2. La prueba de los 5 segundos</h2>
+<p>Mira cada árbol de carpetas y adivina de qué trata el sistema.</p>
+<div class="steps seg" id="treeBtns"></div>
+<div class="two">
+  <div class="tree" id="treeView"></div>
+  <div class="card" id="guess"></div>
+</div>
+
+<h2 id="clasifica">3. Juego: ¿carpeta técnica o de negocio?</h2>
+<p>Esta es la misma idea que comprueban los tests (con una lista de palabras: sirve para el error común, no entiende el negocio).</p>
+<div class="card" id="drill"></div>
+
+<h2 id="cambio">4. ¿Qué carpetas toca un cambio?</h2>
+<div class="steps seg" id="chgBtns"></div>
+<div class="two">
+  <div class="card"><h3><span class="tag tech">Por rol técnico</span></h3><div id="rTech"></div></div>
+  <div class="card"><h3><span class="tag biz">Por capacidad</span></h3><div id="rBiz"></div></div>
+</div>
+<div class="msg" id="rMsg" style="margin-top:10px"></div>
+
+<h2 id="deps">5. Las capacidades se conocen en una sola dirección</h2>
+<p>Haz clic en una celda: ¿puede la capacidad de la <b>fila</b> usar a la de la <b>columna</b>?</p>
+<div class="scroll"><table class="matrix" id="matrix"></table></div>
+<div class="msg" id="depMsg" style="margin-top:10px">Elige una celda.</div>
+<pre><code>// Appointments define lo que NECESITA...
+public interface IFeeCharger { void ChargeLateCancellation(Guid patientId, Guid appointmentId); }
+
+// ...y Billing lo implementa. Appointments no sabe que Billing existe.
+public sealed class ChargeLateCancellationFee(InvoiceBook invoices, TimeProvider clock) : IFeeCharger { ... }</code></pre>
+
+<h2 id="vs">6. Y las demás arquitecturas</h2>
+<div class="scroll"><table>
+<tr><th></th><th>Responde a…</th><th>Relación con Screaming</th></tr>
+<tr><td>Layered / Clean / Hexagonal</td><td>¿Hacia dónde apuntan las dependencias?</td><td>No dicen cómo se llaman las carpetas: pueden gritar el negocio o no</td></tr>
+<tr><td>Vertical Slice</td><td>¿Cómo agrupo por funcionalidad?</td><td>El mecanismo más natural para gritar el negocio</td></tr>
+<tr><td>Modular Monolith</td><td>¿Cómo impongo fronteras?</td><td>Screaming con fronteras que defiende el compilador</td></tr>
+<tr><td>DDD</td><td>¿Cómo nombro el negocio?</td><td>El lenguaje ubicuo da los nombres de las carpetas</td></tr>
+</table></div>
+<p class="small" style="margin-top:8px">Autocrítica: varios ejemplos de este catálogo (Clean, Hexagonal, Onion, DDD, CQRS, Layered) gritan su <i>arquitectura</i> en los nombres de sus proyectos, porque su objetivo es enseñar esa arquitectura. En un proyecto real, las capas irían <b>dentro</b> de cada capacidad.</p>
+
+<h2 id="errores">7. Errores típicos</h2>
+<div class="grid">
+  <div class="card"><h3><code>Common</code> / <code>Utils</code> gigante</h3><p>El cajón de sastre que nadie sabe de quién es.</p></div>
+  <div class="card"><h3>Capas otra vez dentro</h3><p><code>Patients/Controllers</code>, <code>Patients/Services</code>: el mismo problema, un nivel más abajo.</p></div>
+  <div class="card"><h3>Nombres vagos</h3><p><code>AppointmentManager</code> no dice nada. <code>CancelAppointment</code> sí.</p></div>
+  <div class="card"><h3>Solo renombrar carpetas</h3><p>Si las clases siguen atadas al framework, solo cambió la fachada.</p></div>
+  <div class="card"><h3>Ciclos entre capacidades</h3><p>A usa B y B usa A: no se entienden por separado.</p></div>
+  <div class="card"><h3>Fiarse de una lista de palabras</h3><p>Detecta lo evidente. El criterio final es: ¿lo reconocería alguien del negocio?</p></div>
+</div>
+
+<h2 id="quiz">8. Quiz</h2>
+<div class="card quiz" id="quizBox"></div>
+
+<footer>Kit completo: <code>docs/GUIA-SCREAMING-ARCHITECTURE.md</code>, <code>docs/SCREAMING-VS-OTRAS.md</code> y <code>sample/</code>.</footer>
+</div>
+
+<script>
+(function(){
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function $(id){return document.getElementById(id);}
+
+  try{var t=localStorage.getItem('scr-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}
+  $('theme').addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('scr-theme',next);}catch(e){}
+  });
+
+  /* ---------- 5-second test ---------- */
+  var TREES=[
+    {n:'Árbol A',tree:'Controllers/\n  PatientController.cs\n  AppointmentController.cs\nModels/\n  Patient.cs\n  Appointment.cs\nRepositories/\n  PatientRepository.cs\n  AppointmentRepository.cs\nServices/\n  PatientService.cs\n  AppointmentService.cs\nProgram.cs',
+     q:'¿Qué hace este sistema?',opts:[['Una clínica','No lo sabes por las carpetas: los nombres dentro dan una pista, pero la ESTRUCTURA solo dice "aplicación web con capas técnicas".'],['Una tienda online',null],['No se puede saber por las carpetas',true]],
+     msg:'Este es Clinic.Technical, el mal ejemplo. Con esas cuatro carpetas podría ser una tienda, un banco o un blog.'},
+    {n:'Árbol B',tree:'Appointments/\n  BookAppointment.cs\n  CancelAppointment.cs\n  ListAppointments.cs\n  AppointmentsEndpoints.cs\nBilling/\n  ChargeLateCancellationFee.cs\n  ListInvoices.cs\nPatients/\n  RegisterPatient.cs\n  GetPatient.cs\n  PatientsEndpoints.cs\nProgram.cs',
+     q:'¿Qué hace este sistema?',opts:[['Una clínica: pacientes, citas y facturación',true],['Un blog',null],['Un banco',null]],
+     msg:'Este es Clinic, el buen ejemplo. Antes de abrir un solo archivo ya sabes qué hace, y qué se puede hacer con una cita: reservar, cancelar, listar.'}
+  ];
+  var tb=$('treeBtns');
+  TREES.forEach(function(x){
+    var b=document.createElement('button');b.textContent=x.n;
+    b.addEventListener('click',function(){
+      [].forEach.call(tb.children,function(c){c.classList.toggle('on',c===b);});
+      $('treeView').textContent=x.tree;
+      $('guess').innerHTML='<h3>'+esc(x.q)+'</h3><div class="opts">'+x.opts.map(function(o,i){return '<button data-i="'+i+'">'+esc(o[0])+'</button>';}).join('')+'</div><div class="msg" id="guessMsg" aria-live="polite">Elige una respuesta.</div>';
+      [].forEach.call($('guess').querySelectorAll('.opts button'),function(btn){
+        btn.addEventListener('click',function(){
+          var right=x.opts[parseInt(btn.dataset.i,10)][1]===true;
+          var m=$('guessMsg');m.className='msg '+(right?'ok':'err');
+          m.textContent=(right?'Correcto. ':'No exactamente. ')+x.msg;
+        });
+      });
+    });
+    tb.appendChild(b);
+  });
+  tb.firstChild.click();
+
+  /* ---------- classify folders ---------- */
+  var ITEMS=[
+    ['Controllers','tech','Es un rol técnico del framework web: dice CÓMO está hecho, no QUÉ hace.'],
+    ['Appointments','biz','Una capacidad del negocio: las citas.'],
+    ['Services','tech','"Servicio" no dice nada del negocio; cualquier sistema tiene servicios.'],
+    ['Billing','biz','Una capacidad del negocio: la facturación.'],
+    ['Utils','tech','Cajón de sastre sin dueño.'],
+    ['Patients','biz','Una capacidad del negocio: los pacientes.'],
+    ['Repositories','tech','Un patrón de acceso a datos, no una capacidad.'],
+    ['Handlers','tech','Un rol técnico: ¿handlers de qué? No hay negocio en el nombre.']
+  ];
+  var di=0,ds=0,drill=$('drill');
+  function showDrill(){
+    if(di>=ITEMS.length){drill.innerHTML='<h3>Resultado: '+ds+' / '+ITEMS.length+'</h3><p>'+(ds>=7?'Excelente ojo para lo que grita un árbol.':'Repasa: ¿el nombre dice QUÉ hace el sistema o CÓMO está hecho?')+'</p><button id="dAgain">Reintentar</button>';
+      $('dAgain').addEventListener('click',function(){di=0;ds=0;showDrill();});return;}
+    var it=ITEMS[di];
+    drill.innerHTML='<p><b>'+(di+1)+'/'+ITEMS.length+'</b> Carpeta de primer nivel: <code>'+esc(it[0])+'/</code></p><div class="opts"><button data-k="biz"><span class="tag biz">De negocio</span></button><button data-k="tech"><span class="tag tech">Técnica</span></button></div><div class="msg" id="dMsg" aria-live="polite"></div>';
+    [].forEach.call(drill.querySelectorAll('.opts button'),function(b){
+      b.addEventListener('click',function(){
+        var ok=b.dataset.k===it[1];if(ok)ds++;
+        [].forEach.call(drill.querySelectorAll('.opts button'),function(x){x.disabled=true;});
+        var m=$('dMsg');m.className='msg '+(ok?'ok':'err');
+        m.innerHTML=(ok?'Correcto. ':'No: es '+(it[1]==='biz'?'de negocio':'técnica')+'. ')+esc(it[2])+' <button id="dNext">Siguiente</button>';
+        $('dNext').addEventListener('click',function(){di++;showDrill();});
+      });
+    });
+  }
+  showDrill();
+
+  /* ---------- change ripple ---------- */
+  var CHG=[
+    {n:'Cancelar una cita: nueva regla',tech:['Controllers','Services','Repositories','Models'],biz:['Appointments/CancelAppointment.cs'],note:'Por rol técnico tocas varias carpetas; por capacidad, un archivo con el nombre de lo que cambias.'},
+    {n:'Nueva función: reprogramar una cita',tech:['Controllers','Services','Models'],biz:['Appointments/RescheduleAppointment.cs (nuevo)'],note:'Una acción nueva de una capacidad existente = un archivo nuevo en su carpeta, sin carpeta nueva.'},
+    {n:'Nueva área: recordatorios por SMS',tech:['Controllers','Services','Repositories','Models'],biz:['Reminders/ (carpeta nueva)'],note:'Una capacidad nueva se ve en el árbol como una carpeta nueva: el árbol "crece" con el negocio.'},
+    {n:'Cambiar el framework web',tech:['Controllers (reescritas)','Services (a menudo acopladas)'],biz:['*Endpoints.cs y Program.cs'],note:'Si los casos de uso no conocen el framework, solo cambian los archivos de borde.'}
+  ];
+  var cb=$('chgBtns');
+  CHG.forEach(function(c){
+    var b=document.createElement('button');b.textContent=c.n;
+    b.addEventListener('click',function(){
+      [].forEach.call(cb.children,function(x){x.classList.toggle('on',x===b);});
+      $('rTech').innerHTML=c.tech.map(function(x){return '<span class="cell hit">'+esc(x)+'</span>';}).join('');
+      $('rBiz').innerHTML=c.biz.map(function(x){return '<span class="cell one">'+esc(x)+'</span>';}).join('');
+      $('rMsg').className='msg';$('rMsg').textContent=c.note;
+    });
+    cb.appendChild(b);
+  });
+  cb.firstChild.click();
+
+  /* ---------- dependency matrix ---------- */
+  var CAP=['Patients','Appointments','Billing'];
+  var ALLOWED={'Appointments>Patients':'Citas necesita saber si el paciente existe: usa IPatientDirectory, que Patients ofrece.','Billing>Appointments':'Billing implementa IFeeCharger, la interfaz que Citas definió. Citas no conoce a Billing.'};
+  var WHY={
+    'Patients>Appointments':'Patients no necesita nada de las citas; si lo usara, un paciente no se entendería sin su agenda.',
+    'Patients>Billing':'Los pacientes no dependen de la facturación.',
+    'Appointments>Billing':'Sería un ciclo: Billing ya depende de Citas (implementa su interfaz). Citas pide lo que necesita con una interfaz propia.',
+    'Billing>Patients':'No declarado: Billing recibe el id del paciente en la llamada y no necesita consultar a Patients.'
+  };
+  var tbl=$('matrix'),h='<tr><th>fila usa a →</th>'+CAP.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr>';
+  CAP.forEach(function(f){h+='<tr><th>'+f+'</th>'+CAP.map(function(t){
+    if(f===t)return '<td>·</td>';var k=f+'>'+t,ok=!!ALLOWED[k];
+    return '<td class="'+(ok?'ok':'bad')+'"><button data-k="'+k+'" aria-label="'+f+' usa a '+t+'">'+(ok?'✔':'✘')+'</button></td>';}).join('')+'</tr>';});
+  tbl.innerHTML=h;
+  tbl.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    var k=b.dataset.k,m=$('depMsg');m.className='msg '+(ALLOWED[k]?'ok':'err');
+    m.textContent=k.replace('>',' usa a ')+': '+(ALLOWED[k]?'PERMITIDO. '+ALLOWED[k]:'PROHIBIDO. '+WHY[k]);
+  });
+
+  /* ---------- quiz ---------- */
+  var Q=[
+    ['¿Qué mide la "prueba de los 5 segundos"?',['Lo rápido que compila','Si, al abrir la carpeta, entiendes qué hace el sistema','Cuántas clases hay'],1,'Es la pregunta del artículo: ¿qué grita tu arquitectura?'],
+    ['¿Cuál es una carpeta de primer nivel que grita el negocio?',['Services','Appointments','Helpers'],1,'Nombra una capacidad del negocio, no un rol técnico.'],
+    ['Según el artículo, ¿qué no deberías necesitar para ejecutar los tests de los casos de uso?',['Un editor de texto','El servidor web en marcha','Un compilador'],1,'"You shouldn’t need the web server running in order to run your tests."'],
+    ['¿Dónde debe aparecer el framework web en el sample?',['En todos los archivos','Solo en los archivos de borde (Endpoints, Setup, Program)','Nunca'],1,'Es un detalle del borde: los casos de uso no lo conocen.'],
+    ['Appointments necesita cobrar una cancelación tardía. ¿Cómo se relaciona con Billing?',['Appointments usa directamente a Billing','Appointments define IFeeCharger y Billing lo implementa','Billing consulta la agenda'],1,'El consumidor define lo que necesita; la dirección de dependencia queda en un solo sentido.'],
+    ['¿Basta con renombrar las carpetas?',['Sí','No: si las clases siguen acopladas al framework, solo cambia la fachada','Solo en .NET'],1,'El criterio incluye poder probar los casos de uso sin servidor.'],
+    ['¿Pueden existir capas (dominio, aplicación...) en un proyecto que grita su negocio?',['No, está prohibido','Sí, dentro de cada capacidad','Solo en la raíz'],1,'Screaming decide el primer nivel; dentro puedes usar la estructura que convenga.']
+  ];
+  var qi=0,score=0,qbox=$('quizBox');
+  function showQ(){
+    if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: ya lees lo que grita un proyecto.':score>=4?'Bien. Repasa dónde vive el framework.':'Vuelve a los árboles y compáralos.')+'</p><button id="again">Reintentar</button>';
+      $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}
+    var q=Q[qi];
+    qbox.innerHTML='<p><b>'+(qi+1)+'/'+Q.length+'</b> '+esc(q[0])+'</p>'+q[1].map(function(o,i){return '<button class="opt" data-i="'+i+'">'+esc(o)+'</button>';}).join('')+'<div class="msg" id="qmsg" aria-live="polite"></div>';
+    [].forEach.call(qbox.querySelectorAll('.opt'),function(b){
+      b.addEventListener('click',function(){
+        var i=parseInt(b.dataset.i,10);
+        [].forEach.call(qbox.querySelectorAll('.opt'),function(x){x.disabled=true;});
+        b.classList.add(i===q[2]?'right':'wrong');
+        if(i!==q[2])qbox.querySelectorAll('.opt')[q[2]].classList.add('right'); else score++;
+        $('qmsg').innerHTML=esc(q[3])+' <button id="next">Siguiente</button>';
+        $('next').addEventListener('click',function(){qi++;showQ();});
+      });
+    });
+  }
+  showQ();
+})();
+</script>
+</body>
+</html>
