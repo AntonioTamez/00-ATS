@@ -223,7 +223,7 @@ a{color:var(--ent)}
 
 <section id="quiz">
   <h2>8. Comprueba lo aprendido</h2>
-  <div id="quiz"></div>
+  <div id="quizBox"></div>
 </section>
 
 <footer>
@@ -379,7 +379,7 @@ const QUIZ=[
   {q:"¿Qué es un buen nombre de evento de dominio?",o:["RowInserted","ReservationCancelled","UpdateReservation"],a:1,w:"En pasado y en el lenguaje del negocio."},
   {q:"¿Cuántos agregados debería modificar una transacción?",o:["Todos los necesarios","Uno; los demás reaccionan con eventos","Ninguno"],a:1,w:"Dentro de la frontera hay consistencia inmediata; entre agregados, eventual."}
 ];
-const quizEl=document.getElementById("quiz");
+const quizEl=document.getElementById("quizBox");
 QUIZ.forEach((it,qi)=>{
   const d=document.createElement("div");d.className="card quiz";d.style.marginBottom="10px";
   d.innerHTML=`<b>${qi+1}. ${it.q}</b>`;

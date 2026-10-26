@@ -17,6 +17,12 @@ Cada arquitectura se documenta con el mismo formato: **guía paso a paso**, **pr
 | 9 | Event-Driven Architecture | Distribuidas | Hecha | `EVENT-DRIVEN/` |
 | 10 | Layered / N-Tier | Clásicas (punto de comparación) | Hecha | `LAYERED/` |
 | 11 | MVC / MVVM | Patrones de presentación | Hecha | `MVC-MVVM/` |
+| 12 | Event Sourcing | Modelado del dominio / persistencia | Hecha | `EVENT-SOURCING/` |
+| 13 | Screaming Architecture | Organización por funcionalidad | Pendiente | |
+| 14 | Serverless / FaaS | Distribuidas | Pendiente | |
+| 15 | Microkernel / Plugins | Extensibilidad | Pendiente | |
+| 16 | Pipes & Filters | Procesamiento por etapas | Pendiente | |
+| 17 | Atomic Design + Container-Presentational + Micro-frontends | Frontend | Pendiente | |
 
 ## Detalle
 
@@ -36,6 +42,14 @@ Cada arquitectura se documenta con el mismo formato: **guía paso a paso**, **pr
 ### Clásicas, para comparar
 - **Layered (N-Tier)**: la arquitectura "de siempre". Sirve para explicar qué problema resolvieron las otras.
 - **MVC / MVVM**: patrones de presentación; aclaran la confusión frecuente con las arquitecturas de aplicación.
+
+### Ampliación del catálogo (candidatas añadidas después de completar las 11 originales)
+- **Event Sourcing**: el estado como secuencia de eventos; continuación natural de CQRS y Event-Driven, que lo mencionan y lo dejan fuera a propósito.
+- **Screaming Architecture**: que la estructura de carpetas "grite" el negocio y no el framework.
+- **Serverless / FaaS**: funciones por evento, sin servidor propio; otros costes (arranque en frío, estado externo).
+- **Microkernel / Plugins**: un núcleo pequeño más extensiones.
+- **Pipes & Filters**: etapas encadenadas (ETL, pipelines de datos).
+- **Frontend** (Atomic Design, Container-Presentational, Micro-frontends): la rama que el catálogo original no cubre.
 
 ## Orden recomendado
 

@@ -225,7 +225,7 @@ public async Task Update_PersistsLoan(string kind) { /* mismo test, distinto ada
 
 <section id="quiz">
   <h2>7. Comprueba lo aprendido</h2>
-  <div id="quiz"></div>
+  <div id="quizBox"></div>
 </section>
 
 <footer>
@@ -321,7 +321,7 @@ const QUIZ=[
   {q:"¿Para qué sirve un test de contrato?",o:["Probar que un adaptador cumple su puerto","Probar el controller","Medir el rendimiento"],a:0,w:"La misma suite corre contra cada adaptador del mismo puerto."},
   {q:"¿Hexagonal y Clean son incompatibles?",o:["Sí, hay que elegir una","No: Clean absorbe la idea de Hexagonal y suelen combinarse","Solo en microservicios"],a:1,w:"Martin cita Hexagonal como antecesor de Clean."}
 ];
-const quizEl=document.getElementById("quiz");
+const quizEl=document.getElementById("quizBox");
 QUIZ.forEach((it,qi)=>{
   const d=document.createElement("div");d.className="card quiz";d.style.marginBottom="10px";
   d.innerHTML=`<b>${qi+1}. ${it.q}</b>`;

@@ -170,7 +170,7 @@ a{color:var(--ord)}
 </div>
 
 <h2 id="quiz">7. Quiz</h2>
-<div class="card quiz" id="quiz"></div>
+<div class="card quiz" id="quizBox"></div>
 
 <footer>Kit completo: <code>docs/GUIA-MICROSERVICIOS.md</code>, <code>docs/MICROSERVICIOS-VS-OTRAS.md</code> y <code>sample/</code>.</footer>
 </div>
@@ -329,7 +329,7 @@ a{color:var(--ord)}
     ['Proyecto nuevo, un equipo, dominio sin descubrir. ¿Qué recomienda Fowler?',['Microservicios desde el día 1','Empezar con un monolito (modular)','Una función serverless por endpoint'],1,'"You shouldn’t start a new project with microservices": las fronteras se aprenden con el tiempo.'],
     ['Cuatro servicios en cadena, cada uno al 99 % de disponibilidad. ¿Disponibilidad total aproximada?',['99 %','≈ 96 %','≈ 90 %'],1,'0,99⁴ ≈ 0,96: la disponibilidad se multiplica en cadenas síncronas.']
   ];
-  var qi=0,score=0,qbox=$('quiz');
+  var qi=0,score=0,qbox=$('quizBox');
   function showQ(){
     if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: ya piensas en fallos parciales.':score>=4?'Bien. Repasa idempotencia y compensación.':'Vuelve al simulador y prueba cada escenario.')+'</p><button id="again">Reintentar</button>';
       $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}

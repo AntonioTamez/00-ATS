@@ -179,7 +179,7 @@ builder.Services.AddNotificationsModule();</code></pre>
 </div>
 
 <h2 id="quiz">7. Quiz</h2>
-<div class="card quiz" id="quiz"></div>
+<div class="card quiz" id="quizBox"></div>
 
 <footer>
   Kit completo: <code>docs/GUIA-MODULAR-MONOLITH.md</code>, <code>docs/MODULAR-MONOLITH-VS-OTRAS.md</code> y <code>sample/</code>.
@@ -350,7 +350,7 @@ builder.Services.AddNotificationsModule();</code></pre>
     ['¿Qué pasa en el sample si un suscriptor lanza una excepción?',['El pedido falla','Se registra el error y el resto sigue; el evento no se reintenta','El evento se reintenta solo'],1,'El bus en memoria aísla al publicador, pero sin outbox no hay reintento ni garantía.'],
     ['¿El monolito modular es un paso obligatorio hacia microservicios?',['Sí, siempre','No: es una arquitectura válida por sí sola','Solo en empresas grandes'],1,'Muchos sistemas nunca necesitan salir de aquí; si lo necesitas, las costuras ya están hechas.']
   ];
-  var qi=0,score=0,qbox=$('quiz');
+  var qi=0,score=0,qbox=$('quizBox');
   function showQ(){
     if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: ya piensas en módulos.':score>=4?'Bien. Repasa las reglas de referencia.':'Vuelve a la sección 4 y al simulador.')+'</p><button id="again">Reintentar</button>';
       $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}

@@ -161,7 +161,7 @@ _add = new RelayCommand(_ => AddSelected(), _ => SelectedProduct is not null &am
 </div>
 
 <h2 id="quiz">8. Quiz</h2>
-<div class="card quiz" id="quiz"></div>
+<div class="card quiz" id="quizBox"></div>
 
 <footer>Kit completo: <code>docs/GUIA-MVC-MVVM.md</code>, <code>docs/MVC-MVVM-VS-OTRAS.md</code> y <code>sample/</code>.</footer>
 </div>
@@ -322,7 +322,7 @@ _add = new RelayCommand(_ => AddSelected(), _ => SelectedProduct is not null &am
     ['Tras un POST de formulario en MVC, ¿por qué se redirige?',['Por velocidad','Para que refrescar la página no repita la acción (Post/Redirect/Get)','Porque es obligatorio'],1,'Evita que un F5 vuelva a añadir el producto.'],
     ['Dos presentaciones (web y escritorio) necesitan la misma regla. ¿Dónde se escribe?',['En cada controlador/ViewModel','Una vez, en el Model','En la vista'],1,'Así web y escritorio la comparten y no se desincronizan.']
   ];
-  var qi=0,score=0,qbox=$('quiz');
+  var qi=0,score=0,qbox=$('quizBox');
   function showQ(){
     if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: distingues los dos patrones.':score>=4?'Bien. Repasa quién conoce a quién.':'Vuelve al laboratorio y compara los dos ciclos.')+'</p><button id="again">Reintentar</button>';
       $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}

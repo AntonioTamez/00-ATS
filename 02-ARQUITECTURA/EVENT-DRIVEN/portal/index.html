@@ -192,7 +192,7 @@ internal sealed record OrderPlacedMessage(Guid OrderId, string? Sku, int Quantit
 </div>
 
 <h2 id="quiz">7. Quiz</h2>
-<div class="card quiz" id="quiz"></div>
+<div class="card quiz" id="quizBox"></div>
 
 <footer>Kit completo: <code>docs/GUIA-EVENT-DRIVEN.md</code>, <code>docs/EVENT-DRIVEN-VS-OTRAS.md</code> y <code>sample/</code>.</footer>
 </div>
@@ -377,7 +377,7 @@ internal sealed record OrderPlacedMessage(Guid OrderId, string? Sku, int Quantit
     ['¿Pueden dos participantes compartir una librería con la clase del evento?',['Sí, es lo más cómodo','Mejor no: cada consumidor lleva su copia con los campos que necesita','Solo si es internal'],1,'Se comparte el formato del mensaje, no el código; así se despliegan por separado y toleran campos nuevos.'],
     ['Necesitas saber en el mismo instante si hay stock para decirlo al usuario. ¿Qué encaja mejor?',['Eventos','Una llamada directa (request/response)','Dead-letter'],1,'Si necesitas la respuesta ya, los eventos no aportan: usa una llamada.']
   ];
-  var qi=0,score=0,qbox=$('quiz');
+  var qi=0,score=0,qbox=$('quizBox');
   function showQ(){
     if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: ya piensas en mensajes y fallos.':score>=4?'Bien. Repasa outbox e inbox.':'Vuelve al simulador y prueba cada fallo.')+'</p><button id="again">Reintentar</button>';
       $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}

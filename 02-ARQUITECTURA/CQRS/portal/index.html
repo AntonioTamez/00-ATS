@@ -159,7 +159,7 @@ public sealed record GetAccountQuery(Guid AccountId) : IQuery&lt;AccountSummary?
 </div>
 
 <h2 id="quiz">7. Quiz</h2>
-<div class="card quiz" id="quiz"></div>
+<div class="card quiz" id="quizBox"></div>
 
 <footer>Kit completo: <code>docs/GUIA-CQRS.md</code>, <code>docs/CQRS-VS-OTRAS.md</code> y <code>sample/</code>.</footer>
 </div>
@@ -314,7 +314,7 @@ public sealed record GetAccountQuery(Guid AccountId) : IQuery&lt;AccountSummary?
     ['¿Qué pasa si se corrompe el modelo de lectura?',['Se pierden los datos','Se reconstruye desde el log de eventos','Hay que restaurar un backup de escritura'],1,'La lectura es derivada y desechable: se rehace con RebuildAsync.'],
     ['Tu app son formularios de alta y edición sin reglas. ¿CQRS?',['Sí, siempre','No: un CRUD ordenado basta','Solo si hay microservicios'],1,'Fowler: "Many systems do fit a CRUD mental model, and so should be done in that style".']
   ];
-  var qi=0,score=0,qbox=$('quiz');
+  var qi=0,score=0,qbox=$('quizBox');
   function showQ(){
     if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: ya piensas en comandos y consultas.':score>=4?'Bien. Repasa la consistencia eventual.':'Vuelve al simulador y prueba el projector.')+'</p><button id="again">Reintentar</button>';
       $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}

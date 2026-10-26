@@ -194,7 +194,7 @@ a{color:var(--blue)}
 
 <section id="quiz">
   <h2>7. Comprueba lo aprendido</h2>
-  <div id="quiz"></div>
+  <div id="quizBox"></div>
 </section>
 
 <footer>
@@ -304,7 +304,7 @@ const QUIZ=[
   {q:"Hay un solo proyecto. ¿Quién impide que una slice use a otra?",o:["El compilador","Tests de aislamiento (y revisión)","Nadie hace falta"],a:1,w:"Dentro de un proyecto el compilador no ayuda: hace falta un test."},
   {q:"¿Cuándo advierte Bogard que el patrón “no es para ti”?",o:["Si el equipo no sabe cuándo la lógica debe pasar al dominio","Si usas .NET","Si tienes más de 5 funcionalidades"],a:0,w:"Exige criterio para reconocer smells y refactorizar."}
 ];
-const quizEl=document.getElementById("quiz");
+const quizEl=document.getElementById("quizBox");
 QUIZ.forEach((it,qi)=>{
   const d=document.createElement("div");d.className="card quiz";d.style.marginBottom="10px";
   d.innerHTML=`<b>${qi+1}. ${it.q}</b>`;

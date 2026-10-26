@@ -206,7 +206,7 @@ internal sealed class InMemoryOrderRepository : IOrderRepository { ... }</code><
 
 <section id="quiz">
   <h2>7. Comprueba lo aprendido</h2>
-  <div id="quiz"></div>
+  <div id="quizBox"></div>
 </section>
 
 <footer>
@@ -317,7 +317,7 @@ const QUIZ=[
   {q:"¿Qué debe devolver un servicio de aplicación hacia la UI?",o:["La entidad Order","Un DTO (OrderDto)","Un registro de la base de datos"],a:1,w:"Las entidades no salen del anillo de aplicación."},
   {q:"¿Para qué tipo de sistema advierte Palermo que NO es adecuada?",o:["Aplicaciones empresariales longevas","Sitios web pequeños","Sistemas con dominio complejo"],a:1,w:"Encaja en aplicaciones longevas con comportamiento complejo."}
 ];
-const quizEl=document.getElementById("quiz");
+const quizEl=document.getElementById("quizBox");
 QUIZ.forEach((it,qi)=>{
   const d=document.createElement("div");d.className="card quiz";d.style.marginBottom="10px";
   d.innerHTML=`<b>${qi+1}. ${it.q}</b>`;
