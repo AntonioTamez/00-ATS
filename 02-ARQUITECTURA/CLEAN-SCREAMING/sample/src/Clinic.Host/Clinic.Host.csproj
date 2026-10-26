@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The composition root: the only project that knows every capability exists, and how to plug them together. -->
+    <ProjectReference Include="..\Patients\Clinic.Patients.Adapters\Clinic.Patients.Adapters.csproj" />
+    <ProjectReference Include="..\Appointments\Clinic.Appointments.Adapters\Clinic.Appointments.Adapters.csproj" />
+    <ProjectReference Include="..\Billing\Clinic.Billing.Adapters\Clinic.Billing.Adapters.csproj" />
+    <ProjectReference Include="..\Clinic.SharedKernel\Clinic.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

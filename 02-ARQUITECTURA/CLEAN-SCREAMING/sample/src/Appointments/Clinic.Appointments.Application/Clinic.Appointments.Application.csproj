@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Note what is NOT here: no Clinic.Patients.* and no Clinic.Billing.*. Other capabilities are reached through PORTS. -->
+    <ProjectReference Include="..\Clinic.Appointments.Domain\Clinic.Appointments.Domain.csproj" />
+    <ProjectReference Include="..\..\Clinic.SharedKernel\Clinic.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Clinic.Appointments.Application\Clinic.Appointments.Application.csproj" />
+    <ProjectReference Include="..\Clinic.Appointments.Domain\Clinic.Appointments.Domain.csproj" />
+    <ProjectReference Include="..\..\Clinic.SharedKernel\Clinic.SharedKernel.csproj" />
+    <!-- The ONLY place where Appointments touches another capability: an adapter that calls Patients' application layer. -->
+    <ProjectReference Include="..\..\Patients\Clinic.Patients.Application\Clinic.Patients.Application.csproj" />
+  </ItemGroup>
+
+</Project>
