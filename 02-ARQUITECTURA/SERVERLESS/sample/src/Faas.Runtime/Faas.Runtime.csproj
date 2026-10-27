@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A tiny, local FaaS PLATFORM: what a cloud provider does around your functions.
+    It triggers them, gives each invocation a context, enforces a timeout, retries failed queue messages,
+    dead-letters the poison ones and applies output bindings only when the function succeeded.
+    It knows nothing about orders, and it references nothing but the framework.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

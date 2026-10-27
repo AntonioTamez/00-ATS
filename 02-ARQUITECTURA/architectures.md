@@ -20,7 +20,7 @@ Cada arquitectura se documenta con el mismo formato: **guía paso a paso**, **pr
 | 12 | Event Sourcing | Modelado del dominio / persistencia | Hecha | `EVENT-SOURCING/` |
 | 13 | Screaming Architecture | Organización por funcionalidad | Hecha | `SCREAMING/` |
 | 18 | Clean + Screaming (combinación) | Dependencias hacia adentro + estructura que grita el negocio | Hecha | `CLEAN-SCREAMING/` |
-| 14 | Serverless / FaaS | Distribuidas | Pendiente | |
+| 14 | Serverless / FaaS | Distribuidas | Hecha | `SERVERLESS/` |
 | 15 | Microkernel / Plugins | Extensibilidad | Hecha | `MICROKERNEL/` |
 | 16 | Pipes & Filters | Procesamiento por etapas | Hecha | `PIPES-AND-FILTERS/` |
 | 17 | Atomic Design + Container-Presentational + Micro-frontends | Frontend | Pendiente | |

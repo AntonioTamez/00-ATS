@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serverless y FaaS para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --ok:#2e8b57;--bad:#c0392b;--warn:#b7791f;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:66ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button,select{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.45;cursor:not-allowed}
+input[type=number]{font:inherit;width:4.5em;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+.small{font-size:.85rem;color:var(--muted)}
+.ctl{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin:10px 0}
+.ctl label{display:flex;flex-direction:column;gap:4px;font-size:.92rem}
+.ctl label.inline{flex-direction:row;align-items:center;gap:8px}
+.two{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:800px){.two{grid-template-columns:1.2fr 1fr}}
+ul.log{list-style:none;margin:0;padding:0}
+ul.log li{padding:5px 8px;border-left:4px solid var(--line);margin:4px 0;background:var(--code);border-radius:4px;font-size:.88rem;font-family:ui-monospace,Consolas,monospace}
+ul.log li.ok{border-color:var(--ok)}ul.log li.bad{border-color:var(--bad)}ul.log li.warn{border-color:var(--warn)}
+.msg{min-height:2.6em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}.msg.warn{border-left:4px solid var(--warn)}
+dl.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:.92rem}
+dl.kv dt{color:var(--muted)}dl.kv dd{margin:0;font-family:ui-monospace,Consolas,monospace}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Serverless y FaaS para novatos</h1>
+  <p class="lead">Funciones chiquitas sin estado que una plataforma dispara, reintenta y apaga. Probá qué pasa cuando el mismo mensaje llega dos veces o la función se cuelga a mitad de camino.</p>
+</header>
+<nav>
+  <a href="#idea">La idea</a><a href="#lab">Laboratorio</a><a href="#reglas">Reglas</a><a href="#limites">Límites</a><a href="#quiz">Quiz</a>
+  <button id="theme" type="button">Tema</button>
+</nav>
+
+<section id="idea">
+<h2>1. La idea</h2>
+<div class="grid">
+  <div class="card"><h3>Función</h3><p>Un método que recibe un evento y un contexto, y devuelve un resultado. Corta, sin estado propio, idempotente.</p></div>
+  <div class="card"><h3>Plataforma</h3><p>La dispara (HTTP, cola, reloj), le da un contexto nuevo, le pone un timeout, la reintenta y aparta los mensajes que nunca funcionan.</p></div>
+  <div class="card"><h3>Estado afuera</h3><p>Lo que debe sobrevivir vive en una base o una cola, detrás de un puerto. La instancia que corre tu función es efímera.</p></div>
+</div>
+<pre>HTTP ─► PlaceOrder ─(cola "orders")─► ReserveStock ─(cola "order-events")─► ...
+                │                          │
+                └──────── IOrderStore ─────┘     DailySummary (reloj) ─► "reports"</pre>
+<p class="small">Este kit usa una plataforma <b>simulada en tu máquina</b>: enseña el modelo de programación, no mide arranques en frío ni escalado reales.</p>
+</section>
+
+<section id="lab">
+<h2>2. Laboratorio: la plataforma entrega al menos una vez</h2>
+<p>Un pedido de 2 unidades, con 5 en stock. Elegí cómo llegan los mensajes y cómo se comporta la función; el simulador sigue las reglas de la plataforma del sample (reentrega, mensajes muertos, instancias).</p>
+<div class="ctl">
+  <label>Mensajes que llegan
+    <select id="scenario">
+      <option value="normal">Uno normal</option>
+      <option value="dup">El mismo mensaje, dos veces</option>
+      <option value="poison">Uno corrupto (JSON roto)</option>
+    </select>
+  </label>
+  <label>Falla de la función
+    <select id="failure">
+      <option value="none">Ninguna</option>
+      <option value="before">Falla ANTES de reservar</option>
+      <option value="after">Se cuelga DESPUÉS de reservar</option>
+    </select>
+  </label>
+  <label>…durante los primeros <span><input type="number" id="failTimes" min="1" max="4" value="1"> intentos</span></label>
+  <label>Entregas máximas antes de descartar <input type="number" id="maxDeliveries" min="1" max="5" value="3"></label>
+  <label>Instancias de la función
+    <select id="instances"><option value="warm">Caliente (se reutiliza una)</option><option value="cold">Nueva en cada invocación</option></select>
+  </label>
+  <label class="inline"><input type="checkbox" id="idem" checked> La función es idempotente (<code>ReserveOnce</code>)</label>
+</div>
+<p class="small">El sample real siempre es idempotente. Apagar la casilla es un "¿y si no lo fuera?" solo de este simulador.</p>
+<div class="two">
+  <div><h3>Invocaciones</h3><ul class="log" id="log"></ul></div>
+  <div>
+    <h3>Resultado</h3>
+    <dl class="kv" id="result"></dl>
+    <div class="msg" id="reading"></div>
+  </div>
+</div>
+</section>
+
+<section id="reglas">
+<h2>3. Las reglas de una función</h2>
+<div class="grid">
+  <div class="card"><h3>Sin estado</h3><p>"No asumas que el estado de una invocación estará en la siguiente." El resultado debe ser igual con instancias calientes o nuevas (probalo arriba).</p></div>
+  <div class="card"><h3>Idempotente</h3><p>Si el mismo mensaje llega dos veces, el efecto ocurre una sola vez. Apagá la casilla y mirá el stock.</p></div>
+  <div class="card"><h3>Corta</h3><p>El POST valida, guarda y responde 202. El trabajo lento va a una cola.</p></div>
+  <div class="card"><h3>Por colas, no por llamadas</h3><p>Una función no llama a otra: le deja un mensaje.</p></div>
+  <div class="card"><h3>Negocio ≠ fallo</h3><p>"Sin stock" se anuncia y el mensaje se completa. Una excepción es para lo técnico.</p></div>
+  <div class="card"><h3>El mundo entra por parámetro</h3><p>Hora del contexto, E/S por puertos: la función se prueba llamándola como un método.</p></div>
+</div>
+</section>
+
+<section id="limites">
+<h2>4. Lo que NO es</h2>
+<div class="grid">
+  <div class="card"><h3>No es una nube</h3><p>Todo corre en un proceso y en memoria. Sin latencia de arranque en frío real, sin autoescalado, sin facturación.</p></div>
+  <div class="card"><h3>El timeout no mata</h3><p>.NET no puede matar una tarea. Si la función ignora el token, sigue en segundo plano. Una plataforma real mata la instancia.</p></div>
+  <div class="card"><h3>Falta el outbox</h3><p>Si te colgás entre "escribí" y "anuncié", el reintento ve que ya estaba hecho y el evento se pierde. Probalo: <i>Se cuelga DESPUÉS de reservar</i> con la función idempotente.</p></div>
+</div>
+</section>
+
+<section id="quizSection">
+<h2 id="quiz">5. Quiz</h2>
+<div class="card quiz" id="quizBox"></div>
+</section>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+
+// <logic> — a faithful, small mirror of Faas.Runtime + ReserveStockFunction + InMemoryOrderStore (no DOM)
+const STOCK = 5, QTY = 2;
+
+function initialMessages(scenario) {
+  if (scenario === "dup") return [{ id: "k1", body: "ok", dc: 1 }, { id: "k1", body: "ok", dc: 1 }];
+  if (scenario === "poison") return [{ id: "poison-1", body: "bad", dc: 1 }];
+  return [{ id: "k1", body: "ok", dc: 1 }];
+}
+
+function simulate(o) {
+  const store = { stock: STOCK, status: "Received", processed: new Set() };
+  const queue = initialMessages(o.scenario);
+  const events = [], dead = [], log = [];
+  let instances = 0, warm = false, guard = 0;
+
+  while (queue.length && guard++ < 200) {
+    const m = queue.shift();
+    if (o.recycle || !warm) { instances++; warm = true; } // the platform acquires an instance per invocation
+    let error = null, outputs = [];
+    try {
+      if (m.body === "bad") throw new Error("malformed message body");
+      if (o.failure === "before" && m.dc <= o.failTimes) throw new Error("transient error");
+
+      let result;
+      if (o.idempotent) { // ReserveOnceAsync: one atomic step
+        if (store.processed.has(m.id) || store.status !== "Received") result = "AlreadyProcessed";
+        else {
+          store.processed.add(m.id);
+          if (store.stock >= QTY) { store.stock -= QTY; store.status = "Reserved"; result = "Reserved"; }
+          else { store.status = "OutOfStock"; result = "OutOfStock"; }
+        }
+      } else if (store.stock >= QTY) { store.stock -= QTY; store.status = "Reserved"; result = "Reserved"; }
+      else { store.status = "OutOfStock"; result = "OutOfStock"; }
+
+      if (o.failure === "after" && m.dc <= o.failTimes) throw new Error("crash after reserving");
+      if (result === "Reserved") outputs = ["OrderReserved"];
+      else if (result === "OutOfStock") outputs = ["OrderRejected"];
+    } catch (e) { error = e.message; }
+
+    log.push({ id: m.id, attempt: m.dc, ok: error === null, error });
+    if (error === null) events.push(...outputs); // outputs are sent only if the function succeeded
+    else if (m.dc >= o.maxDeliveries) dead.push({ id: m.id, deliveries: m.dc, reason: error });
+    else queue.push({ ...m, dc: m.dc + 1 });
+  }
+  return { stock: store.stock, status: store.status, events, dead, log, instances };
+}
+
+function reading(o, r) {
+  if (!o.idempotent && r.stock < STOCK - QTY)
+    return { kind: "err", text: `¡Se descontó de más! Quedan ${r.stock} y deberían quedar ${STOCK - QTY}. Sin idempotencia, cada entrega repite el efecto.` };
+  if (o.idempotent && o.failure === "after" && r.status === "Reserved" && r.events.length === 0 && r.dead.length === 0)
+    return { kind: "warn", text: "El stock está bien (se reservó una sola vez), pero el evento OrderReserved se perdió: te colgaste entre el efecto y el anuncio. Se arregla con un outbox." };
+  if (r.dead.length)
+    return { kind: "warn", text: "Hay mensajes muertos: nadie los procesa solos. Alguien tiene que mirarlos." };
+  if (r.log.length > 1 && r.events.length === 1)
+    return { kind: "ok", text: "Hubo reintentos o duplicados, pero el efecto ocurrió una sola vez y se anunció una sola vez." };
+  return { kind: "ok", text: "Todo en orden." };
+}
+// </logic>
+
+// ---------- laboratorio ----------
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  if (props) Object.assign(e, props);
+  e.append(...kids);
+  return e;
+}
+
+function readOptions() {
+  const num = (id, min, max) => Math.min(max, Math.max(min, Math.floor(Number($(id).value) || min)));
+  return {
+    scenario: $("scenario").value,
+    failure: $("failure").value,
+    failTimes: num("failTimes", 1, 4),
+    maxDeliveries: num("maxDeliveries", 1, 5),
+    recycle: $("instances").value === "cold",
+    idempotent: $("idem").checked,
+  };
+}
+
+function refresh() {
+  const o = readOptions();
+  const r = simulate(o);
+
+  const log = $("log");
+  log.textContent = "";
+  for (const x of r.log)
+    log.append(el("li", { className: x.ok ? "ok" : "bad", textContent: `[${x.id}] intento ${x.attempt}: ${x.ok ? "OK" : "FALLÓ (" + x.error + ")"}` }));
+  if (!r.log.length) log.append(el("li", { textContent: "Sin invocaciones" }));
+
+  const kv = $("result");
+  kv.textContent = "";
+  const rows = [
+    ["Stock (empezó en " + STOCK + ")", String(r.stock)],
+    ["Estado del pedido", r.status],
+    ["Eventos anunciados", r.events.length ? r.events.join(", ") : "ninguno"],
+    ["Mensajes muertos", r.dead.length ? r.dead.map((d) => `${d.id} tras ${d.deliveries} entregas (${d.reason})`).join("; ") : "ninguno"],
+    ["Instancias creadas", String(r.instances)],
+  ];
+  for (const [k, v] of rows) kv.append(el("dt", { textContent: k }), el("dd", { textContent: v }));
+
+  const read = reading(o, r);
+  const box = $("reading");
+  box.className = "msg " + read.kind;
+  box.textContent = read.text;
+}
+
+for (const id of ["scenario", "failure", "failTimes", "maxDeliveries", "instances", "idem"])
+  $(id).addEventListener("input", refresh);
+
+// ---------- tema ----------
+try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+$("theme").addEventListener("click", () => {
+  const dark = document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+  const next = dark ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("theme", next); } catch (e) {}
+});
+
+// ---------- quiz ----------
+const questions = [
+  { q: "Una cola dispara tu función. ¿Qué garantía de entrega es la habitual?",
+    o: ["Exactamente una vez, siempre", "Al menos una vez: el mismo mensaje puede llegar dos veces", "A lo sumo una vez"], a: 1,
+    e: "Azure Functions documenta 'at-least-once'. Tu código y los sistemas que toca tienen que tolerar duplicados." },
+  { q: "Tu función guarda un contador en un campo de la clase. ¿Qué problema tiene?",
+    o: ["Ninguno: la instancia siempre es la misma", "La instancia es efímera: otra invocación puede correr en una instancia nueva y perder el valor", "Solo falla con HTTP"], a: 1,
+    e: "No asumas que el estado de una invocación estará en la siguiente. El estado va detrás de un puerto (base, cola, caché)." },
+  { q: "Un POST debe responder rápido, pero el trabajo tarda. ¿Qué hacés?",
+    o: ["Hacer todo dentro del request", "Validar, guardar, dejar un mensaje en una cola y responder 202", "Lanzar un Task.Run y devolver"], a: 1,
+    e: "Responder 202 y diferir el trabajo con una cola es la receta de Microsoft. Task.Run puede morir con la instancia." },
+  { q: "Pediste 3 unidades y hay 1. ¿Cómo debería terminar la función?",
+    o: ["Lanzando una excepción", "Anunciando un rechazo y completando el mensaje", "Reintentando hasta que haya stock"], a: 1,
+    e: "'Sin stock' es un resultado de negocio. Una excepción causaría reintentos inútiles y un mensaje muerto." },
+  { q: "La función es idempotente y se cuelga justo después de reservar, antes de anunciar el evento. En el reintento…",
+    o: ["Reserva otra vez", "Ve que ya estaba hecho y no anuncia nada: el evento se perdió", "Anuncia el evento dos veces"], a: 1,
+    e: "Efecto y mensaje son dos escrituras separadas. El patrón outbox guarda el evento pendiente en la misma operación atómica. Pasalo por el laboratorio." },
+  { q: "¿Cómo se comunican dos funciones?",
+    o: ["Una llama a la otra por HTTP y espera", "Se dejan mensajes en una cola", "Comparten una variable estática"], a: 1,
+    e: "Microsoft recomienda colas para la comunicación entre funciones. Las llamadas directas atan los tiempos y los fallos." },
+  { q: "¿Para qué NO suele servir bien FaaS?",
+    o: ["Webhooks y tareas por evento", "Procesos largos que necesitan estado en memoria", "Tareas nocturnas"], a: 1,
+    e: "Fowler: las funciones suelen tener una duración máxima por invocación y no conservan estado local." },
+];
+let qi = 0, score = 0;
+function renderQuiz() {
+  const box = $("quizBox");
+  box.textContent = "";
+  if (qi >= questions.length) {
+    const p = el("p", { textContent: `Resultado: ${score} de ${questions.length}.` });
+    const b = el("button", { type: "button", textContent: "Reintentar" });
+    b.addEventListener("click", () => { qi = 0; score = 0; renderQuiz(); });
+    box.append(p, b);
+    return;
+  }
+  const q = questions[qi];
+  const h = el("h3", { textContent: `${qi + 1}/${questions.length} · ${q.q}` });
+  const fb = el("div", { className: "msg" });
+  fb.setAttribute("aria-live", "polite");
+  const next = el("button", { type: "button", textContent: "Siguiente", disabled: true });
+  next.addEventListener("click", () => { qi++; renderQuiz(); });
+  const opts = [];
+  q.o.forEach((text, i) => {
+    const b = el("button", { type: "button", className: "opt", textContent: text });
+    b.addEventListener("click", () => {
+      opts.forEach((x) => (x.disabled = true));
+      const right = i === q.a;
+      if (right) score++;
+      b.classList.add(right ? "right" : "wrong");
+      opts[q.a].classList.add("right");
+      fb.textContent = (right ? "¡Correcto! " : "No exactamente. ") + q.e;
+      fb.className = "msg " + (right ? "ok" : "err");
+      next.disabled = false;
+    });
+    opts.push(b);
+  });
+  box.append(h, ...opts, fb, next);
+}
+
+refresh();
+renderQuiz();
+</script>
+</body>
+</html>

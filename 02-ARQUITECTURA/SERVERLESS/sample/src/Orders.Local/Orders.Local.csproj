@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The COMPOSITION ROOT, like "func start" on a laptop: it picks the store, creates the platform, registers each
+    function with its trigger and options. It is the only project that knows the concrete store and the host.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Faas.Runtime\Faas.Runtime.csproj" />
+    <ProjectReference Include="..\Orders.Functions\Orders.Functions.csproj" />
+  </ItemGroup>
+
+</Project>
