@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The sales DOMAIN filters. Each one knows the pipeline contract (IFilter) and its own input and output types.
+    No filter references another filter: only the composition root (Sales.Host) decides which run and in what order.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sales.Pipeline\Sales.Pipeline.csproj" />
+  </ItemGroup>
+
+</Project>

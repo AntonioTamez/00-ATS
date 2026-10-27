@@ -22,7 +22,7 @@ Cada arquitectura se documenta con el mismo formato: **guía paso a paso**, **pr
 | 18 | Clean + Screaming (combinación) | Dependencias hacia adentro + estructura que grita el negocio | Hecha | `CLEAN-SCREAMING/` |
 | 14 | Serverless / FaaS | Distribuidas | Pendiente | |
 | 15 | Microkernel / Plugins | Extensibilidad | Hecha | `MICROKERNEL/` |
-| 16 | Pipes & Filters | Procesamiento por etapas | Pendiente | |
+| 16 | Pipes & Filters | Procesamiento por etapas | Hecha | `PIPES-AND-FILTERS/` |
 | 17 | Atomic Design + Container-Presentational + Micro-frontends | Frontend | Pendiente | |
 
 ## Detalle
