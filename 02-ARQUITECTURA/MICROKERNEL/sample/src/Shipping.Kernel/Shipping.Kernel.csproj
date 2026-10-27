@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The CORE SYSTEM. It knows the contracts and nothing about any concrete carrier. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shipping.Contracts\Shipping.Contracts.csproj" />
+    <InternalsVisibleTo Include="Shipping.Tests" />
+  </ItemGroup>
+
+</Project>
