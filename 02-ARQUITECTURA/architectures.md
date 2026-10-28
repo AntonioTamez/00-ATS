@@ -26,6 +26,15 @@ Para ver todas juntas (ejes, cuándo elegir cada una, combinaciones y estado de 
 | 15 | Microkernel / Plugins | Extensibilidad | Hecha | `MICROKERNEL/` |
 | 16 | Pipes & Filters | Procesamiento por etapas | Hecha | `PIPES-AND-FILTERS/` |
 | 17 | Atomic Design + Container-Presentational + Micro-frontends | Frontend | Hecha | `FRONTEND/` |
+| 19 | Saga (orquestada vs coreografiada) | Distribuidas / consistencia | Pendiente | `SAGA/` |
+| 20 | BFF (Backend for Frontend) | Distribuidas / integración con frontend | Pendiente | `BFF/` |
+| 21 | Strangler Fig | Migración incremental | Pendiente | `STRANGLER-FIG/` |
+
+Notas de las pendientes:
+
+- **Saga:** transacciones de negocio entre servicios sin transacción distribuida, con compensaciones. Se apoya en Microservicios y Event-Driven, y es el hilo natural del outbox que quedó abierto en Serverless.
+- **BFF:** un backend por tipo de cliente que agrega y adapta las llamadas a los servicios. Se apoya en Frontend (micro-frontends) y Microservicios.
+- **Strangler Fig:** reemplazar un sistema legado por partes detrás de una fachada, junto con la Anti-Corruption Layer. Se apoya en Modular Monolith y Microservicios.
 
 ## Detalle
 
