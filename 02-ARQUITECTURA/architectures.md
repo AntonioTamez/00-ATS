@@ -2,6 +2,8 @@
 
 Cada arquitectura se documenta con el mismo formato: **guía paso a paso**, **proyecto de referencia .NET con tests de arquitectura**, **portal interactivo para novatos** y **comparativa** con las anteriores.
 
+Para ver todas juntas (ejes, cuándo elegir cada una, combinaciones y estado de verificación): [`COMPARATIVA-GLOBAL.md`](COMPARATIVA-GLOBAL.md).
+
 ## Estado
 
 | # | Arquitectura | Familia | Estado | Carpeta |
@@ -23,7 +25,7 @@ Cada arquitectura se documenta con el mismo formato: **guía paso a paso**, **pr
 | 14 | Serverless / FaaS | Distribuidas | Hecha | `SERVERLESS/` |
 | 15 | Microkernel / Plugins | Extensibilidad | Hecha | `MICROKERNEL/` |
 | 16 | Pipes & Filters | Procesamiento por etapas | Hecha | `PIPES-AND-FILTERS/` |
-| 17 | Atomic Design + Container-Presentational + Micro-frontends | Frontend | Pendiente | |
+| 17 | Atomic Design + Container-Presentational + Micro-frontends | Frontend | Hecha | `FRONTEND/` |
 
 ## Detalle
 

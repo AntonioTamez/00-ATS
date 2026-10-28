@@ -1,0 +1,34 @@
+/* Every micro-frontend owns one class prefix: ds- (design system), catalog-, cart-, shell-. Only :root and body are global. */
+:root { --fg: #1c1c1a; --muted: #5d5d57; --line: #deded8; --bg: #f7f7f5; --card: #fff; --ok: #2e8b57; --warn: #b7791f; --bad: #c0392b; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg: #ececE6; --muted: #a4a49b; --line: #34342f; --bg: #151514; --card: #1e1e1c; }
+}
+body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: var(--fg); background: var(--bg); }
+
+.shell-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); }
+.shell-columns { display: grid; gap: 16px; padding: 16px; grid-template-columns: 1fr; }
+@media (min-width: 800px) { .shell-columns { grid-template-columns: 2fr 1fr; } }
+.shell-failed { border: 1px solid var(--bad); border-radius: 8px; padding: 12px; }
+
+.ds-button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line); padding: 6px 12px; color: var(--fg); background: var(--card); }
+.ds-button--primary { background: var(--fg); color: var(--bg); }
+.ds-button:disabled { opacity: .45; cursor: not-allowed; }
+.ds-badge { font-size: .8rem; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); }
+.ds-badge--success { border-color: var(--ok); }
+.ds-badge--warning { border-color: var(--warn); }
+.ds-badge--danger { border-color: var(--bad); }
+.ds-heading { margin: 0 0 8px; }
+.ds-input { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
+.ds-search { display: flex; gap: 8px; }
+.ds-stepper { display: inline-flex; gap: 6px; align-items: center; }
+.ds-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.ds-card__footer { margin-top: 8px; }
+
+.catalog-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.catalog-product { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.catalog-layout__toolbar { margin: 8px 0 12px; }
+.catalog-status--error { border: 1px solid var(--bad); border-radius: 8px; padding: 8px 12px; }
+
+.cart-lines { list-style: none; margin: 0; padding: 0; }
+.cart-line { display: grid; gap: 6px; grid-template-columns: 1fr auto auto; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.cart-summary { font-weight: 600; }

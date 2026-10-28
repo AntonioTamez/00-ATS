@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontend por capas para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --ok:#2e8b57;--bad:#c0392b;--warn:#b7791f;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:66ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button,select{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.two{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:800px){.two{grid-template-columns:1fr 1fr}}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0;white-space:pre-wrap;word-break:break-word}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+.small{font-size:.85rem;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.msg{min-height:2.6em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}.msg.warn{border-left:4px solid var(--warn)}
+ul.log{list-style:none;margin:0;padding:0}
+ul.log li{padding:5px 8px;border-left:4px solid var(--line);margin:4px 0;background:var(--code);border-radius:4px;font-size:.88rem;font-family:ui-monospace,Consolas,monospace}
+ul.log li.ok{border-color:var(--ok)}ul.log li.bad{border-color:var(--bad)}
+.ctl{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:10px 0}
+.ctl label{display:flex;flex-direction:column;gap:4px;font-size:.92rem}
+.slot{border:1px dashed var(--line);border-radius:12px;padding:10px;min-height:7em}
+.slot h4{margin:0 0 6px;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.preview{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg)}
+/* the preview uses the same prefixes the sample uses */
+.ds-button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);padding:4px 10px;color:var(--fg);background:var(--card)}
+.ds-button--primary{background:var(--fg);color:var(--bg)}
+.ds-button:disabled{opacity:.45;cursor:not-allowed}
+.ds-badge{font-size:.78rem;padding:1px 8px;border-radius:99px;border:1px solid var(--line)}
+.ds-badge--success{border-color:var(--ok)}.ds-badge--warning{border-color:var(--warn)}.ds-badge--danger{border-color:var(--bad)}
+.ds-heading{margin:0 0 6px;font-size:1rem}
+.ds-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.ds-card__footer{margin-top:6px}
+.catalog-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.catalog-product{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.shell-failed{border:1px solid var(--bad);border-radius:8px;padding:8px 10px}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Frontend por capas para novatos</h1>
+  <p class="lead">Tres ideas en una misma tienda: armá la interfaz con átomos y moléculas, separá lo que muestra de lo que sabe, y repartila entre equipos que entregan por separado.</p>
+</header>
+<nav>
+  <a href="#idea">La idea</a><a href="#atomic">Atomic Design</a><a href="#container">Container / Presentational</a><a href="#shell">Micro-frontends</a><a href="#limites">Límites</a><a href="#quiz">Quiz</a>
+  <button id="theme" type="button">Tema</button>
+</nav>
+
+<section id="idea">
+<h2>1. Tres preguntas distintas</h2>
+<div class="grid">
+  <div class="card"><h3>Atomic Design</h3><p>¿De qué piezas se compone la interfaz? Átomos, moléculas, organismos, templates y páginas.</p></div>
+  <div class="card"><h3>Container / Presentational</h3><p>¿Quién sabe <i>qué</i> datos mostrar y quién sabe <i>cómo</i> se ven? El contenedor tiene el estado; lo demás son funciones puras.</p></div>
+  <div class="card"><h3>Micro-frontends</h3><p>¿Cómo se reparte la aplicación entre equipos que entregan por separado? Un shell los carga y se protege de sus fallos.</p></div>
+</div>
+<pre>shell ──(import dinámico desde el manifest)──► catalog ─┐
+  │                                                        ├─► design-system (átomos, moléculas)
+  └──────────────────────────────────────────► cart ──────┘
+catalog ──"cart/add-item"──► bus de eventos ──► cart ──"cart/changed"──► encabezado del shell</pre>
+</section>
+
+<section id="atomic">
+<h2>2. Clasificador: ¿qué nivel es?</h2>
+<p>Elegí el nivel de cada pieza de la tienda. Atención al último: no todo es un nivel.</p>
+<div class="card quiz" id="classifier"></div>
+</section>
+
+<section id="container">
+<h2>3. Laboratorio: una función pura, muchos estados</h2>
+<p>La página del catálogo es una <b>función de sus props</b>. Elegí un estado y mirá lo que dibuja; el contenedor es quien decide en cuál estamos.</p>
+<div class="ctl">
+  <label>Estado que le pasa el contenedor
+    <select id="state">
+      <option value="loading">Cargando</option>
+      <option value="error">Error al cargar</option>
+      <option value="ready">Listo (todos)</option>
+      <option value="search">Listo, buscando "design"</option>
+      <option value="nomatch">Listo, buscando "zzz"</option>
+    </select>
+  </label>
+</div>
+<div class="two">
+  <div><h3>Props (lo único que recibe)</h3><pre id="props"></pre><p class="small">Mismas props → mismo HTML, siempre. No hay <code>fetch</code>, reloj ni estado adentro.</p></div>
+  <div><h3>Lo que dibuja</h3><div class="preview" id="preview"></div></div>
+</div>
+<h3>El HTML que produce</h3>
+<pre id="html"></pre>
+<div class="row"><button type="button" id="addBtn">Simular un clic en el primer "Add to cart" disponible</button></div>
+<div class="msg" id="clickMsg"></div>
+</section>
+
+<section id="shell">
+<h2>4. Laboratorio: el shell y sus micro-frontends</h2>
+<p>El shell carga cada micro-frontend desde una lista y lo monta en su espacio. Rompé uno a propósito y mirá cómo reacciona. Es la misma lógica de decisión que <code>shell/loader.js</code>.</p>
+<div class="ctl">
+  <label>catalog
+    <select id="catalogMode"><option value="ok">Funciona</option><option value="missing">No se encuentra el módulo</option><option value="contract">Habla otro contrato (99)</option><option value="throws">Lanza al montarse</option><option value="ds2">Necesita design-system 2.x</option></select>
+  </label>
+  <label>cart
+    <select id="cartMode"><option value="ok">Funciona</option><option value="missing">No se encuentra el módulo</option><option value="contract">Habla otro contrato (99)</option><option value="throws">Lanza al montarse</option><option value="ds2">Necesita design-system 2.x</option></select>
+  </label>
+</div>
+<div class="row"><button type="button" id="startShell">Iniciar el shell</button><button type="button" id="stopShell">Detener</button><span class="small">Encabezado: carrito con <b id="count">0</b> item(s)</span></div>
+<div class="two">
+  <div class="slot" id="slotMain"><h4>main</h4><div id="mainBody"></div></div>
+  <div class="slot" id="slotAside"><h4>aside</h4><div id="asideBody"></div></div>
+</div>
+<h3>Informe del shell</h3>
+<ul class="log" id="report"></ul>
+<div class="msg" id="shellMsg"></div>
+</section>
+
+<section id="limites">
+<h2>5. Lo que NO es</h2>
+<div class="grid">
+  <div class="card"><h3>No es un framework</h3><p><code>h()</code> y el adaptador al DOM son de juguete. La arquitectura no depende de eso, pero el repintado ingenuo pierde el foco y el texto a medio escribir.</p></div>
+  <div class="card"><h3>No aísla la ejecución</h3><p>Los micro-frontends comparten página, runtime y design system. El aislamiento es por contrato, versiones y prefijos de clases, no por iframes ni Shadow DOM.</p></div>
+  <div class="card"><h3>No tiene despliegues separados</h3><p>Todo vive en un repo y un servidor. El principal beneficio de los micro-frontends, entregar por separado, queda sin demostrar.</p></div>
+</div>
+</section>
+
+<section id="quizSection">
+<h2 id="quiz">6. Quiz</h2>
+<div class="card quiz" id="quizBox"></div>
+</section>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+
+// <logic> — a faithful, small mirror of the sample's runtime, design system, catalog and shell decisions (no DOM)
+const VERSION = "1.2.0";
+const STATIC_PRODUCTS = [
+  { id: "p1", title: "Clean Architecture", priceCents: 3499, stock: 5 },
+  { id: "p2", title: "Domain-Driven Design", priceCents: 5499, stock: 0 },
+  { id: "p3", title: "Atomic Design", priceCents: 2999, stock: 12 },
+  { id: "p4", title: "Building Microservices", priceCents: 4599, stock: 3 },
+];
+
+function h(type, props, ...children) {
+  const kids = [];
+  const push = (list) => { for (const c of list) { if (Array.isArray(c)) push(c); else if (c !== null && c !== undefined && c !== false && c !== true) kids.push(c); } };
+  push(children);
+  if (typeof type === "function") return type({ ...(props || {}), children: kids });
+  return { type, props: { ...(props || {}) }, children: kids };
+}
+const ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+const escapeHtml = (t) => String(t).replace(/[&<>"']/g, (c) => ESC[c]);
+const ALIASES = { className: "class", htmlFor: "for", defaultValue: "value" };
+function attributeEntries(props) {
+  const out = [];
+  for (const [name, value] of Object.entries(props)) {
+    if (name === "children" || /^on[A-Z]/.test(name) || typeof value === "function") continue;
+    if (value === false || value === null || value === undefined) continue;
+    out.push([ALIASES[name] || name, value === true ? "" : String(value)]);
+  }
+  return out;
+}
+function renderToString(node) {
+  if (node === null || node === undefined || node === false || node === true) return "";
+  if (Array.isArray(node)) return node.map(renderToString).join("");
+  if (typeof node === "string" || typeof node === "number") return escapeHtml(node);
+  const attrs = attributeEntries(node.props).map(([n, v]) => (v === "" ? " " + n : ` ${n}="${escapeHtml(v)}"`)).join("");
+  return `<${node.type}${attrs}>${node.children.map(renderToString).join("")}</${node.type}>`;
+}
+
+function formatMoney(cents) {
+  const abs = Math.abs(cents);
+  return `${cents < 0 ? "-" : ""}$${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, "0")}`;
+}
+// atoms
+const Button = ({ label, onClick, variant = "primary", disabled = false, testId }) =>
+  h("button", { type: "button", className: `ds-button ds-button--${variant}`, disabled, onClick, "data-testid": testId }, label);
+const Badge = ({ text, tone = "neutral" }) => h("span", { className: `ds-badge ds-badge--${tone}` }, text);
+const Heading = ({ level = 2, text }) => h(`h${Math.min(6, Math.max(1, level))}`, { className: "ds-heading" }, text);
+const Price = ({ cents }) => h("span", { className: "ds-price" }, formatMoney(cents));
+// molecule
+const Card = ({ title, children = [], footer = null, testId }) =>
+  h("article", { className: "ds-card", "data-testid": testId }, Heading({ level: 3, text: title }), h("div", { className: "ds-card__body" }, children), footer ? h("footer", { className: "ds-card__footer" }, footer) : null);
+// catalog domain
+const filterProducts = (products, term) => { const t = term.trim().toLowerCase(); return t === "" ? products : products.filter((p) => p.title.toLowerCase().includes(t)); };
+function stockStatus(p) {
+  if (p.stock <= 0) return { label: "Out of stock", tone: "danger", canBuy: false };
+  if (p.stock <= 3) return { label: "Low stock", tone: "warning", canBuy: true };
+  return { label: "In stock", tone: "success", canBuy: true };
+}
+// organisms
+function ProductCard({ product, onAdd }) {
+  const s = stockStatus(product);
+  return Card({
+    title: product.title, testId: `product-${product.id}`,
+    children: h("div", { className: "catalog-product" }, Badge({ text: s.label, tone: s.tone }), Price({ cents: product.priceCents })),
+    footer: Button({ label: "Add to cart", disabled: !s.canBuy, onClick: () => onAdd(product.id), testId: `add-${product.id}` }),
+  });
+}
+const ProductGrid = ({ products, onAdd }) =>
+  products.length === 0 ? h("p", { className: "catalog-empty" }, "No products match your search.") : h("div", { className: "catalog-grid" }, products.map((product) => ProductCard({ product, onAdd })));
+// page
+function CatalogPage({ state, onAdd, onRetry }) {
+  const body = state.status === "loading" ? h("p", { className: "catalog-status" }, "Loading…")
+    : state.status === "error" ? h("div", { className: "catalog-status catalog-status--error" }, h("p", null, state.error), Button({ label: "Retry", onClick: onRetry, testId: "retry" }))
+    : ProductGrid({ products: filterProducts(state.products, state.term), onAdd });
+  return h("section", { className: "catalog-layout" }, h("header", null, Heading({ level: 2, text: "Catalog" })), h("div", { className: "catalog-layout__toolbar" }, `Search: "${state.term}"`), h("div", { className: "catalog-layout__content" }, body));
+}
+const PRESETS = {
+  loading: { status: "loading", products: [], term: "", error: "" },
+  error: { status: "error", products: [], term: "", error: "Could not load the catalog: offline" },
+  ready: { status: "ready", products: STATIC_PRODUCTS, term: "", error: "" },
+  search: { status: "ready", products: STATIC_PRODUCTS, term: "design", error: "" },
+  nomatch: { status: "ready", products: STATIC_PRODUCTS, term: "zzz", error: "" },
+};
+
+// cart domain + shell decisions
+function addItem(cart, item) {
+  const existing = cart.lines.find((l) => l.productId === item.productId);
+  return existing
+    ? { lines: cart.lines.map((l) => (l === existing ? { ...l, quantity: l.quantity + 1 } : l)) }
+    : { lines: [...cart.lines, { ...item, quantity: 1 }] };
+}
+const itemCount = (cart) => cart.lines.reduce((s, l) => s + l.quantity, 0);
+
+const MANIFEST = [
+  { name: "catalog", slot: "main", requires: 1 },
+  { name: "cart", slot: "aside", requires: 1 },
+];
+// mode: ok | missing | contract | throws | ds2 ; decides what loading this micro-frontend leads to
+function loadRemote(entry, mode) {
+  const requires = mode === "ds2" ? 2 : entry.requires;
+  if (requires !== Number(VERSION.split(".")[0])) return { failure: `it needs design-system ${requires}.x but the shell provides ${VERSION}` };
+  if (mode === "missing") return { failure: `cannot find ./${entry.name}.js` };
+  if (mode === "contract") return { failure: "it speaks contract 99, the shell speaks 1" };
+  if (mode === "throws") return { failure: "kaboom" };
+  return { ok: true };
+}
+function startShell(modes) {
+  const results = MANIFEST.map((entry) => ({ entry, ...loadRemote(entry, modes[entry.name]) }));
+  return {
+    mounted: results.filter((r) => r.ok).map((r) => r.entry.name),
+    failed: results.filter((r) => r.failure).map((r) => ({ name: r.entry.name, reason: r.failure })),
+  };
+}
+// </logic>
+
+// ---------- DOM helpers (the portal's own, separate from the sample) ----------
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  if (props) Object.assign(e, props);
+  e.append(...kids);
+  return e;
+}
+function toDom(node) {
+  if (node === null || node === undefined || node === false || node === true) return [];
+  if (Array.isArray(node)) return node.flatMap(toDom);
+  if (typeof node === "string" || typeof node === "number") return [document.createTextNode(String(node))];
+  const e = document.createElement(node.type);
+  for (const [n, v] of attributeEntries(node.props)) e.setAttribute(n, v);
+  for (const [n, handler] of Object.entries(node.props)) if (n === "onClick" && typeof handler === "function") e.addEventListener("click", () => handler({}));
+  e.append(...node.children.flatMap(toDom));
+  return [e];
+}
+
+// ---------- 2. classifier ----------
+const LEVELS = ["Átomo", "Molécula", "Organismo", "Template", "Página", "Contenedor (no es un nivel)"];
+const PIECES = [
+  { name: "Button", level: 0, why: "No se puede dividir más: un botón sin saber qué hace." },
+  { name: "Price", level: 0, why: "Un átomo: muestra un monto. Convertirlo en texto es lo único que sabe." },
+  { name: "SearchField", level: 1, why: "Una molécula: un campo y un botón que juntos significan 'buscar'." },
+  { name: "QuantityStepper", level: 1, why: "Una molécula: dos botones y un número. Sin ninguna noción de carrito." },
+  { name: "Card", level: 1, why: "Una molécula genérica: título, cuerpo y pie. No sabe qué contiene." },
+  { name: "ProductCard", level: 2, why: "Un organismo: menciona productos y stock. En cuanto aparece el negocio, deja el design system." },
+  { name: "CartTable", level: 2, why: "Un organismo: una sección completa de la interfaz con líneas, pasos y botones de quitar." },
+  { name: "CatalogTemplate", level: 3, why: "Un template: dónde va el encabezado, la barra y el contenido, sin contenido real." },
+  { name: "CatalogPage", level: 4, why: "Una página: el template con contenido real para un estado de la pantalla." },
+  { name: "CatalogContainer", level: 5, why: "Un contenedor: tiene el estado y los efectos. No es un nivel atómico y no escribe markup." },
+];
+let ci = 0, cscore = 0;
+function renderClassifier() {
+  const box = $("classifier");
+  box.textContent = "";
+  if (ci >= PIECES.length) {
+    const again = el("button", { type: "button", textContent: "Reintentar" });
+    again.addEventListener("click", () => { ci = 0; cscore = 0; renderClassifier(); });
+    box.append(el("p", { textContent: `Resultado: ${cscore} de ${PIECES.length}.` }), again);
+    return;
+  }
+  const piece = PIECES[ci];
+  const fb = el("div", { className: "msg" });
+  fb.setAttribute("aria-live", "polite");
+  const next = el("button", { type: "button", textContent: "Siguiente", disabled: true });
+  next.addEventListener("click", () => { ci++; renderClassifier(); });
+  const buttons = LEVELS.map((label, i) => {
+    const b = el("button", { type: "button", className: "opt", textContent: label });
+    b.addEventListener("click", () => {
+      buttons.forEach((x) => (x.disabled = true));
+      const right = i === piece.level;
+      if (right) cscore++;
+      b.classList.add(right ? "right" : "wrong");
+      buttons[piece.level].classList.add("right");
+      fb.textContent = (right ? "¡Correcto! " : "No exactamente. ") + piece.why;
+      fb.className = "msg " + (right ? "ok" : "err");
+      next.disabled = false;
+    });
+    return b;
+  });
+  box.append(el("h3", { textContent: `${ci + 1}/${PIECES.length} · ${piece.name}` }), ...buttons, fb, next);
+}
+
+// ---------- 3. presentational lab ----------
+let purchases = 0;
+function renderLab() {
+  const key = $("state").value;
+  const state = PRESETS[key];
+  $("props").textContent = JSON.stringify({ ...state, products: state.status === "ready" ? `[${state.products.length} products]` : "[]" }, null, 2);
+  const tree = CatalogPage({ state, onAdd: (id) => { purchases++; $("clickMsg").className = "msg ok"; $("clickMsg").textContent = `El componente solo llamó a onAdd("${id}") (${purchases} vez/veces). Qué hacer con eso lo decide el contenedor: acá nada, porque no hay contenedor.`; }, onRetry: () => {} });
+  $("html").textContent = renderToString(tree);
+  const preview = $("preview");
+  preview.textContent = "";
+  preview.append(...toDom(tree));
+  $("addBtn").disabled = !preview.querySelector('[data-testid^="add-"]:not(:disabled)');
+}
+$("state").addEventListener("input", () => { $("clickMsg").textContent = ""; $("clickMsg").className = "msg"; renderLab(); });
+$("addBtn").addEventListener("click", () => { const b = $("preview").querySelector('[data-testid^="add-"]:not(:disabled)'); if (b) b.click(); });
+
+// ---------- 4. shell lab ----------
+let cart = { lines: [] };
+let running = null;
+function fillSlot(body, name, failure, content) {
+  body.textContent = "";
+  if (failure) {
+    body.append(...toDom(h("div", { className: "shell-failed" }, h("strong", null, `${name} is unavailable`), h("p", null, failure))));
+  } else content(body);
+}
+function renderShell() {
+  $("count").textContent = String(itemCount(cart));
+  const main = $("mainBody"), aside = $("asideBody");
+  main.textContent = ""; aside.textContent = "";
+  if (!running) return;
+  const reason = (name) => (running.failed.find((f) => f.name === name) || {}).reason;
+  fillSlot(main, "catalog", reason("catalog"), (body) => {
+    body.append(...toDom(ProductGrid({ products: STATIC_PRODUCTS.slice(0, 3), onAdd: publishAdd })));
+  });
+  fillSlot(aside, "cart", reason("cart"), (body) => {
+    if (cart.lines.length === 0) body.append(el("p", { textContent: "Your cart is empty." }));
+    else for (const l of cart.lines) body.append(el("p", { textContent: `${l.title} × ${l.quantity} · ${formatMoney(l.quantity * l.priceCents)}` }));
+  });
+}
+// the "bus": the catalog announces, whoever is mounted and listening reacts
+function publishAdd(productId) {
+  const p = STATIC_PRODUCTS.find((x) => x.id === productId);
+  const cartListening = running && running.mounted.includes("cart");
+  if (cartListening) cart = addItem(cart, { productId: p.id, title: p.title, priceCents: p.priceCents });
+  $("shellMsg").className = "msg " + (cartListening ? "ok" : "warn");
+  $("shellMsg").textContent = cartListening
+    ? `catalog publicó cart/add-item para ${p.title}; el carrito lo escuchó y el encabezado muestra ${itemCount(cart)}.`
+    : `catalog publicó cart/add-item para ${p.title}, pero el carrito no está montado: nadie lo escucha. El catálogo sigue funcionando y nada se rompe.`;
+  renderShell();
+}
+function renderReport() {
+  const list = $("report");
+  list.textContent = "";
+  if (!running) { list.append(el("li", { textContent: "El shell no está iniciado." })); return; }
+  for (const name of running.mounted) list.append(el("li", { className: "ok", textContent: `${name}: montado` }));
+  for (const f of running.failed) list.append(el("li", { className: "bad", textContent: `${f.name}: ${f.reason}` }));
+}
+$("startShell").addEventListener("click", () => {
+  cart = { lines: [] };
+  running = startShell({ catalog: $("catalogMode").value, cart: $("cartMode").value });
+  $("shellMsg").className = "msg";
+  $("shellMsg").textContent = running.failed.length ? "Los micro-frontends que fallaron se reemplazaron por un mensaje; los demás siguen funcionando." : "Todo montado. Probá agregar un libro desde el catálogo.";
+  renderReport(); renderShell();
+});
+$("stopShell").addEventListener("click", () => { running = null; cart = { lines: [] }; $("shellMsg").className = "msg"; $("shellMsg").textContent = "Shell detenido: los espacios quedan vacíos y nadie escucha el bus."; renderReport(); renderShell(); });
+
+// ---------- tema ----------
+try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+$("theme").addEventListener("click", () => {
+  const dark = document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+  const next = dark ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("theme", next); } catch (e) {}
+});
+
+// ---------- quiz ----------
+const questions = [
+  { q: "¿Qué hace un componente presentacional?",
+    o: ["Pide los datos al servidor y los guarda", "Recibe props y devuelve elementos: no tiene estado ni efectos", "Decide a qué micro-frontend avisar"], a: 1,
+    e: "Los presentacionales 'care about how data is shown'. Por eso son funciones puras, fáciles de probar y de reutilizar." },
+  { q: "Un contenedor del sample ¿puede escribir markup?",
+    o: ["Sí, es cómodo", "No: solo le pasa estado y manejadores a la página", "Solo etiquetas simples"], a: 1,
+    e: "Mezclar el 'qué' con el 'cómo' obliga a probar todo junto. Un test del sample prohíbe h(...) en los contenedores." },
+  { q: "¿Dónde debe vivir un ProductCard que menciona stock y precios del catálogo?",
+    o: ["En el design system compartido", "En el micro-frontend del catálogo, como organismo", "En el shell"], a: 1,
+    e: "El design system no sabe de negocio: solo átomos y moléculas. En cuanto aparece el dominio, la pieza pertenece a su micro-frontend." },
+  { q: "El carrito no carga (404). ¿Qué debería pasar en el shell?",
+    o: ["Se rompe toda la página", "Se muestra un mensaje en su espacio y el catálogo sigue funcionando", "Se reintenta para siempre"], a: 1,
+    e: "Es el punto de un shell resiliente. Probalo en el laboratorio: el informe lista qué falló y por qué." },
+  { q: "¿Cómo se avisan 'catalog' y 'cart' de una compra?",
+    o: ["catalog importa el carrito y lo llama", "Con un evento de contrato conocido, sin importarse", "Con una variable global compartida"], a: 1,
+    e: "micro-frontends.org: 'Use Browser Events for communication'. El sample valida el payload contra el contrato al publicar." },
+  { q: "Un micro-frontend se construyó para el design system 2.x y el shell trae 1.2.0. ¿Qué hace el shell?",
+    o: ["Lo monta igual y espera lo mejor", "Se niega a montarlo y dice por qué", "Actualiza el design system solo"], a: 1,
+    e: "El manifest declara la versión mayor requerida. Una incompatibilidad se detecta antes de montar, no en medio de la pantalla." },
+  { q: "Tenés un solo equipo y se despliega todo junto. ¿Micro-frontends?",
+    o: ["Sí, siempre es mejor", "Probablemente no: un monolito modular de frontend cuesta menos", "Solo si usás React"], a: 1,
+    e: "Fowler enumera los costos: dependencias duplicadas, fragmentación, más pipelines. Se justifican cuando hay equipos que necesitan entregar por separado." },
+];
+let qi = 0, score = 0;
+function renderQuiz() {
+  const box = $("quizBox");
+  box.textContent = "";
+  if (qi >= questions.length) {
+    const b = el("button", { type: "button", textContent: "Reintentar" });
+    b.addEventListener("click", () => { qi = 0; score = 0; renderQuiz(); });
+    box.append(el("p", { textContent: `Resultado: ${score} de ${questions.length}.` }), b);
+    return;
+  }
+  const q = questions[qi];
+  const fb = el("div", { className: "msg" });
+  fb.setAttribute("aria-live", "polite");
+  const next = el("button", { type: "button", textContent: "Siguiente", disabled: true });
+  next.addEventListener("click", () => { qi++; renderQuiz(); });
+  const opts = q.o.map((text, i) => {
+    const b = el("button", { type: "button", className: "opt", textContent: text });
+    b.addEventListener("click", () => {
+      opts.forEach((x) => (x.disabled = true));
+      const right = i === q.a;
+      if (right) score++;
+      b.classList.add(right ? "right" : "wrong");
+      opts[q.a].classList.add("right");
+      fb.textContent = (right ? "¡Correcto! " : "No exactamente. ") + q.e;
+      fb.className = "msg " + (right ? "ok" : "err");
+      next.disabled = false;
+    });
+    return b;
+  });
+  box.append(el("h3", { textContent: `${qi + 1}/${questions.length} · ${q.q}` }), ...opts, fb, next);
+}
+
+renderClassifier();
+renderLab();
+renderReport();
+renderShell();
+renderQuiz();
+</script>
+</body>
+</html>
