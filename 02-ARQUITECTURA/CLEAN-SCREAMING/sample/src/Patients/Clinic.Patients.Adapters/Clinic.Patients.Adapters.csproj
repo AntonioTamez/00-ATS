@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- FRAMEWORKS AND ADAPTERS (outer circle): the web framework and the storage live here, and only here. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Clinic.Patients.Application\Clinic.Patients.Application.csproj" />
+    <ProjectReference Include="..\Clinic.Patients.Domain\Clinic.Patients.Domain.csproj" />
+    <ProjectReference Include="..\..\Clinic.SharedKernel\Clinic.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

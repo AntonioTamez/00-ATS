@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The view model knows the Model. It must NOT know any UI framework or any concrete View. -->
+    <ProjectReference Include="..\Shop.Model\Shop.Model.csproj" />
+  </ItemGroup>
+
+</Project>

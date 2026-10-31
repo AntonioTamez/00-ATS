@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The View knows the ViewModel (and, through it, nothing else). It never talks to the Model directly. -->
+    <ProjectReference Include="..\Shop.ViewModels\Shop.ViewModels.csproj" />
+  </ItemGroup>
+
+</Project>

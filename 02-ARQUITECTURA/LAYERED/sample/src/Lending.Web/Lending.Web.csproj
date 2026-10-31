@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Closed layers: the presentation layer talks ONLY to the layer immediately below. No reference to Lending.Data. -->
+    <ProjectReference Include="..\Lending.Business\Lending.Business.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clean + Screaming para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --biz:#2e8b57;--tech:#c0392b;--a:#3a8fd9;--warn:#b7791f;--ok:#2e8b57;--bad:#c0392b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:66ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
+.scroll{overflow-x:auto}
+.small{font-size:.85rem;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.seg button.on{background:var(--fg);color:var(--bg)}
+.msg{min-height:2.6em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}
+.tree{font-family:ui-monospace,Consolas,monospace;font-size:.9rem;white-space:pre;background:var(--code);border-radius:10px;padding:12px 14px;overflow-x:auto;min-height:14em}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;color:#fff;padding:1px 8px;border-radius:99px}
+.tag.biz{background:var(--biz)}.tag.tech{background:var(--tech)}
+.matrix td,.matrix th{text-align:center}
+.matrix td.ok{background:color-mix(in srgb,var(--ok) 18%,transparent)}
+.matrix td.bad{background:color-mix(in srgb,var(--bad) 18%,transparent)}
+.matrix td.me{background:var(--code);color:var(--muted)}
+.matrix td button{width:100%}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Clean + Screaming para novatos</h1>
+  <p class="lead">Dos ideas de Uncle Bob que se completan: <b>Screaming</b> hace que las carpetas hablen del negocio; <b>Clean</b> hace que las dependencias apunten hacia adentro. Juntas, y con el <b>compilador</b> vigilando.</p>
+</header>
+<nav>
+  <a href="#ideas">Las dos ideas</a><a href="#arboles">Tres árboles</a><a href="#matriz">Quién conoce a quién</a><a href="#costura">Costuras</a><a href="#quiz">Quiz</a>
+  <button id="theme" type="button">Tema</button>
+</nav>
+
+<section id="ideas">
+<h2>1. Cada una cubre el hueco de la otra</h2>
+<div class="grid">
+  <div class="card"><h3>Screaming <span class="tag biz">negocio</span></h3>
+    <p>"Your architectures should tell readers about the system, not about the frameworks you used."</p>
+    <p class="small">Le falta: no dice nada sobre hacia dónde apuntan las dependencias.</p></div>
+  <div class="card"><h3>Clean <span class="tag tech">dependencias</span></h3>
+    <p>"Source code dependencies can only point inwards."</p>
+    <p class="small">Le falta: no dice cómo se llaman las carpetas; el resultado típico grita <code>Domain/Application/Infrastructure</code>.</p></div>
+  <div class="card"><h3>Juntas</h3>
+    <p>Primer nivel = capacidades del negocio. Dentro de cada una, los círculos de Clean como <b>proyectos</b>: el compilador impide romper la regla.</p></div>
+</div>
+</section>
+
+<section id="arboles">
+<h2>2. Mismo sistema, tres árboles</h2>
+<p>Elegí uno y leé qué te cuenta el árbol.</p>
+<div class="row seg" id="treeButtons"></div>
+<div class="tree" id="tree"></div>
+<div class="msg" id="treeMsg"></div>
+</section>
+
+<section id="matriz">
+<h2>3. Matriz de referencias entre proyectos</h2>
+<p>Tocá una celda: ¿puede el proyecto de la <b>fila</b> referenciar al de la <b>columna</b>? Las celdas verdes existen; las rojas las prohíbe el diseño.</p>
+<div class="scroll"><table class="matrix" id="matrix"></table></div>
+<div class="msg" id="matrixMsg">Tocá una celda para ver la explicación.</div>
+</section>
+
+<section id="costura">
+<h2>4. Cómo se hablan las capacidades</h2>
+<p>Citas necesita saber si un paciente existe, pero <b>no puede</b> referenciar a Pacientes desde sus círculos interiores. Armá la costura paso a paso.</p>
+<div class="row"><button type="button" id="seamNext">Siguiente paso</button><button type="button" id="seamReset">Reiniciar</button></div>
+<pre id="seamCode"></pre>
+<div class="msg" id="seamMsg"></div>
+</section>
+
+<section id="quizSection">
+<h2 id="quiz">5. Quiz</h2>
+<div class="card quiz" id="quizBox"></div>
+</section>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+
+/* ---------- theme ---------- */
+try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}
+$("theme").addEventListener("click",()=>{
+  const dark=document.documentElement.dataset.theme==="dark"||(!document.documentElement.dataset.theme&&matchMedia("(prefers-color-scheme: dark)").matches);
+  const next=dark?"light":"dark";document.documentElement.dataset.theme=next;
+  try{localStorage.setItem("theme",next);}catch(e){}
+});
+
+/* ---------- trees ---------- */
+const trees = {
+  clean: {
+    label: "Solo Clean",
+    text: "src/\n├─ TodoApp.Domain\n├─ TodoApp.Application\n├─ TodoApp.Infrastructure\n└─ TodoApp.Api",
+    msg: "Dependencias impecables... pero el árbol grita capas. ¿De qué trata el sistema? No se sabe."
+  },
+  screaming: {
+    label: "Solo Screaming",
+    text: "src/Clinic/\n├─ Patients/\n├─ Appointments/\n├─ Billing/\n└─ Program.cs",
+    msg: "Grita 'clínica'. Pero un solo proyecto: la frontera entre capacidades la vigila un test de texto, no el compilador."
+  },
+  both: {
+    label: "Clean + Screaming",
+    text: "src/\n├─ Patients/\n│  ├─ Clinic.Patients.Domain\n│  ├─ Clinic.Patients.Application\n│  └─ Clinic.Patients.Adapters\n├─ Appointments/   (los mismos 3)\n├─ Billing/        (los mismos 3)\n├─ Clinic.SharedKernel\n└─ Clinic.Host",
+    msg: "Primer nivel: qué hace el sistema. Segundo: cómo está hecho. Y cada círculo es un proyecto, así que lo defiende el compilador."
+  }
+};
+function showTree(key){
+  $("tree").textContent = trees[key].text;
+  $("treeMsg").textContent = trees[key].msg;
+  $("treeMsg").className = "msg " + (key === "both" ? "ok" : "err");
+  [...$("treeButtons").children].forEach(b => b.classList.toggle("on", b.dataset.key === key));
+}
+Object.keys(trees).forEach(key => {
+  const b = document.createElement("button");
+  b.type = "button"; b.dataset.key = key; b.textContent = trees[key].label;
+  b.addEventListener("click", () => showTree(key));
+  $("treeButtons").appendChild(b);
+});
+showTree("clean");
+
+/* ---------- reference matrix ---------- */
+const projects = [
+  "Patients.Domain","Patients.Application","Patients.Adapters",
+  "Appointments.Domain","Appointments.Application","Appointments.Adapters",
+  "Billing.Domain","Billing.Application","Billing.Adapters","SharedKernel"
+];
+const allowed = new Set([
+  "Patients.Domain>SharedKernel",
+  "Patients.Application>Patients.Domain","Patients.Application>SharedKernel",
+  "Patients.Adapters>Patients.Application","Patients.Adapters>Patients.Domain","Patients.Adapters>SharedKernel",
+  "Appointments.Domain>SharedKernel",
+  "Appointments.Application>Appointments.Domain","Appointments.Application>SharedKernel",
+  "Appointments.Adapters>Appointments.Application","Appointments.Adapters>Appointments.Domain","Appointments.Adapters>SharedKernel",
+  "Appointments.Adapters>Patients.Application",
+  "Billing.Domain>SharedKernel",
+  "Billing.Application>Billing.Domain","Billing.Application>SharedKernel",
+  "Billing.Adapters>Billing.Application","Billing.Adapters>Billing.Domain","Billing.Adapters>SharedKernel",
+  "Billing.Adapters>Appointments.Application"
+]);
+function why(from, to){
+  const ok = allowed.has(from + ">" + to);
+  if (from === to) return [null, "Es el mismo proyecto."];
+  const cap = (p) => p.split(".")[0];
+  const layer = (p) => p.split(".")[1];
+  if (ok && cap(from) !== cap(to)) return [true, `${from} → ${to}: la costura entre capacidades. Solo un ADAPTADOR (el borde) puede tocar la capa Application del vecino, y para implementar un puerto del consumidor.`];
+  if (ok && to === "SharedKernel") return [true, `${from} → SharedKernel: las dos excepciones compartidas. Es lo único que todos pueden conocer.`];
+  if (ok) return [true, `${from} → ${to}: hacia adentro dentro de la misma capacidad. Es la regla de dependencia de Clean.`];
+  if (from === "SharedKernel") return [false, "El kernel no conoce a nadie: es la raíz."];
+  if (layer(to) === "Adapters") return [false, `${from} → ${to}: un círculo interior no puede conocer al exterior ("Nothing in an inner circle can know anything at all about something in an outer circle").`];
+  if (cap(from) !== cap(to)) return [false, `${from} → ${to}: ningún círculo interior conoce a otra capacidad, y los adaptadores solo llegan a la capa Application de su vecino directo.`];
+  return [false, `${from} → ${to}: apuntaría hacia afuera en el mismo círculo de dependencias. Clean solo permite hacia adentro.`];
+}
+const table = $("matrix");
+const head = document.createElement("tr");
+head.appendChild(document.createElement("th"));
+projects.forEach(p => { const th = document.createElement("th"); th.textContent = p; th.style.fontSize = ".72rem"; head.appendChild(th); });
+table.appendChild(head);
+projects.forEach(from => {
+  const tr = document.createElement("tr");
+  const th = document.createElement("th"); th.textContent = from; th.style.fontSize = ".72rem"; tr.appendChild(th);
+  projects.forEach(to => {
+    const td = document.createElement("td");
+    const [ok, text] = why(from, to);
+    if (ok === null) { td.className = "me"; td.textContent = "·"; }
+    else {
+      td.className = ok ? "ok" : "bad";
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = ok ? "✓" : "✗"; b.setAttribute("aria-label", text);
+      b.addEventListener("click", () => { $("matrixMsg").textContent = text; $("matrixMsg").className = "msg " + (ok ? "ok" : "err"); });
+      td.appendChild(b);
+    }
+    tr.appendChild(td);
+  });
+  table.appendChild(tr);
+});
+
+/* ---------- seam stepper ---------- */
+const seamSteps = [
+  { code: "// Appointments.Application  (círculo 2)\npublic interface IPatientLookup { bool Exists(Guid patientId); }",
+    msg: "1. Citas define el PUERTO con las palabras que ella necesita. No conoce a Pacientes." },
+  { code: "// BookAppointment usa el puerto\nif (!patients.Exists(patientId)) throw new NotFoundException(...);",
+    msg: "2. El caso de uso solo habla con la interfaz. Para probarlo alcanza un fake de 3 líneas." },
+  { code: "// Appointments.Adapters  (círculo exterior)\npublic sealed class PatientLookupAdapter(GetPatient getPatient) : IPatientLookup\n{\n    public bool Exists(Guid id) => getPatient.Find(id) is not null;\n}",
+    msg: "3. El ADAPTADOR vive en el borde y es el único que referencia Patients.Application." },
+  { code: "// Clinic.Host\nbuilder.Services.AddPatients();\nbuilder.Services.AddAppointments();",
+    msg: "4. El Host enchufa todo. Si mañana Pacientes pasa a ser un servicio, solo cambia este adaptador." }
+];
+let seam = 0;
+function showSeam(){
+  const s = seamSteps.slice(0, seam + 1);
+  $("seamCode").textContent = s.map(x => x.code).join("\n\n");
+  $("seamMsg").textContent = seamSteps[seam].msg;
+  $("seamMsg").className = "msg ok";
+  $("seamNext").disabled = seam >= seamSteps.length - 1;
+}
+$("seamNext").addEventListener("click", () => { if (seam < seamSteps.length - 1) { seam++; showSeam(); } });
+$("seamReset").addEventListener("click", () => { seam = 0; showSeam(); });
+showSeam();
+
+/* ---------- quiz ---------- */
+const questions = [
+  { q: "Abrís src/ y ves Domain, Application, Infrastructure, Api. ¿Qué falta?",
+    o: ["Screaming: el primer nivel grita capas, no el negocio","Nada, es la estructura correcta","Más proyectos"], a: 0,
+    e: "Clean no dice cómo agrupar. Con Screaming el primer nivel serían las capacidades." },
+  { q: "¿Qué impide que Patients.Domain use una clase de Appointments?",
+    o: ["Una convención del equipo","El compilador: no existe la referencia de proyecto","El linter"], a: 1,
+    e: "Cada círculo es un proyecto. Sin ProjectReference, no compila." },
+  { q: "¿Quién define el puerto IPatientLookup?",
+    o: ["Patients, porque es quien tiene los datos","Appointments, el consumidor, con lo que necesita","Un proyecto de interfaces compartido"], a: 1,
+    e: "El consumidor define el puerto y el vecino lo implementa en su borde (inversión de dependencias)." },
+  { q: "¿Dónde puede un proyecto de una capacidad referenciar a otra capacidad?",
+    o: ["En cualquier círculo","Solo en Adapters, hacia la capa Application del vecino","Solo en Domain"], a: 1,
+    e: "Los círculos interiores nunca conocen a otra capacidad; los adaptadores son el borde." },
+  { q: "Un caso de uso devuelve la entidad Patient directamente. ¿Problema?",
+    o: ["Ninguno","Lo que cruza la frontera debe ser un dato simple (DTO), no la entidad","Solo es un problema de rendimiento"], a: 1,
+    e: "'Data that crosses the boundaries is simple data structures'. Un test lo vigila." },
+  { q: "CancelAppointment cancela y luego cobra la tarifa. ¿Qué riesgo queda?",
+    o: ["Ninguno","Si el cobro falla, la cita queda cancelada sin factura (no hay atomicidad entre capacidades)","Se cobra dos veces siempre"], a: 1,
+    e: "Es un límite honesto del sample: haría falta transacción, outbox o compensación." },
+  { q: "Tu app es un CRUD pequeño con una sola capacidad. ¿Conviene esta combinación?",
+    o: ["Sí, siempre","No: es ceremonia de más; alcanza con carpetas por capacidad","Solo si usás microservicios"], a: 1,
+    e: "Once proyectos para un dominio diminuto solo se justifican para enseñar." }
+];
+let qi = 0, score = 0;
+function renderQuiz(){
+  const box = $("quizBox");
+  box.textContent = "";
+  if (qi >= questions.length) {
+    const p = document.createElement("p");
+    p.textContent = `Resultado: ${score} de ${questions.length}.`;
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = "Reintentar";
+    b.addEventListener("click", () => { qi = 0; score = 0; renderQuiz(); });
+    box.append(p, b);
+    return;
+  }
+  const q = questions[qi];
+  const h = document.createElement("h3"); h.textContent = `${qi + 1}/${questions.length} · ${q.q}`;
+  const fb = document.createElement("div"); fb.className = "msg"; fb.setAttribute("aria-live", "polite");
+  const next = document.createElement("button"); next.type = "button"; next.textContent = "Siguiente"; next.disabled = true;
+  next.addEventListener("click", () => { qi++; renderQuiz(); });
+  const opts = [];
+  q.o.forEach((text, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "opt"; b.textContent = text;
+    b.addEventListener("click", () => {
+      opts.forEach(x => x.disabled = true);
+      const right = i === q.a;
+      if (right) score++;
+      b.classList.add(right ? "right" : "wrong");
+      opts[q.a].classList.add("right");
+      fb.textContent = (right ? "¡Correcto! " : "No exactamente. ") + q.e;
+      fb.className = "msg " + (right ? "ok" : "err");
+      next.disabled = false;
+    });
+    opts.push(b);
+  });
+  box.append(h, ...opts, fb, next);
+}
+renderQuiz();
+</script>
+</body>
+</html>

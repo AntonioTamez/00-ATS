@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event Sourcing para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --ev:#7a5cc7;--st:#2e8b57;--cmd:#d9622b;--a:#3a8fd9;--ok:#2e8b57;--bad:#c0392b;--warn:#b7791f;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1060px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:66ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:5px 8px;vertical-align:top}
+.scroll{overflow-x:auto}
+.small{font-size:.85rem;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+input[type=number],input[type=text],select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px;max-width:100%}
+input[type=number]{width:4.5em}input[type=text]{width:10em}
+input[type=range]{width:100%}
+.seg button.on,.steps button.on{background:var(--fg);color:var(--bg)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.msg{min-height:2.6em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}.msg.warn{border-left:4px solid var(--warn)}
+/* ledger */
+.lab{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:900px){.lab{grid-template-columns:1.25fr 1fr}}
+.ledger{width:100%;font-family:ui-monospace,Consolas,monospace;font-size:.8rem}
+.ledger td,.ledger th{padding:3px 6px}
+.ledger tr.cut td{opacity:.35}
+.ledger tr.snap td{border-bottom:2px solid var(--st)}
+.ledger tr.new td{background:color-mix(in srgb,var(--ev) 12%,transparent)}
+.ledger tr.comp td:nth-child(2){color:var(--cmd);font-weight:700}
+.big{font-size:2.2rem;font-weight:700;line-height:1.1}
+.state{border:2px solid var(--st);border-radius:12px;padding:10px 14px}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;color:#fff;padding:1px 8px;border-radius:99px}
+.tag.ev{background:var(--ev)}.tag.st{background:var(--st)}.tag.a{background:var(--a)}.tag.c{background:var(--cmd)}
+.clerks{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+@media(max-width:640px){.clerks{grid-template-columns:1fr}}
+.clerk{border:2px solid var(--line);border-radius:12px;padding:10px 12px}
+.clerk.a{border-color:var(--a)}.clerk.b{border-color:var(--cmd)}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--a)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#lab">Libro mayor</a><a href="#snap">Snapshots</a><a href="#conc">Conflictos</a>
+  <a href="#ver">Versiones</a><a href="#cuando">¿Cuándo?</a><a href="#vs">vs otras</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>Event Sourcing<br>para novatos</h1>
+  <p class="lead">En vez de guardar "hay 7 en stock", guardas <b>lo que pasó</b>: "llegaron 10", "salieron 3". El 7 se <b>calcula</b> repitiendo los hechos. Nada se edita ni se borra: lo que se equivoca se corrige con otro hecho.</p>
+</header>
+
+<h2 id="que">1. La idea</h2>
+<div class="grid">
+  <div class="card"><h3>CRUD</h3><p>Una fila con el valor actual. Cambiar es <b>sobrescribir</b>: el pasado se pierde, salvo que añadas una auditoría aparte.</p></div>
+  <div class="card"><h3><span class="tag ev">Event Sourcing</span></h3><p>Una lista de <b>hechos</b> que solo crece. El estado actual es lo que sale de repetirlos. El historial <b>es</b> el dato.</p></div>
+  <div class="card"><h3>El precio</h3><p>Más piezas: versionar eventos, controlar la concurrencia, construir lecturas aparte, cuidar los datos personales.</p></div>
+</div>
+
+<h2 id="lab">2. Libro mayor: añade hechos y repítelos</h2>
+<p>Ejecuta comandos. Cada uno <b>decide</b> (puede rechazarse) y, si procede, <b>añade un evento</b>. El número grande no se guarda: se reconstruye.</p>
+<div class="lab">
+  <div class="card">
+    <div class="row">
+      <button id="bRecv">Recibir</button><button id="bShip">Enviar</button><button id="bAdj">Ajustar (±)</button>
+      <input type="number" id="qty" value="5" aria-label="Cantidad"><input type="text" id="note" value="Acme" aria-label="Proveedor / referencia / motivo">
+      <button id="bReset">Reiniciar</button>
+    </div>
+    <div class="msg" id="cmdMsg" aria-live="polite">Pulsa un comando.</div>
+    <div class="scroll"><table class="ledger" id="ledger"></table></div>
+    <p class="small">Fila verde con borde = ahí se tomó un snapshot. No hay botón para editar ni borrar filas: el almacén solo sabe <b>añadir</b> y <b>leer</b>.</p>
+  </div>
+  <div>
+    <div class="state"><span class="tag st">Estado reconstruido</span>
+      <div class="big" id="onHand">0</div><div class="small" id="stateInfo"></div></div>
+    <h3 style="margin-top:12px">Máquina del tiempo</h3>
+    <input type="range" id="slider" min="0" max="0" value="0" aria-label="Versión a la que viajar">
+    <div class="small" id="sliderInfo"></div>
+    <h3 style="margin-top:12px">Modelo de lectura (proyección)</h3>
+    <div class="card" id="proj" style="padding:8px 12px"></div>
+    <div class="row"><button id="bWipe">Borrar la proyección</button><button id="bRebuild">Reconstruirla desde los eventos</button></div>
+  </div>
+</div>
+
+<h2 id="snap">3. Snapshots: una caché, no la verdad</h2>
+<p>Con miles de eventos, repetirlos todos en cada carga es lento. Cada <b>N</b> eventos se guarda una foto del estado; cargar = foto + los eventos posteriores.</p>
+<div class="row"><label>Foto cada <input type="number" id="every" value="5" min="0"> eventos (0 = nunca)</label></div>
+<div class="msg" id="loadMsg"></div>
+<p class="small">Los tests prueban que cargar con o sin snapshot da <b>exactamente</b> el mismo estado, y que se puede borrar el snapshot y reconstruirlo.</p>
+
+<h2 id="conc">4. Dos empleados a la vez: concurrencia optimista</h2>
+<p>Los dos cargan el artículo en la misma versión y deciden con lo que ven. El almacén solo acepta el primero que escriba: el otro debe <b>recargar y volver a decidir</b>.</p>
+<div class="clerks">
+  <div class="clerk a"><h3 style="color:var(--a)">Empleado A</h3><div class="small" id="aView"></div>
+    <div class="row"><button id="aLoad">Cargar</button><button id="aSave">Enviar 4 y guardar</button></div></div>
+  <div class="clerk b"><h3 style="color:var(--cmd)">Empleado B</h3><div class="small" id="bView"></div>
+    <div class="row"><button id="bLoad">Cargar</button><button id="bSave">Enviar 4 y guardar</button></div></div>
+</div>
+<div class="msg" id="concMsg" style="margin-top:10px" aria-live="polite">Carga ambos y guarda primero el de uno y luego el del otro.</div>
+
+<h2 id="ver">5. Los eventos viejos no se reescriben</h2>
+<p>Un día cambia la forma de un evento. Los ya guardados <b>no se tocan</b>: un <i>upcaster</i> los convierte al leerlos.</p>
+<div class="steps seg" id="verBtns"></div>
+<pre><code id="verCode"></code></pre>
+<div class="msg" id="verMsg"></div>
+
+<h2 id="cuando">6. ¿Lo necesito?</h2>
+<p>Microsoft: <i>"For most systems and most parts of a system, traditional data management is sufficient."</i> Marca lo que se parece a tu caso:</p>
+<div class="card" id="check"></div>
+<div class="msg" id="checkMsg" style="margin-top:10px"></div>
+
+<h2 id="vs">7. No confundir</h2>
+<div class="scroll"><table>
+<tr><th></th><th>Event Sourcing</th><th>CQRS</th><th>Event-Driven</th></tr>
+<tr><td>Es…</td><td>Cómo se <b>guarda</b> el estado</td><td>Separar <b>lecturas y escrituras</b></td><td>Cómo se <b>comunican</b> las partes</td></tr>
+<tr><td>Los eventos…</td><td>Son el dato persistente</td><td>Pueden alimentar la lectura</td><td>Son mensajes en un broker</td></tr>
+<tr><td>¿Depende de los otros?</td><td>No</td><td>No</td><td>No</td></tr>
+</table></div>
+<p style="margin-top:10px">Se combinan a menudo, pero cada uno existe sin los demás. Un <b>audit log</b> aparte no es Event Sourcing: puede desincronizarse del estado.</p>
+
+<h2 id="errores">8. Errores típicos</h2>
+<div class="grid">
+  <div class="card"><h3>Eventos sin intención</h3><p><code>StockChanged(42)</code> pierde el porqué. Prefiere <code>StockShipped(4, "ORD-1")</code>.</p></div>
+  <div class="card"><h3>Editar o borrar un evento</h3><p>Rompe la historia. Se corrige con un evento compensatorio.</p></div>
+  <div class="card"><h3>Validar al reproducir</h3><p>Una regla nueva impediría reconstruir el pasado. <code>Apply</code> no valida.</p></div>
+  <div class="card"><h3>Cambiar un evento sin upcaster</h3><p>Los viejos dejan de poder leerse.</p></div>
+  <div class="card"><h3>Datos personales en los eventos</h3><p>Chocan con el derecho al olvido. Guárdalos fuera o cífralos por sujeto.</p></div>
+  <div class="card"><h3>Usarlo para todo</h3><p>Aplícalo donde aporta (un libro mayor sí, el perfil de usuario no).</p></div>
+</div>
+
+<h2 id="quiz">9. Quiz</h2>
+<div class="card quiz" id="quizBox"></div>
+
+<footer>Kit completo: <code>docs/GUIA-EVENT-SOURCING.md</code>, <code>docs/EVENT-SOURCING-VS-OTRAS.md</code> y <code>sample/</code>.</footer>
+</div>
+
+<script>
+(function(){
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function $(id){return document.getElementById(id);}
+
+  try{var t=localStorage.getItem('es-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}
+  $('theme').addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('es-theme',next);}catch(e){}
+  });
+
+  /* ---------- the ledger (mirrors the sample's rules) ---------- */
+  var events,snapshots,proj,projCheckpoint,viewVersion,lastNew;
+  function reset(){
+    events=[{v:1,type:'ItemRegistered',detail:'BOOK-1 "Clean Architecture"',delta:0}];
+    snapshots={};proj=null;projCheckpoint=0;lastNew=1;
+    viewVersion=1;
+    $('cmdMsg').className='msg';$('cmdMsg').textContent='Pulsa un comando.';
+    maybeSnapshot(1);catchUp();render(true);
+  }
+  function stateAt(version){ // replay: the state is NEVER stored, only derived
+    var onHand=0,applied=0;
+    events.forEach(function(e){if(e.v<=version){onHand+=e.delta;applied++;}});
+    return {onHand:onHand,applied:applied};
+  }
+  function currentVersion(){return events.length;}
+  function every(){var n=parseInt($('every').value,10);return isNaN(n)||n<0?0:n;}
+  function maybeSnapshot(prevVersion){
+    var n=every(),v=currentVersion();
+    if(n>0&&Math.floor(v/n)>Math.floor(prevVersion/n)){snapshots[v]=stateAt(v).onHand;}
+  }
+  function add(type,detail,delta){
+    var prev=currentVersion();
+    events.push({v:prev+1,type:type,detail:detail,delta:delta});
+    lastNew=prev+1;maybeSnapshot(prev);catchUp();
+    viewVersion=currentVersion();
+  }
+  function say(kind,text){var m=$('cmdMsg');m.className='msg '+kind;m.textContent=text;}
+  function qty(){var q=parseInt($('qty').value,10);return isNaN(q)?0:q;}
+  $('bRecv').addEventListener('click',function(){
+    var q=qty();if(q<=0){say('err','Regla del dominio: la cantidad recibida debe ser positiva. No se añade ningún evento.');return;}
+    add('StockReceived','from '+($('note').value.trim()||'(no supplier)'),q);say('ok','Evento añadido: StockReceived +'+q+'.');render(true);
+  });
+  $('bShip').addEventListener('click',function(){
+    var q=qty(),have=stateAt(currentVersion()).onHand;
+    if(q<=0){say('err','Regla del dominio: la cantidad enviada debe ser positiva.');return;}
+    if(q>have){say('err','Regla del dominio: no se pueden enviar '+q+', solo hay '+have+'. NO se añade ningún evento.');return;}
+    add('StockShipped','ref '+($('note').value.trim()||'?'),-q);say('ok','Evento añadido: StockShipped −'+q+'.');render(true);
+  });
+  $('bAdj').addEventListener('click',function(){
+    var q=qty(),have=stateAt(currentVersion()).onHand;
+    if(q===0){say('err','Regla del dominio: un ajuste no puede ser cero.');return;}
+    if(!$('note').value.trim()){say('err','Regla del dominio: un ajuste necesita un motivo (escríbelo en el campo de texto).');return;}
+    if(have+q<0){say('err','Regla del dominio: el ajuste dejaría '+(have+q)+' en stock.');return;}
+    add('StockAdjusted','"'+$('note').value.trim()+'"',q);say('ok','Corrección = evento NUEVO: StockAdjusted '+(q>0?'+':'')+q+'. El error anterior sigue en la historia.');render(true);
+  });
+  $('bReset').addEventListener('click',reset);
+  $('every').addEventListener('input',function(){snapshots={};for(var v=1;v<=currentVersion();v++){var n=every();if(n>0&&v%n===0)snapshots[v]=stateAt(v).onHand;}render(false);});
+  $('slider').addEventListener('input',function(){viewVersion=parseInt($('slider').value,10);render(false);});
+
+  /* projection: a disposable read model with a checkpoint */
+  function catchUp(){
+    if(proj===null)return;
+    events.forEach(function(e){if(e.v>projCheckpoint){proj.onHand+=e.delta;if(e.delta!==0)proj.moves++;projCheckpoint=e.v;}});
+  }
+  $('bWipe').addEventListener('click',function(){proj=null;projCheckpoint=0;render(false);});
+  $('bRebuild').addEventListener('click',function(){proj={onHand:0,moves:0};projCheckpoint=0;catchUp();render(false);});
+
+  function render(fresh){
+    var v=currentVersion();
+    $('slider').max=v;$('slider').value=Math.min(viewVersion,v);
+    var shown=Math.min(viewVersion,v),s=stateAt(shown);
+    $('onHand').textContent=s.onHand;
+    $('stateInfo').textContent='Reconstruido repitiendo '+s.applied+' evento(s)'+(shown<v?' (viajando al pasado: versión '+shown+' de '+v+')':' (versión actual)');
+    $('sliderInfo').textContent='Versión '+shown+' / '+v+(shown<v?' — los eventos posteriores quedan atenuados en la tabla.':'');
+    var rows='<tr><th>v</th><th>Evento</th><th>Detalle</th><th>Δ</th></tr>';
+    events.forEach(function(e){
+      var cls=[];if(e.v>shown)cls.push('cut');if(snapshots[e.v]!==undefined)cls.push('snap');if(fresh&&e.v===lastNew&&v>1)cls.push('new');if(e.type==='StockAdjusted')cls.push('comp');
+      rows+='<tr class="'+cls.join(' ')+'"><td>'+e.v+'</td><td>'+esc(e.type)+'</td><td>'+esc(e.detail)+'</td><td>'+(e.delta>0?'+':'')+(e.delta||'')+'</td></tr>';
+    });
+    $('ledger').innerHTML=rows;
+    if(proj===null)$('proj').innerHTML='<i>(proyección borrada: no hay modelo de lectura)</i>';
+    else $('proj').innerHTML='En stock: <b>'+proj.onHand+'</b> · movimientos: '+proj.moves+' · checkpoint: evento #'+projCheckpoint+(proj.onHand!==stateAt(v).onHand?' <b style="color:var(--bad)">(desfasada)</b>':'');
+    // load cost with snapshots
+    var n=every(),snapVersions=Object.keys(snapshots).map(Number).filter(function(x){return x<=v;}).sort(function(a,b){return a-b;});
+    var last=snapVersions.length?snapVersions[snapVersions.length-1]:0;
+    $('loadMsg').className='msg ok';
+    $('loadMsg').textContent=n===0?'Sin snapshots: cargar repite los '+v+' eventos.'
+      :(last===0?'Aún no hay snapshot (se toma al llegar a '+n+' eventos). Cargar repite los '+v+' evento(s).'
+      :'Último snapshot: versión '+last+'. Cargar lee la foto + '+(v-last)+' evento(s) en vez de '+v+'.');
+    renderClerks();
+  }
+
+  /* ---------- optimistic concurrency ---------- */
+  var A=null,B=null;
+  function loadClerk(c){return {version:currentVersion(),onHand:stateAt(currentVersion()).onHand};}
+  function clerkView(c,id){$(id).textContent=c?'Cargó la versión '+c.version+' (stock '+c.onHand+')':'(sin cargar)';}
+  function renderClerks(){clerkView(A,'aView');clerkView(B,'bView');}
+  function save(c,name){
+    var msg=$('concMsg');
+    if(!c){msg.className='msg warn';msg.textContent=name+': primero carga el artículo.';return null;}
+    if(c.onHand<4){msg.className='msg err';msg.textContent=name+': regla del dominio: no se pueden enviar 4, solo hay '+c.onHand+' (con lo que cargó).';return null;}
+    if(currentVersion()!==c.version){
+      msg.className='msg err';
+      msg.textContent=name+': ConcurrencyException. Esperaba la versión '+c.version+' pero el stream ya está en la '+currentVersion()+'. No se escribe nada. Recarga y decide de nuevo.';
+      return null;
+    }
+    add('StockShipped','ref '+name+'-4',-4);msg.className='msg ok';msg.textContent=name+': guardado (versión '+currentVersion()+').';render(true);return currentVersion();
+  }
+  $('aLoad').addEventListener('click',function(){A=loadClerk();renderClerks();});
+  $('bLoad').addEventListener('click',function(){B=loadClerk();renderClerks();});
+  $('aSave').addEventListener('click',function(){if(save(A,'A')!==null)A=null;renderClerks();});
+  $('bSave').addEventListener('click',function(){if(save(B,'B')!==null)B=null;renderClerks();});
+
+  /* ---------- versions / upcasting ---------- */
+  var VER=[
+    {n:'Evento guardado hace tiempo (v1)',code:'// En el almacén, tal cual se escribió (NO se modifica nunca):\n{ "type": "stock-received", "schemaVersion": 1, "data": { "qty": 7 } }',msg:'Así se guardó cuando la aplicación aún no registraba proveedor y llamaba "qty" a la cantidad.'},
+    {n:'Forma actual (v2)',code:'// Eventos nuevos se escriben así:\n{ "type": "stock-received", "schemaVersion": 2, "data": { "quantity": 7, "supplier": "Acme" } }',msg:'La aplicación actual solo conoce esta forma.'},
+    {n:'Lo que ve el código: upcast al leer',code:'// Upcaster v1 → v2 (se aplica al LEER):\nv1 => new JsonObject { ["quantity"] = v1["qty"], ["supplier"] = null }\n\n// Resultado en memoria (el almacén sigue igual):\nStockReceived(Quantity: 7, Supplier: null)',msg:'El código solo maneja la última versión. Los upcasters se pueden encadenar (v1→v2→v3). Reescribir los eventos guardados rompería la inmutabilidad y es el último recurso.'}
+  ];
+  var vb=$('verBtns');
+  VER.forEach(function(x){
+    var b=document.createElement('button');b.textContent=x.n;
+    b.addEventListener('click',function(){[].forEach.call(vb.children,function(c){c.classList.toggle('on',c===b);});$('verCode').textContent=x.code;$('verMsg').className='msg';$('verMsg').textContent=x.msg;});
+    vb.appendChild(b);
+  });
+  vb.firstChild.click();
+
+  /* ---------- checklist ---------- */
+  var CH=[
+    ['Necesito saber exactamente qué pasó y cuándo (auditoría fuerte)',2],
+    ['Quiero poder reconstruir el estado de un momento pasado',2],
+    ['Quiero crear modelos de lectura nuevos a partir del historial',1],
+    ['Mi dominio es un libro mayor, inventario o similar',1],
+    ['Es un CRUD de altas, bajas y modificaciones sin historial relevante',-3],
+    ['Necesito lecturas siempre al día sin margen',-2],
+    ['El equipo no tiene experiencia con eventos y es un prototipo',-2]
+  ];
+  var ck=$('check');
+  CH.forEach(function(c,i){var l=document.createElement('label');l.style.display='block';l.style.cursor='pointer';l.innerHTML='<input type="checkbox" data-i="'+i+'"> '+esc(c[0]);ck.appendChild(l);});
+  ck.addEventListener('change',function(){
+    var s=0;[].forEach.call(ck.querySelectorAll('input:checked'),function(x){s+=CH[parseInt(x.dataset.i,10)][1];});
+    var n=$('checkMsg');n.className='msg '+(s>=4?'ok':s>=1?'warn':'err');
+    n.textContent=s>=4?'Hay motivos reales. Aplícalo solo a esa parte del sistema, no a todo.':s>=1?'Dudoso: una tabla de auditoría aparte puede darte lo que necesitas con mucho menos coste.':'Probablemente un CRUD ordenado te basta.';
+  });
+
+  /* ---------- quiz ---------- */
+  var Q=[
+    ['¿Qué guarda Event Sourcing?',['El valor actual de cada campo','La secuencia de hechos que produjo el estado','Una copia de seguridad diaria'],1,'El estado actual se deriva repitiendo los eventos.'],
+    ['Te equivocaste al registrar una salida. ¿Cómo se corrige?',['Editando el evento viejo','Borrando el evento','Con un nuevo evento que compensa (un ajuste)'],2,'Los eventos son inmutables; la corrección también queda en la historia.'],
+    ['¿Por qué Apply no valida?',['Por rendimiento','Porque un hecho ya ocurrido no se discute; si validara, una regla nueva impediría reconstruir el pasado','No hace falta'],1,'Los comandos deciden y pueden rechazar; reproducir sólo aplica hechos.'],
+    ['Dos empleados cargan la misma versión y ambos intentan guardar. ¿Qué pasa?',['Se guardan los dos','El primero se guarda; el segundo recibe un conflicto, recarga y vuelve a decidir','Se pierden ambos'],1,'Concurrencia optimista: el almacén exige la versión esperada del stream.'],
+    ['¿Qué es un snapshot?',['La fuente de verdad','Una caché del estado a una versión; se puede borrar y reconstruir desde los eventos','Un backup de la base'],1,'Es una optimización: los eventos siguen mandando.'],
+    ['Cambió la forma de un evento. ¿Qué haces con los ya guardados?',['Los reescribes','Los dejas y añades un upcaster que los convierte al leerlos','Los borras'],1,'Se conserva la inmutabilidad; el código sólo maneja la última versión.'],
+    ['¿Event Sourcing es lo mismo que CQRS?',['Sí','No: uno es cómo se guarda; el otro, separar lecturas de escrituras','Solo en .NET'],1,'Se combinan a menudo pero son independientes.']
+  ];
+  var qi=0,score=0,qbox=$('quizBox');
+  function showQ(){
+    if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: ya piensas en hechos.':score>=4?'Bien. Repasa concurrencia y versionado.':'Vuelve al libro mayor y juega con los comandos.')+'</p><button id="again">Reintentar</button>';
+      $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}
+    var q=Q[qi];
+    qbox.innerHTML='<p><b>'+(qi+1)+'/'+Q.length+'</b> '+esc(q[0])+'</p>'+q[1].map(function(o,i){return '<button class="opt" data-i="'+i+'">'+esc(o)+'</button>';}).join('')+'<div class="msg" id="qmsg" aria-live="polite"></div>';
+    [].forEach.call(qbox.querySelectorAll('.opt'),function(b){
+      b.addEventListener('click',function(){
+        var i=parseInt(b.dataset.i,10);
+        [].forEach.call(qbox.querySelectorAll('.opt'),function(x){x.disabled=true;});
+        b.classList.add(i===q[2]?'right':'wrong');
+        if(i!==q[2])qbox.querySelectorAll('.opt')[q[2]].classList.add('right'); else score++;
+        $('qmsg').innerHTML=esc(q[3])+' <button id="next">Siguiente</button>';
+        $('next').addEventListener('click',function(){qi++;showQ();});
+      });
+    });
+  }
+  showQ();
+  reset();
+  proj={onHand:0,moves:0};projCheckpoint=0;catchUp();render(false);
+  window.__es={get events(){return events;},get snapshots(){return snapshots;},stateAt:stateAt};
+})();
+</script>
+</body>
+</html>

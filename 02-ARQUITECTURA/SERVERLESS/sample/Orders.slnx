@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Faas.Runtime/Faas.Runtime.csproj" />
+    <Project Path="src/Orders.Functions/Orders.Functions.csproj" />
+    <Project Path="src/Orders.Local/Orders.Local.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Orders.Tests/Orders.Tests.csproj" />
+  </Folder>
+</Solution>

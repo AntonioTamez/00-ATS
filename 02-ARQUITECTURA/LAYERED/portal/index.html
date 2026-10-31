@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arquitectura en capas para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --web:#3a8fd9;--biz:#d9622b;--data:#2e8b57;--ok:#2e8b57;--bad:#c0392b;--warn:#b7791f;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:64ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
+.scroll{overflow-x:auto}
+.small{font-size:.85rem;color:var(--muted)}
+/* layer stack */
+.stack{display:grid;gap:6px;margin:12px 0}
+.layer{border:2px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--card);transition:background .2s,border-color .2s}
+.layer.web{border-color:var(--web)}.layer.biz{border-color:var(--biz)}.layer.data{border-color:var(--data)}
+.layer.on{background:color-mix(in srgb,var(--fg) 8%,var(--card))}
+.layer h3{margin:0}
+.layer .what{font-size:.88rem;color:var(--muted)}
+.down{text-align:center;color:var(--muted);font-size:.85rem}
+.msg{min-height:3em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}.msg.warn{border-left:4px solid var(--warn)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.seg button.on,.steps button.on{background:var(--fg);color:var(--bg)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+/* where does it go */
+.tag{display:inline-block;font-size:.75rem;font-weight:700;color:#fff;padding:1px 8px;border-radius:99px}
+.tag.web{background:var(--web)}.tag.biz{background:var(--biz)}.tag.data{background:var(--data)}
+.drill{font-size:1.02rem}
+.drill .opts{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+/* ripple */
+.ripple{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.ripple{grid-template-columns:1fr}}
+.col h3{font-size:.95rem}
+.cell{display:inline-block;margin:3px 4px 3px 0;padding:3px 10px;border-radius:8px;border:2px solid var(--line);font-size:.85rem;color:var(--muted)}
+.cell.hit{border-color:var(--bad);color:var(--fg);font-weight:600;background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--web)}
+.arrows{font-family:ui-monospace,Consolas,monospace;font-size:.85rem;white-space:pre;overflow-x:auto;background:var(--code);padding:10px 12px;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#flujo">Una petición</a><a href="#donde">¿Dónde va?</a>
+  <a href="#cambio">Un cambio</a><a href="#flecha">La flecha</a><a href="#cuando">¿Cuándo?</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>Arquitectura en capas<br>para novatos</h1>
+  <p class="lead">La estructura "de siempre": <b>presentación</b>, <b>negocio</b> y <b>datos</b>. Cada capa usa solo la de abajo. Es simple y suficiente en muchos casos, y es el punto de partida para entender por qué existen Clean, Hexagonal y las demás.</p>
+</header>
+
+<h2 id="que">1. La idea</h2>
+<div class="stack">
+  <div class="layer web"><h3 style="color:var(--web)">Presentación</h3><div class="what">Recibe HTTP, devuelve JSON, traduce errores a códigos. No tiene reglas.</div></div>
+  <div class="down">▼ usa</div>
+  <div class="layer biz"><h3 style="color:var(--biz)">Negocio</h3><div class="what">Las reglas: máximo 3 libros, 14 días de plazo, multa por retraso.</div></div>
+  <div class="down">▼ usa</div>
+  <div class="layer data"><h3 style="color:var(--data)">Datos</h3><div class="what">Tablas y consultas. Guarda y recupera; no decide nada.</div></div>
+</div>
+<div class="grid">
+  <div class="card"><h3>Capa ≠ nivel</h3><p>Una <b>capa</b> es una división del código. Un <b>nivel</b> (tier) es una máquina o proceso distinto. El ejemplo tiene 3 capas en 1 solo nivel.</p></div>
+  <div class="card"><h3>Capas cerradas</h3><p>Cada capa solo llama a la <b>inmediata</b> inferior. Presentación nunca toca Datos. Es lo que verifican los tests.</p></div>
+</div>
+
+<h2 id="flujo">2. Sigue una petición</h2>
+<p>Un miembro pide prestado un libro. Avanza para ver qué hace cada capa.</p>
+<div class="steps seg" id="flowBtns"></div>
+<div class="stack" id="flowStack">
+  <div class="layer web" data-l="web"><h3 style="color:var(--web)">Presentación</h3><div class="what" id="wText">—</div></div>
+  <div class="layer biz" data-l="biz"><h3 style="color:var(--biz)">Negocio</h3><div class="what" id="bText">—</div></div>
+  <div class="layer data" data-l="data"><h3 style="color:var(--data)">Datos</h3><div class="what" id="dText">—</div></div>
+</div>
+<div class="msg" id="flowMsg">Elige un paso.</div>
+
+<h2 id="donde">3. Juego: ¿en qué capa va?</h2>
+<div class="card drill" id="drill"></div>
+
+<h2 id="cambio">4. ¿Qué toca un cambio?</h2>
+<p>En capas, una funcionalidad suele <b>atravesar las tres</b>. Compara con agrupar por funcionalidad (Vertical Slice).</p>
+<div class="steps seg" id="chg"></div>
+<div class="ripple">
+  <div class="col card"><h3>En capas</h3><div id="rLayer"></div></div>
+  <div class="col card"><h3>Agrupado por funcionalidad (Vertical Slice)</h3><div id="rSlice"></div></div>
+</div>
+<div class="msg" id="rMsg" style="margin-top:10px"></div>
+<p class="small">Dato real del ejemplo: añadir un campo <code>Isbn</code> de punta a punta tocó 3 archivos (uno por capa) y 17 líneas, sin romper ningún test. Es barato aquí; el coste crece con el tamaño del sistema.</p>
+
+<h2 id="flecha">5. La flecha de dependencia</h2>
+<p>Esto es lo que cambia entre capas clásicas y Clean / Hexagonal / Onion:</p>
+<div class="steps seg" id="arrowBtns"></div>
+<div class="arrows" id="arrowDiagram"></div>
+<div class="msg" id="arrowMsg" style="margin-top:10px"></div>
+<pre><code>// Capas clásicas: el negocio recibe una CLASE concreta de datos
+public sealed class LoanService(BookRepository books, MemberRepository members, LoanRepository loans, TimeProvider clock)
+
+// Clean/Hexagonal: recibe una INTERFAZ que el negocio define y otro implementa
+public sealed class LoanService(IBookRepository books, ...)</code></pre>
+
+<h2 id="cuando">6. ¿Me sirve?</h2>
+<p>Microsoft la sitúa en dominios <i>"traditional"</i> con pocas actualizaciones. Marca lo que se parece a tu caso:</p>
+<div class="card" id="check"></div>
+<div class="msg" id="checkMsg" style="margin-top:10px"></div>
+
+<h2 id="errores">7. Errores típicos</h2>
+<div class="grid">
+  <div class="card"><h3>Negocio que solo reenvía</h3><p>Si la capa del medio es un CRUD de paso, añade código sin valor.</p></div>
+  <div class="card"><h3>Reglas en los endpoints</h3><p>Se duplican y no se prueban sin HTTP.</p></div>
+  <div class="card"><h3>Devolver las filas a la UI</h3><p>La pantalla queda atada a las tablas. Usa DTOs.</p></div>
+  <div class="card"><h3>Saltarse capas</h3><p>"La UI consulta la base, es más rápido": las reglas se esquivan.</p></div>
+  <div class="card"><h3>Un <code>Common</code> para todos</h3><p>Dependencia oculta y cajón de sastre.</p></div>
+  <div class="card"><h3>Negocio que solo se prueba con la base real</h3><p>Tests lentos y frágiles. Necesitas un seam o una base en memoria.</p></div>
+</div>
+
+<h2 id="quiz">8. Quiz</h2>
+<div class="card quiz" id="quizBox"></div>
+
+<footer>Kit completo: <code>docs/GUIA-LAYERED.md</code>, <code>docs/LAYERED-VS-OTRAS.md</code> y <code>sample/</code>.</footer>
+</div>
+
+<script>
+(function(){
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function $(id){return document.getElementById(id);}
+
+  try{var t=localStorage.getItem('layered-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}
+  $('theme').addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('layered-theme',next);}catch(e){}
+  });
+
+  /* ---------- request flow ---------- */
+  var FLOW=[
+    {n:'1. Llega la petición',on:['web'],w:'POST /loans {memberId:1, bookId:7}. Deserializa el JSON a NewLoanRequest.',b:'—',d:'—',m:'La presentación solo entiende HTTP y JSON. Todavía no decide nada.'},
+    {n:'2. Se llama al negocio',on:['web','biz'],w:'Llama a loans.Borrow(1, 7). No conoce la capa de datos.',b:'LoanService.Borrow(1, 7) empieza.',d:'—',m:'La presentación delega TODA decisión en la capa de negocio.'},
+    {n:'3. El negocio pide datos',on:['biz','data'],w:'—',b:'Necesita el miembro, el libro y los préstamos activos.',d:'MemberRepository.GetById(1), BookRepository.GetById(7), LoanRepository.GetActiveByBook(7)…',m:'El negocio usa los repositorios de la capa inferior. Recibe FILAS (records).'},
+    {n:'4. El negocio decide',on:['biz'],w:'—',b:'¿Libro libre? ¿Miembro con menos de 3 libros? Si no, lanza BusinessRuleException.',d:'—',m:'Aquí viven las reglas. Los datos solo respondieron preguntas.'},
+    {n:'5. Se guarda',on:['biz','data'],w:'—',b:'Crea un LoanRecord (vence en 14 días).',d:'LoanRepository.Insert(...) → guarda la fila.',m:'La capa de datos persiste lo que el negocio decidió.'},
+    {n:'6. Sube la respuesta',on:['biz','web'],w:'Recibe un LoanDto → Results.Created(201). Si hubo excepción: 422 o 404.',b:'Convierte la fila en un LoanDto y la devuelve. La fila NO sale de esta capa.',d:'—',m:'Por eso el negocio mapea a DTO: la presentación nunca ve las filas de la base.'}
+  ];
+  var fb=$('flowBtns');
+  FLOW.forEach(function(s,i){
+    var b=document.createElement('button');b.textContent=s.n;
+    b.addEventListener('click',function(){
+      [].forEach.call(fb.children,function(c){c.classList.toggle('on',c===b);});
+      [].forEach.call(document.querySelectorAll('#flowStack .layer'),function(l){l.classList.toggle('on',s.on.indexOf(l.dataset.l)>=0);});
+      $('wText').textContent=s.w;$('bText').textContent=s.b;$('dText').textContent=s.d;$('flowMsg').textContent=s.m;
+    });
+    fb.appendChild(b);
+  });
+  fb.firstChild.click();
+
+  /* ---------- where does it go ---------- */
+  var ITEMS=[
+    ['"Un miembro no puede tener más de 3 libros prestados"','biz','Es una regla del negocio.'],
+    ['Convertir una excepción de "no encontrado" en HTTP 404','web','Traducir a HTTP es trabajo de la presentación.'],
+    ['Consulta: "dame los préstamos activos del miembro"','data','Es una pregunta sobre las tablas.'],
+    ['Calcular la multa: 0,50 € por día de retraso','biz','Es un cálculo de negocio.'],
+    ['Decidir el formato JSON de la respuesta','web','Cómo se presenta es cosa de la presentación.'],
+    ['Comprobar que el email contiene "@" al registrar un miembro','biz','Es una regla del negocio, aunque parezca "de formulario".'],
+    ['Guardar una fila nueva y asignarle un id','data','Persistir es trabajo de la capa de datos.'],
+    ['Copiar una fila LoanRecord a un LoanDto','biz','El mapeo ocurre en el negocio para que las filas no salgan.']
+  ];
+  var di=0,ds=0,drill=$('drill');
+  function showDrill(){
+    if(di>=ITEMS.length){drill.innerHTML='<h3>Resultado: '+ds+' / '+ITEMS.length+'</h3><p>'+(ds>=7?'Excelente: ya separas responsabilidades.':'Repasa qué decide, qué presenta y qué guarda.')+'</p><button id="dAgain">Reintentar</button>';
+      $('dAgain').addEventListener('click',function(){di=0;ds=0;showDrill();});return;}
+    var it=ITEMS[di];
+    drill.innerHTML='<p><b>'+(di+1)+'/'+ITEMS.length+'</b> '+esc(it[0])+'</p><div class="opts">'+
+      '<button data-l="web"><span class="tag web">Presentación</span></button><button data-l="biz"><span class="tag biz">Negocio</span></button><button data-l="data"><span class="tag data">Datos</span></button></div><div class="msg" id="dMsg" aria-live="polite"></div>';
+    [].forEach.call(drill.querySelectorAll('.opts button'),function(b){
+      b.addEventListener('click',function(){
+        var ok=b.dataset.l===it[1];if(ok)ds++;
+        [].forEach.call(drill.querySelectorAll('.opts button'),function(x){x.disabled=true;});
+        var m=$('dMsg');m.className='msg '+(ok?'ok':'err');
+        m.innerHTML=(ok?'Correcto. ':'No: va en <b>'+({web:'Presentación',biz:'Negocio',data:'Datos'})[it[1]]+'</b>. ')+esc(it[2])+' <button id="dNext">Siguiente</button>';
+        $('dNext').addEventListener('click',function(){di++;showDrill();});
+      });
+    });
+  }
+  showDrill();
+
+  /* ---------- change ripple ---------- */
+  var CHG=[
+    {n:'Añadir un campo (ISBN)',layer:['Datos: BookRecord','Negocio: BookDto + mapeo','Presentación: NewBookRequest'],slice:['Carpeta del slice "AddBook"'],note:'En capas se toca una pieza por capa. Hecho de verdad en el ejemplo: 3 archivos, 17 líneas.'},
+    {n:'Nueva funcionalidad (reservar un libro)',layer:['Datos: ReservationRecord + repositorio','Negocio: servicio + DTO + reglas','Presentación: endpoint'],slice:['Carpeta nueva "Reserve" (todo junto)'],note:'Una funcionalidad atraviesa las tres capas; por slice, es una carpeta nueva.'},
+    {n:'Cambiar una regla (de 3 a 5 libros)',layer:['Negocio: constante MaxActiveLoans'],slice:['Slice "Borrow"'],note:'Una regla de negocio vive en una sola capa: aquí las capas funcionan bien.'},
+    {n:'Cambiar el formato JSON',layer:['Presentación: endpoint / DTO de respuesta'],slice:['Slice afectado'],note:'Cambio localizado en presentación.'},
+    {n:'Cambiar de base de datos',layer:['Datos: repositorios','Negocio: depende de clases concretas de datos → puede verse afectado'],slice:['Acceso a datos del slice o infraestructura compartida'],note:'Con dependencia concreta hacia datos, el negocio también puede tocarse. Con Clean/Hexagonal, solo un adaptador.'}
+  ];
+  var cb=$('chg');
+  CHG.forEach(function(c){
+    var b=document.createElement('button');b.textContent=c.n;
+    b.addEventListener('click',function(){
+      [].forEach.call(cb.children,function(x){x.classList.toggle('on',x===b);});
+      $('rLayer').innerHTML=c.layer.map(function(x){return '<span class="cell hit">'+esc(x)+'</span>';}).join('');
+      $('rSlice').innerHTML=c.slice.map(function(x){return '<span class="cell hit">'+esc(x)+'</span>';}).join('');
+      $('rMsg').className='msg';$('rMsg').textContent=c.note;
+    });
+    cb.appendChild(b);
+  });
+  cb.firstChild.click();
+
+  /* ---------- arrow ---------- */
+  var ARR=[
+    {n:'Capas clásicas',d:'Presentación ──► Negocio ──► Datos\n\nel negocio depende de DATOS',m:'El negocio usa clases concretas de la capa de datos. Cambiar la base o probar sin ella es difícil: no hay un punto donde enchufar un sustituto.'},
+    {n:'Clean / Onion / Hexagonal',d:'Presentación ──► Negocio ◄── Datos\n\nDATOS depende del negocio (implementa sus interfaces)',m:'El negocio define interfaces y los detalles las implementan. Se prueba con fakes y se cambia la base tocando un adaptador. Coste: interfaces y un composition root.'}
+  ];
+  var ab=$('arrowBtns');
+  ARR.forEach(function(a){
+    var b=document.createElement('button');b.textContent=a.n;
+    b.addEventListener('click',function(){
+      [].forEach.call(ab.children,function(x){x.classList.toggle('on',x===b);});
+      $('arrowDiagram').textContent=a.d;$('arrowMsg').className='msg';$('arrowMsg').textContent=a.m;
+    });
+    ab.appendChild(b);
+  });
+  ab.firstChild.click();
+
+  /* ---------- checklist ---------- */
+  var CH=[
+    ['La aplicación es en esencia altas, bajas, consultas y modificaciones',2],
+    ['El equipo es pequeño y conoce este patrón',1],
+    ['Los requisitos todavía están cambiando y no quiero sobre-diseñar',1],
+    ['Estoy migrando algo que ya está en capas, con pocos cambios',1],
+    ['Cada funcionalidad nueva me obliga a tocar todas las capas y duele',-2],
+    ['No puedo probar el negocio sin una base de datos real',-2],
+    ['Las reglas son muchas y complejas, y siguen creciendo',-2]
+  ];
+  var ck=$('check');
+  CH.forEach(function(c,i){var l=document.createElement('label');l.style.display='block';l.style.cursor='pointer';l.innerHTML='<input type="checkbox" data-i="'+i+'"> '+esc(c[0]);ck.appendChild(l);});
+  ck.addEventListener('change',function(){
+    var s=0;[].forEach.call(ck.querySelectorAll('input:checked'),function(x){s+=CH[parseInt(x.dataset.i,10)][1];});
+    var n=$('checkMsg');n.className='msg '+(s>=3?'ok':s>=0?'warn':'err');
+    n.textContent=s>=3?'Capas es una buena opción: simple y suficiente.':s>=0?'Capas puede servir, pero vigila los puntos que te duelen.':'Considera Vertical Slice, Clean/Hexagonal o DDD según qué te duela.';
+  });
+
+  /* ---------- quiz ---------- */
+  var Q=[
+    ['En capas cerradas, ¿qué puede llamar la capa de presentación?',['Negocio y Datos','Solo Negocio','Solo Datos'],1,'Cada capa usa únicamente la inmediatamente inferior.'],
+    ['¿Dónde va la regla "máximo 3 libros por miembro"?',['En el endpoint','En la capa de negocio','En la consulta SQL'],1,'Las reglas viven en el negocio; la presentación y los datos no deciden.'],
+    ['¿Para qué mapea el negocio las filas a DTOs?',['Por rendimiento','Para que las filas de la base no lleguen a la presentación','Por costumbre'],1,'Si las filas salieran, la UI quedaría atada al esquema de la base.'],
+    ['¿Qué diferencia hay entre capa y nivel (tier)?',['Ninguna','Capa = división lógica del código; nivel = máquina o proceso distinto','Nivel = más importante'],1,'El ejemplo tiene 3 capas en 1 nivel.'],
+    ['¿Qué cambia en Clean/Hexagonal respecto a las capas clásicas?',['Hay más capas','El negocio deja de depender de los datos concretos (interfaces)','Se elimina la presentación'],1,'Se invierte la dependencia hacia la capa de datos.'],
+    ['Una funcionalidad nueva (reservar libros) suele tocar…',['Solo una capa','Las tres capas','Solo el test'],1,'Es el coste clásico del corte horizontal; Vertical Slice lo reduce agrupando por funcionalidad.'],
+    ['Tu capa de negocio solo reenvía llamadas al repositorio sin reglas. ¿Qué dice Microsoft?',['Es el diseño ideal','Añade latencia y complejidad sin aportar valor','Es obligatoria'],1,'Es un reto conocido de N-tier: si no hay reglas, esa capa no se justifica.']
+  ];
+  var qi=0,score=0,qbox=$('quizBox');
+  function showQ(){
+    if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: ya entiendes las capas y sus límites.':score>=4?'Bien. Repasa la dirección de la dependencia.':'Vuelve al recorrido de una petición.')+'</p><button id="again">Reintentar</button>';
+      $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}
+    var q=Q[qi];
+    qbox.innerHTML='<p><b>'+(qi+1)+'/'+Q.length+'</b> '+esc(q[0])+'</p>'+q[1].map(function(o,i){return '<button class="opt" data-i="'+i+'">'+esc(o)+'</button>';}).join('')+'<div class="msg" id="qmsg" aria-live="polite"></div>';
+    [].forEach.call(qbox.querySelectorAll('.opt'),function(b){
+      b.addEventListener('click',function(){
+        var i=parseInt(b.dataset.i,10);
+        [].forEach.call(qbox.querySelectorAll('.opt'),function(x){x.disabled=true;});
+        b.classList.add(i===q[2]?'right':'wrong');
+        if(i!==q[2])qbox.querySelectorAll('.opt')[q[2]].classList.add('right'); else score++;
+        $('qmsg').innerHTML=esc(q[3])+' <button id="next">Siguiente</button>';
+        $('next').addEventListener('click',function(){qi++;showQ();});
+      });
+    });
+  }
+  showQ();
+})();
+</script>
+</body>
+</html>

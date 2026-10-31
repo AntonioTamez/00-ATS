@@ -191,7 +191,7 @@ public void Application_DependsOnlyOnDomain()
 
 <section id="quiz">
   <h2>6. Comprueba lo aprendido</h2>
-  <div id="quiz"></div>
+  <div id="quizBox"></div>
 </section>
 
 <footer>
@@ -284,7 +284,7 @@ const QUIZ = [
   {q:"¿Qué devuelve un caso de uso hacia la API?",o:["La entidad","Un DTO","Una fila de la base de datos"],a:1,w:"Solo datos planos cruzan la frontera, nunca entidades."},
   {q:"¿Qué proyecto puede referenciar a todos los demás?",o:["Domain","Application","Api (composition root)"],a:2,w:"Es el único lugar que conecta las capas."}
 ];
-const quizEl = document.getElementById("quiz");
+const quizEl = document.getElementById("quizBox");
 QUIZ.forEach((item,qi)=>{
   const d=document.createElement("div");d.className="card quiz";d.style.marginBottom="10px";
   d.innerHTML=`<b>${qi+1}. ${item.q}</b>`;

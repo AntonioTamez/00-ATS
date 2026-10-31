@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipes y Filters para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --ok:#2e8b57;--bad:#c0392b;--warn:#b7791f;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:66ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.45;cursor:not-allowed}
+input[type=number]{font:inherit;width:5.5em;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
+textarea{width:100%;min-height:15em;font:13px/1.5 ui-monospace,Consolas,monospace;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--code);color:var(--fg);resize:vertical}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+.small{font-size:.85rem;color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.two{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:800px){.two{grid-template-columns:1fr 1fr}}
+.stage{display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);margin:6px 0;flex-wrap:wrap}
+.stage.off{opacity:.55}
+.stage.broken{border-color:var(--bad)}
+.stage .name{font-weight:600;min-width:8.5em}
+.chip{font:12px ui-monospace,Consolas,monospace;padding:1px 8px;border-radius:99px;background:var(--code);border:1px solid var(--line)}
+.stage .btns{margin-left:auto;display:flex;gap:4px}
+.stage .btns button{padding:2px 8px}
+ul.log{list-style:none;margin:0;padding:0}
+ul.log li{padding:5px 8px;border-left:4px solid var(--line);margin:4px 0;background:var(--code);border-radius:4px;font-size:.9rem;font-family:ui-monospace,Consolas,monospace}
+ul.log li.ok{border-color:var(--ok)}ul.log li.bad{border-color:var(--bad)}ul.log li.warn{border-color:var(--warn)}
+.msg{min-height:2.6em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left;font-family:ui-monospace,Consolas,monospace}
+.tablewrap{overflow-x:auto}
+.bar{font-family:ui-monospace,Consolas,monospace;letter-spacing:2px}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Pipes y Filters para novatos</h1>
+  <p class="lead">Pasos chiquitos e independientes, unidos por tuberías. Armá un pipeline, reordená los filtros, rompé los tipos y mirá cuántas líneas lee de verdad.</p>
+</header>
+<nav>
+  <a href="#idea">La idea</a><a href="#lab">Laboratorio</a><a href="#buffer">Buffer</a><a href="#limites">Límites</a><a href="#quiz">Quiz</a>
+  <button id="theme" type="button">Tema</button>
+</nav>
+
+<section id="idea">
+<h2>1. La idea</h2>
+<div class="grid">
+  <div class="card"><h3>Filtro</h3><p>Hace <b>una</b> cosa. Conoce el tipo que recibe y el que entrega, nada más. No sabe quién va antes ni después.</p></div>
+  <div class="card"><h3>Tubería (pipe)</h3><p>Solo conecta: lo que sale de un filtro entra al siguiente. No decide, no enruta. En el sample es un <code>IAsyncEnumerable</code>.</p></div>
+  <div class="card"><h3>Raíz de composición</h3><p>El único lugar que nombra los filtros y define el orden. Cambiar un pipeline es tocar solo ese archivo.</p></div>
+</div>
+<pre>fuente ─► parse-csv ─► validate-sale ─► deduplicate ─► blocked-skus ─► apply-vat ─► salida
+         Line→Raw      Raw→Sale        Sale→Sale      Sale→Sale      Sale→Priced
+(cada filtro recibe un elemento a la vez: nada se carga entero en memoria)</pre>
+</section>
+
+<section id="lab">
+<h2>2. Laboratorio: armá el pipeline</h2>
+<p>Activá, apagá y reordená los filtros. Si el tipo de salida de uno no encaja con la entrada del siguiente, el pipeline <b>no arranca</b> (en el sample ni siquiera compila). El simulador sigue las mismas reglas que los filtros reales.</p>
+<div class="two">
+  <div>
+    <h3>Filtros</h3>
+    <div id="stages"></div>
+    <div class="row">
+      <button type="button" id="resetOrder">Orden original</button>
+      <label><input type="checkbox" id="bug"> Inyectar un bug en <code>validate-sale</code></label>
+    </div>
+    <div class="row">
+      <label>Pedir solo los primeros <input type="number" id="take" min="0" step="1" value="0"> resultados <span class="small">(0 = todos)</span></label>
+    </div>
+    <div class="msg" id="chain"></div>
+  </div>
+  <div>
+    <h3>Datos de entrada (CSV)</h3>
+    <textarea id="csv" spellcheck="false"></textarea>
+    <div class="row"><button type="button" id="resetCsv">Restaurar el ejemplo</button></div>
+  </div>
+</div>
+<h3>Resultado</h3>
+<div class="msg" id="summary"></div>
+<div class="two">
+  <div><h3>Aceptadas</h3><div class="tablewrap"><table id="accepted"></table></div></div>
+  <div><h3>Rechazos (quién y por qué)</h3><ul class="log" id="rejects"></ul></div>
+</div>
+</section>
+
+<section id="buffer">
+<h2>3. La tubería con buffer</h2>
+<p>Con <code>Buffer(n)</code> el productor corre por su cuenta, pero solo hasta <code>n</code> elementos adelantado. Si el consumidor es lento, el productor <b>espera</b> (contrapresión). Probá capacidades y velocidades.</p>
+<div class="row">
+  <label>Capacidad <input type="number" id="cap" min="1" max="10" value="3"></label>
+  <label>El consumidor tarda <input type="number" id="slow" min="1" max="6" value="3"> ticks por elemento</label>
+</div>
+<pre id="bufOut"></pre>
+<div class="msg" id="bufMsg"></div>
+</section>
+
+<section id="limites">
+<h2>4. Lo que NO es</h2>
+<div class="grid">
+  <div class="card"><h3>No es durable</h3><p>Un solo proceso, sin colas. Si se cae a la mitad, se pierde el run. Distribuirlo exige colas, idempotencia y detección de duplicados.</p></div>
+  <div class="card"><h3>Un bug tumba todo</h3><p>Un dato malo se <i>rechaza</i> y el flujo sigue; una excepción en un filtro termina el run entero con el nombre del filtro culpable.</p></div>
+  <div class="card"><h3>Reordenar no es gratis</h3><p>Que los tipos encajen no garantiza el mismo resultado. El compilador cuida los tipos, el significado lo cuidás vos.</p></div>
+</div>
+</section>
+
+<section id="quizSection">
+<h2 id="quiz">5. Quiz</h2>
+<div class="card quiz" id="quizBox"></div>
+</section>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+
+// <logic> — a faithful, small mirror of Sales.Filters + Sales.Pipeline (pure functions, no DOM)
+const VAT = { AR: 0.21, ES: 0.21, UY: 0.22, CL: 0.19 };
+const BLOCKED = ["BAN-001"];
+// The real code uses decimal; the 1e-9 nudge keeps halves like 2.185 rounding away from zero in floating point.
+const round2 = (x) => Math.round((x + 1e-9) * 100) / 100;
+const cents = (x) => Math.round(x * 100);
+
+class PipelineError extends Error {
+  constructor(filter, inner) { super(`filter '${filter}' failed: ${inner.message}`); this.filter = filter; this.inner = inner; }
+}
+
+const FILTERS = {
+  "parse-csv": { in: "SourceLine", out: "RawSale", run: function* (input, reject) {
+    for (const line of input) {
+      if (line.text.trim() === "") continue;
+      const f = line.text.split(",");
+      if (line.n === 1 && f[0].trim().toLowerCase() === "id") continue;
+      if (f.length !== 5) { reject(`line ${line.n}`, `expected 5 columns, found ${f.length}`); continue; }
+      yield { line: line.n, id: f[0].trim(), sku: f[1].trim(), qty: f[2].trim(), price: f[3].trim(), country: f[4].trim() };
+    }
+  } },
+  "validate-sale": { in: "RawSale", out: "Sale", run: function* (input, reject, ctx) {
+    for (const r of input) {
+      const item = `line ${r.line}`;
+      if (ctx.bug && r.id === "1005") throw new Error("boom");
+      if (r.id === "") reject(item, "empty id");
+      else if (r.sku === "") reject(item, "empty sku");
+      else if (!/^[0-9]+$/.test(r.qty) || Number(r.qty) <= 0) reject(item, `quantity '${r.qty}' is not a positive integer`);
+      else if (!/^[0-9]*\.?[0-9]*$/.test(r.price) || r.price === "" || r.price === ".") reject(item, `unit price '${r.price}' is not a non-negative number`);
+      else if (!/^[A-Za-z]{2}$/.test(r.country)) reject(item, `country '${r.country}' must be 2 letters`);
+      else yield { line: r.line, id: r.id, sku: r.sku.toUpperCase(), qty: Number(r.qty), price: Number(r.price), country: r.country.toUpperCase() };
+    }
+  } },
+  "deduplicate": { in: "Sale", out: "Sale", run: function* (input, reject) {
+    const firstSeen = new Map(); // created per run, never kept in the filter
+    for (const s of input) {
+      if (firstSeen.has(s.id)) { reject(`line ${s.line}`, `duplicate id '${s.id}' (first seen at line ${firstSeen.get(s.id)})`); continue; }
+      firstSeen.set(s.id, s.line);
+      yield s;
+    }
+  } },
+  "blocked-skus": { in: "Sale", out: "Sale", run: function* (input, reject) {
+    for (const s of input) {
+      if (BLOCKED.includes(s.sku)) reject(`line ${s.line}`, `sku '${s.sku}' is blocked`);
+      else yield s;
+    }
+  } },
+  "apply-vat": { in: "Sale", out: "PricedSale", run: function* (input, reject) {
+    for (const s of input) {
+      const rate = VAT[s.country];
+      if (rate === undefined) { reject(`line ${s.line}`, `no VAT rate for country '${s.country}'`); continue; }
+      const net = round2(s.qty * s.price);
+      const vat = round2(net * rate);
+      yield { line: s.line, id: s.id, sku: s.sku, qty: s.qty, country: s.country, net, vat, total: net + vat };
+    }
+  } },
+};
+const ORIGINAL_ORDER = ["parse-csv", "validate-sale", "deduplicate", "blocked-skus", "apply-vat"];
+
+function checkChain(names) {
+  let current = "SourceLine";
+  for (const name of names) {
+    const f = FILTERS[name];
+    if (f.in !== current)
+      return { ok: false, at: name, error: `${name} espera ${f.in} pero recibe ${current}`, outType: current };
+    current = f.out;
+  }
+  return { ok: true, outType: current };
+}
+
+function* guard(name, iterable) {
+  const it = iterable[Symbol.iterator]();
+  while (true) {
+    let r;
+    try { r = it.next(); }
+    catch (e) { throw e instanceof PipelineError ? e : new PipelineError(name, e); }
+    if (r.done) return;
+    yield r.value;
+  }
+}
+
+function runPipeline(names, csvText, opts) {
+  const take = (opts && opts.take) || 0;
+  const ctx = { bug: !!(opts && opts.bug) };
+  const rejections = [];
+  const counter = { read: 0 };
+  const lines = csvText.split(/\r?\n/);
+  if (lines.length && lines[lines.length - 1] === "") lines.pop();
+  let stream = (function* () { for (let i = 0; i < lines.length; i++) { counter.read++; yield { n: i + 1, text: lines[i] }; } })();
+  for (const name of names)
+    stream = guard(name, FILTERS[name].run(stream, (item, reason) => rejections.push({ filter: name, item, reason }), ctx));
+  const out = [];
+  let failure = null;
+  try {
+    for (const x of stream) { out.push(x); if (take > 0 && out.length >= take) break; }
+  } catch (e) {
+    if (e instanceof PipelineError) failure = e; else throw e;
+  }
+  return { out, rejections, failure, linesRead: counter.read, totalLines: lines.length };
+}
+
+// Discrete simulation of Buffer(n): the producer makes 1 item per tick unless the buffer is full;
+// the consumer finishes one item every `slow` ticks.
+function simulateBuffer(capacity, slow, ticks) {
+  const rows = [];
+  let buffer = 0, busy = 0, produced = 0, consumed = 0, waiting = 0, maxBuffer = 0;
+  for (let t = 1; t <= ticks; t++) {
+    if (busy === 0 && buffer > 0) { buffer--; busy = slow; }
+    if (busy > 0) { busy--; if (busy === 0) consumed++; }
+    let producer;
+    if (buffer < capacity) { buffer++; produced++; producer = "produce"; }
+    else { waiting++; producer = "ESPERA"; }
+    maxBuffer = Math.max(maxBuffer, buffer);
+    rows.push({ t, buffer, producer, consumed });
+  }
+  return { rows, produced, consumed, waiting, maxBuffer };
+}
+// </logic>
+
+// ---------- laboratorio ----------
+const SAMPLE_CSV = [
+  "id,sku,qty,price,country", "1001,abc-100,2,10.00,AR", "1002,abc-200,1,99.90,es", "1003,ban-001,1,5.00,AR",
+  "1004,abc-100,x,10.00,AR", "1005,xyz-300,3,0.50,UY", "1001,abc-100,2,10.00,AR", "1006,abc-100,1,10.00,XX",
+  "1007,abc-100,1", "1008,abc-300,-2,4.00,AR", "", "1009,abc-400,10,1.15,CL",
+].join("\n");
+
+let order = ORIGINAL_ORDER.map((name) => ({ name, on: true }));
+
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  if (props) Object.assign(e, props);
+  e.append(...kids);
+  return e;
+}
+
+function renderStages(brokenAt) {
+  const box = $("stages");
+  box.textContent = "";
+  order.forEach((s, i) => {
+    const f = FILTERS[s.name];
+    const cb = el("input", { type: "checkbox", checked: s.on, ariaLabel: "Activar " + s.name });
+    cb.addEventListener("change", () => { s.on = cb.checked; refresh(); });
+    const up = el("button", { type: "button", textContent: "↑", disabled: i === 0, ariaLabel: "Subir " + s.name });
+    up.addEventListener("click", () => { [order[i - 1], order[i]] = [order[i], order[i - 1]]; refresh(); });
+    const down = el("button", { type: "button", textContent: "↓", disabled: i === order.length - 1, ariaLabel: "Bajar " + s.name });
+    down.addEventListener("click", () => { [order[i + 1], order[i]] = [order[i], order[i + 1]]; refresh(); });
+    const row = el("div", { className: "stage" + (s.on ? "" : " off") + (brokenAt === s.name ? " broken" : "") },
+      cb, el("span", { className: "name", textContent: s.name }),
+      el("span", { className: "chip", textContent: f.in }), "→", el("span", { className: "chip", textContent: f.out }),
+      el("span", { className: "btns" }, up, down));
+    box.append(row);
+  });
+}
+
+function cell(text) { return el("td", { textContent: String(text) }); }
+
+function refresh() {
+  const names = order.filter((s) => s.on).map((s) => s.name);
+  const chain = checkChain(names);
+  renderStages(chain.ok ? null : chain.at);
+  const accepted = $("accepted"), rejects = $("rejects"), summary = $("summary"), chainMsg = $("chain");
+  accepted.textContent = ""; rejects.textContent = "";
+
+  if (!chain.ok) {
+    chainMsg.className = "msg err";
+    chainMsg.textContent = "No compila: " + chain.error + ". Un filtro solo puede ir después de uno cuya salida coincida con su entrada.";
+    summary.className = "msg"; summary.textContent = "El pipeline no arranca.";
+    return;
+  }
+  chainMsg.className = "msg ok";
+  chainMsg.textContent = names.length
+    ? `Encaja: SourceLine → ${names.map((n) => FILTERS[n].out).join(" → ")}`
+    : "Sin filtros: la salida son las líneas tal cual (SourceLine).";
+
+  const take = Math.max(0, Math.floor(Number($("take").value) || 0));
+  const r = runPipeline(names, $("csv").value, { take, bug: $("bug").checked && names.includes("validate-sale") });
+
+  const parts = [`Líneas leídas de la fuente: ${r.linesRead} de ${r.totalLines}`, `aceptadas: ${r.out.length}`, `rechazadas: ${r.rejections.length}`];
+  if (take > 0) parts.push(r.linesRead < r.totalLines ? "(pidió solo " + take + ": no leyó el resto)" : "(pidió " + take + ", pero hizo falta leer todo)");
+  let text = parts.join(" · ");
+  if (r.failure) text += `. ¡Falló! pipeline failed: ${r.failure.message}`;
+  else if (r.out.length && names[names.length - 1] === "apply-vat") {
+    const t = r.out.reduce((a, s) => ({ net: a.net + cents(s.net), vat: a.vat + cents(s.vat), total: a.total + cents(s.total) }), { net: 0, vat: 0, total: 0 });
+    text += `. Totales: net ${(t.net / 100).toFixed(2)} · vat ${(t.vat / 100).toFixed(2)} · total ${(t.total / 100).toFixed(2)}`;
+  }
+  summary.className = "msg " + (r.failure ? "err" : "ok");
+  summary.textContent = text;
+
+  if (r.out.length) {
+    const keys = Object.keys(r.out[0]);
+    accepted.append(el("tr", null, ...keys.map((k) => el("th", { textContent: k }))));
+    for (const row of r.out) accepted.append(el("tr", null, ...keys.map((k) => cell(typeof row[k] === "number" && !Number.isInteger(row[k]) ? row[k].toFixed(2) : row[k]))));
+  }
+  for (const x of r.rejections)
+    rejects.append(el("li", { className: "warn", textContent: `[${x.filter}] ${x.item}: ${x.reason}` }));
+  if (!r.rejections.length) rejects.append(el("li", { className: "ok", textContent: "Ninguno" }));
+}
+
+$("csv").value = SAMPLE_CSV;
+$("csv").addEventListener("input", refresh);
+$("take").addEventListener("input", refresh);
+$("bug").addEventListener("change", refresh);
+$("resetOrder").addEventListener("click", () => { order = ORIGINAL_ORDER.map((name) => ({ name, on: true })); refresh(); });
+$("resetCsv").addEventListener("click", () => { $("csv").value = SAMPLE_CSV; refresh(); });
+
+// ---------- buffer ----------
+function renderBuffer() {
+  const cap = Math.min(10, Math.max(1, Math.floor(Number($("cap").value) || 1)));
+  const slow = Math.min(6, Math.max(1, Math.floor(Number($("slow").value) || 1)));
+  const sim = simulateBuffer(cap, slow, 16);
+  const lines = ["tick  buffer           productor  consumidos"];
+  for (const r of sim.rows)
+    lines.push(`${String(r.t).padStart(3)}   ${"■".repeat(r.buffer)}${"□".repeat(cap - r.buffer)}`.padEnd(26) + `${r.producer.padEnd(10)} ${r.consumed}`);
+  $("bufOut").textContent = lines.join("\n");
+  const msg = $("bufMsg");
+  msg.className = "msg ok";
+  msg.textContent = `Máximo en el buffer: ${sim.maxBuffer} (capacidad ${cap}). El productor esperó ${sim.waiting} de 16 ticks.`
+    + (slow === 1 ? " Con un consumidor tan rápido casi no hay espera." : " Cuanto más lento el consumidor, más espera el productor, pero la memoria nunca pasa de la capacidad.");
+}
+$("cap").addEventListener("input", renderBuffer);
+$("slow").addEventListener("input", renderBuffer);
+
+// ---------- tema ----------
+try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+$("theme").addEventListener("click", () => {
+  const dark = document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
+  const next = dark ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("theme", next); } catch (e) {}
+});
+
+// ---------- quiz ----------
+const questions = [
+  { q: "¿Qué sabe un filtro del resto del pipeline?",
+    o: ["Qué filtros van antes y después", "Solo el tipo que recibe y el que entrega", "El orden completo de la cadena"], a: 1,
+    e: "Microsoft: los filtros son independientes y solo conocen sus esquemas de entrada y salida. El orden lo decide la raíz de composición." },
+  { q: "¿Qué hace una tubería (pipe)?",
+    o: ["Decide a qué filtro enviar cada dato", "Aplica reglas de negocio", "Solo conecta: la salida de un filtro es la entrada del siguiente"], a: 2,
+    e: "Las tuberías no hacen routing ni lógica. Si hay una decisión, vive en un filtro." },
+  { q: "Un archivo de 10 millones de líneas pasa por el pipeline y pedís solo los 2 primeros resultados. ¿Cuántas líneas se leen aproximadamente?",
+    o: ["Las 10 millones", "Unas pocas: el flujo es perezoso y tira un elemento a la vez", "Ninguna"], a: 1,
+    e: "Los iteradores no corren hasta que alguien pide el siguiente elemento. Probalo en el laboratorio con 'Pedir solo los primeros'." },
+  { q: "Una línea del CSV tiene una cantidad 'x'. ¿Qué debería pasar?",
+    o: ["El filtro la rechaza con un motivo y el flujo sigue", "Se lanza una excepción y se cae todo", "Se ignora sin avisar"], a: 0,
+    e: "Un dato malo es parte normal del flujo: se rechaza con motivo. Ignorarlo en silencio oculta problemas." },
+  { q: "Un filtro lanza una excepción por un bug. ¿Qué pasa en el sample?",
+    o: ["Los demás filtros siguen como si nada", "El run falla con un error que nombra al filtro", "El filtro se reintenta solo"], a: 1,
+    e: "Rechazar es para datos; las excepciones son bugs y tumban el run. Microsoft: si un filtro falla, el pipeline entero probablemente falla." },
+  { q: "'deduplicate' y 'blocked-skus' son ambos Sale → Sale. ¿Podés intercambiarlos sin pensar?",
+    o: ["Sí: si los tipos encajan, el resultado es idéntico siempre", "Los tipos encajan, pero hay que confirmar que el significado no cambia", "No, nunca se pueden reordenar"], a: 1,
+    e: "El compilador cuida los tipos; el significado lo cuidás vos. Acá sí conmutan, y un test lo comprueba con el archivo real." },
+  { q: "Tu pipeline necesita responder a un request HTTP en el mismo request. ¿Es buen candidato?",
+    o: ["Sí, es el caso ideal", "No suele serlo: Microsoft lo marca como caso donde el patrón puede no servir", "Solo si usás colas"], a: 1,
+    e: "El patrón brilla en procesamiento por etapas de flujos (imports, ETL, imágenes), no en request-response." },
+];
+let qi = 0, score = 0;
+function renderQuiz() {
+  const box = $("quizBox");
+  box.textContent = "";
+  if (qi >= questions.length) {
+    const p = el("p", { textContent: `Resultado: ${score} de ${questions.length}.` });
+    const b = el("button", { type: "button", textContent: "Reintentar" });
+    b.addEventListener("click", () => { qi = 0; score = 0; renderQuiz(); });
+    box.append(p, b);
+    return;
+  }
+  const q = questions[qi];
+  const h = el("h3", { textContent: `${qi + 1}/${questions.length} · ${q.q}` });
+  const fb = el("div", { className: "msg" });
+  fb.setAttribute("aria-live", "polite");
+  const next = el("button", { type: "button", textContent: "Siguiente", disabled: true });
+  next.addEventListener("click", () => { qi++; renderQuiz(); });
+  const opts = [];
+  q.o.forEach((text, i) => {
+    const b = el("button", { type: "button", className: "opt", textContent: text });
+    b.addEventListener("click", () => {
+      opts.forEach((x) => (x.disabled = true));
+      const right = i === q.a;
+      if (right) score++;
+      b.classList.add(right ? "right" : "wrong");
+      opts[q.a].classList.add("right");
+      fb.textContent = (right ? "¡Correcto! " : "No exactamente. ") + q.e;
+      fb.className = "msg " + (right ? "ok" : "err");
+      next.disabled = false;
+    });
+    opts.push(b);
+  });
+  box.append(h, ...opts, fb, next);
+}
+
+refresh();
+renderBuffer();
+renderQuiz();
+</script>
+</body>
+</html>

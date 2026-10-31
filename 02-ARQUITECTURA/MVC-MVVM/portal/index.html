@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MVC y MVVM para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --m:#2e8b57;--v:#3a8fd9;--c:#d9622b;--vm:#7a5cc7;--ok:#2e8b57;--bad:#c0392b;--warn:#b7791f;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:66ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
+.scroll{overflow-x:auto}
+.small{font-size:.85rem;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+select,input[type=number]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px;max-width:100%}
+input[type=number]{width:4.5em}
+.seg button.on,.steps button.on{background:var(--fg);color:var(--bg)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.msg{min-height:2.6em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}.msg.warn{border-left:4px solid var(--warn)}
+/* diagrams */
+.diagram{display:grid;gap:10px;grid-template-columns:1fr 1fr 1fr;align-items:stretch;text-align:center;margin:12px 0}
+@media(max-width:640px){.diagram{grid-template-columns:1fr}}
+.box{border:2px solid var(--line);border-radius:12px;padding:10px;background:var(--card);font-weight:600}
+.box small{display:block;font-weight:400;color:var(--muted);margin-top:2px}
+.box.m{border-color:var(--m)}.box.v{border-color:var(--v)}.box.c{border-color:var(--c)}.box.vm{border-color:var(--vm)}
+.box.on{background:color-mix(in srgb,var(--fg) 9%,var(--card))}
+.rel{font-family:ui-monospace,Consolas,monospace;font-size:.85rem;background:var(--code);padding:10px 12px;border-radius:8px;white-space:pre;overflow-x:auto}
+/* labs */
+.labs{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:860px){.labs{grid-template-columns:1fr 1fr}}
+.lab h3.mvc{color:var(--c)}.lab h3.mvvm{color:var(--vm)}
+.screen{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);font-size:.9rem;min-height:9em}
+.screen .line{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding:2px 0}
+.log{list-style:none;margin:6px 0 0;padding:0;font-family:ui-monospace,Consolas,monospace;font-size:.78rem}
+.log li{padding:2px 6px;margin:2px 0;border-left:3px solid var(--line);background:var(--code);border-radius:0 6px 6px 0}
+.log li.c{border-left-color:var(--c)}.log li.m{border-left-color:var(--m)}.log li.v{border-left-color:var(--v)}.log li.vm{border-left-color:var(--vm)}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;color:#fff;padding:1px 8px;border-radius:99px}
+.tag.m{background:var(--m)}.tag.v{background:var(--v)}.tag.c{background:var(--c)}.tag.vm{background:var(--vm)}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--v)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué son</a><a href="#quien">¿Quién conoce a quién?</a><a href="#lab">Laboratorio</a>
+  <a href="#vm">Dos "ViewModel"</a><a href="#donde">¿De quién es?</a><a href="#vs">vs arquitecturas</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>MVC y MVVM<br>para novatos</h1>
+  <p class="lead">Dos formas de organizar el código de la <b>pantalla</b> para que las reglas del negocio no se mezclen con ella. No son arquitecturas de toda la aplicación: son patrones de la capa de presentación.</p>
+</header>
+
+<h2 id="que">1. La idea</h2>
+<div class="grid">
+  <div class="card"><h3><span class="tag m">Model</span></h3><p>Las <b>reglas</b> y los datos (el carrito, el descuento, el máximo por línea). <b>No sabe que existe ninguna pantalla.</b></p></div>
+  <div class="card"><h3><span class="tag v">View</span></h3><p>Lo que ve el usuario. Solo <b>pinta</b>. En web es HTML (Razor); en MVVM, una pantalla enlazada.</p></div>
+  <div class="card"><h3><span class="tag c">Controller</span> / <span class="tag vm">ViewModel</span></h3><p>El intermediario. En <b>MVC</b>, el controlador recibe la acción y elige qué vista mostrar. En <b>MVVM</b>, el ViewModel expone estado y comandos que la vista observa.</p></div>
+</div>
+
+<h2 id="quien">2. ¿Quién conoce a quién?</h2>
+<div class="steps seg" id="patBtns"></div>
+<div class="diagram" id="diagram"></div>
+<div class="rel" id="rel"></div>
+<div class="msg" id="patMsg" style="margin-top:10px"></div>
+
+<h2 id="lab">3. Laboratorio: la misma regla, dos patrones</h2>
+<p>El mismo <b>Model</b> (máximo 10 por producto; 10 % de descuento desde 100 €) detrás de cada patrón. Fíjate en <b>cómo se entera la pantalla</b> de que algo cambió.</p>
+<div class="labs">
+  <div class="card lab">
+    <h3 class="mvc">MVC (web): un ciclo por acción</h3>
+    <div class="row"><select id="cSku" aria-label="Producto"><option value="BOOK-1">Libro 35 €</option><option value="MUG-1">Taza 9,50 €</option><option value="PEN-1">Bolígrafo 1,50 €</option></select>
+      ×<input type="number" id="cQty" value="1" min="0"><button id="cAdd">Añadir (POST)</button><button id="cReload">Recargar la página</button></div>
+    <div class="screen" id="cScreen"></div>
+    <ul class="log" id="cLog"></ul>
+  </div>
+  <div class="card lab">
+    <h3 class="mvvm">MVVM: la vista observa</h3>
+    <div class="row"><select id="vSel" aria-label="Producto seleccionado"><option value="">(ninguno)</option><option value="BOOK-1">Libro 35 €</option><option value="MUG-1">Taza 9,50 €</option><option value="PEN-1">Bolígrafo 1,50 €</option></select>
+      ×<input type="number" id="vQty" value="1" min="0"><button id="vAdd">Añadir (comando)</button><button id="vClear">Vaciar (comando)</button></div>
+    <div class="screen" id="vScreen"></div>
+    <ul class="log" id="vLog"></ul>
+  </div>
+</div>
+<p class="small" style="margin-top:8px">En MVC, la página no cambia hasta que hay una <b>nueva petición</b> (prueba "Recargar"). En MVVM, el botón "Añadir" se habilita o deshabilita <b>solo</b>, según el estado del ViewModel (<code>CanExecute</code>), y la pantalla se redibuja al recibir <code>PropertyChanged</code>.</p>
+
+<h2 id="vm">4. Dos cosas llamadas "ViewModel"</h2>
+<div class="scroll"><table>
+<tr><th></th><th>ViewModel en MVC</th><th>ViewModel en MVVM</th></tr>
+<tr><td>Naturaleza</td><td><b>Pasivo</b>: datos listos para una vista</td><td><b>Activo</b>: estado + comandos + notificaciones</td></tr>
+<tr><td>Vida</td><td>Una petición</td><td>Mientras exista la pantalla</td></tr>
+<tr><td>Notifica cambios</td><td>No</td><td>Sí (<code>INotifyPropertyChanged</code>)</td></tr>
+<tr><td>Tiene comandos</td><td>No</td><td>Sí (<code>ICommand</code>)</td></tr>
+<tr><td>En el ejemplo</td><td><code>CartIndexViewModel</code> (record inmutable)</td><td><code>ShopViewModel</code></td></tr>
+</table></div>
+
+<h2 id="donde">5. Juego: ¿de quién es esta responsabilidad?</h2>
+<div class="steps seg" id="gameMode"></div>
+<div class="card" id="game"></div>
+
+<pre><code>// MVC: el controlador no decide reglas; el Model las decide, el controlador elige la vista
+try { cart.Add(product, quantity); }               // regla en el Model
+catch (CartRuleException ex) { return View("Index", BuildModel(cart, ex.Message)); }
+return RedirectToAction("Index");                   // Post/Redirect/Get
+
+// MVVM: el comando dice si se puede; la vista no habilita botones a mano
+_add = new RelayCommand(_ => AddSelected(), _ => SelectedProduct is not null &amp;&amp; Quantity &gt; 0);</code></pre>
+
+<h2 id="vs">6. ¿Y las arquitecturas (Layered, Clean, Hexagonal)?</h2>
+<div class="scroll"><table>
+<tr><th>Arquitectura</th><th>Dónde viven MVC / MVVM</th></tr>
+<tr><td>Capas (Layered)</td><td>Dentro de la capa de <b>presentación</b></td></tr>
+<tr><td>Clean</td><td>En los <b>interface adapters</b> (controllers, presenters, view models)</td></tr>
+<tr><td>Hexagonal</td><td>En el <b>adaptador de entrada</b> (el controlador traduce HTTP a una llamada al puerto)</td></tr>
+<tr><td>Onion</td><td>En el anillo exterior</td></tr>
+<tr><td>Vertical Slice</td><td>Cada slice puede tener su endpoint; el patrón se diluye</td></tr>
+</table></div>
+<p style="margin-top:10px">No compiten: son niveles distintos. Lo importante es que el <b>Model</b> (las reglas) quede fuera de la pantalla, y así lo comparten la web y la app de escritorio.</p>
+
+<h2 id="errores">7. Errores típicos</h2>
+<div class="grid">
+  <div class="card"><h3>Reglas en el controlador o en el code-behind</h3><p>No se reutilizan ni se prueban sin UI. Al Model.</p></div>
+  <div class="card"><h3>Lógica en la vista Razor</h3><p>La vista solo pinta; los cálculos se hacen antes.</p></div>
+  <div class="card"><h3>ViewModel que conoce botones</h3><p>Ya no se puede probar sin la UI.</p></div>
+  <div class="card"><h3>Habilitar botones a mano</h3><p>El estado debe estar en <code>CanExecute</code>, no en el code-behind.</p></div>
+  <div class="card"><h3>Notificar sin cambio (o no notificar)</h3><p>La pantalla parpadea o se queda desfasada.</p></div>
+  <div class="card"><h3>POST sin token anti-falsificación</h3><p>Otra web podría enviar formularios en nombre del usuario.</p></div>
+</div>
+
+<h2 id="quiz">8. Quiz</h2>
+<div class="card quiz" id="quizBox"></div>
+
+<footer>Kit completo: <code>docs/GUIA-MVC-MVVM.md</code>, <code>docs/MVC-MVVM-VS-OTRAS.md</code> y <code>sample/</code>.</footer>
+</div>
+
+<script>
+(function(){
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function $(id){return document.getElementById(id);}
+  function money(n){return n.toFixed(2)+' €';}
+
+  try{var t=localStorage.getItem('mvc-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}
+  $('theme').addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('mvc-theme',next);}catch(e){}
+  });
+
+  /* ---------- the shared Model (same rules as Shop.Model) ---------- */
+  var PRICE={'BOOK-1':35,'MUG-1':9.5,'PEN-1':1.5},NAME={'BOOK-1':'Libro','MUG-1':'Taza','PEN-1':'Bolígrafo'},MAX=10;
+  function newCart(){return {lines:{}};}
+  function addTo(cart,sku,qty){
+    if(!(qty>0))throw new Error('La cantidad debe ser positiva.');
+    var n=(cart.lines[sku]||0)+qty;
+    if(n>MAX)throw new Error('Máximo '+MAX+' unidades de '+NAME[sku]+'.');
+    cart.lines[sku]=n;
+  }
+  function totals(cart){
+    var sub=0;Object.keys(cart.lines).forEach(function(k){sub+=PRICE[k]*cart.lines[k];});
+    var disc=sub>=100?Math.round(sub*0.10*100)/100:0;return {sub:sub,disc:disc,total:sub-disc};
+  }
+  function count(cart){var n=0;Object.keys(cart.lines).forEach(function(k){n+=cart.lines[k];});return n;}
+
+  /* ---------- who knows whom ---------- */
+  var PATS=[
+    {n:'MVC',boxes:[['m','Model','reglas y datos'],['c','Controller','recibe la acción, elige la vista'],['v','View','pinta el HTML']],
+     rel:'Controller ──usa──► Model\nController ──elige y llena──► View\nView ──lee datos de──► (view model pasivo)\n\nEl Model NO conoce al Controller ni a la View.',
+     msg:'Microsoft: "Both the view and the controller depend on the model. However, the model doesn’t depend on the view or the controller."'},
+    {n:'MVVM',boxes:[['m','Model','reglas y datos'],['vm','ViewModel','estado + comandos + notificaciones'],['v','View','observa y reenvía acciones']],
+     rel:'View ──observa / invoca comandos──► ViewModel ──usa──► Model\n\nEl Model NO conoce al ViewModel. El ViewModel NO conoce a la View.',
+     msg:'Microsoft: "the view \'knows about\' the view model, and the view model \'knows about\' the model, but the model is unaware of the view model, and the view model is unaware of the view."'}
+  ];
+  var pb=$('patBtns');
+  PATS.forEach(function(p){
+    var b=document.createElement('button');b.textContent=p.n;
+    b.addEventListener('click',function(){
+      [].forEach.call(pb.children,function(x){x.classList.toggle('on',x===b);});
+      $('diagram').innerHTML=p.boxes.map(function(x){return '<div class="box '+x[0]+'">'+esc(x[1])+'<small>'+esc(x[2])+'</small></div>';}).join('');
+      $('rel').textContent=p.rel;$('patMsg').className='msg';$('patMsg').textContent=p.msg;
+    });
+    pb.appendChild(b);
+  });
+  pb.firstChild.click();
+
+  /* ---------- MVC lab: one full cycle per action ---------- */
+  var mvcCart=newCart(),mvcPage=null,mvcLog=[];
+  function mvcRender(){
+    var rows=Object.keys(mvcPage.lines).map(function(k){return '<div class="line"><span>'+esc(NAME[k])+' ×'+mvcPage.lines[k]+'</span><span>'+money(PRICE[k]*mvcPage.lines[k])+'</span></div>';}).join('')||'<div class="line"><span>(carrito vacío)</span><span></span></div>';
+    $('cScreen').innerHTML='<b>Página que ve el usuario</b> (instantánea de la última respuesta)'+rows+'<div class="line"><span>Descuento</span><span>'+money(mvcPage.disc)+'</span></div><div class="line"><b>Total</b><b>'+money(mvcPage.total)+'</b></div>'+(mvcPage.error?'<div style="color:var(--bad)">'+esc(mvcPage.error)+'</div>':'');
+    $('cLog').innerHTML=mvcLog.map(function(l){return '<li class="'+l[0]+'">'+esc(l[1])+'</li>';}).join('');
+  }
+  function mvcSnapshot(error){var t=totals(mvcCart);var lines={};Object.keys(mvcCart.lines).forEach(function(k){lines[k]=mvcCart.lines[k];});mvcPage={lines:lines,disc:t.disc,total:t.total,error:error||null};}
+  $('cAdd').addEventListener('click',function(){
+    var sku=$('cSku').value,qty=parseInt($('cQty').value,10);mvcLog=[];
+    mvcLog.push(['c','Navegador → POST /cart/add (con token anti-falsificación)']);
+    mvcLog.push(['c','Controller: busca el producto y llama al Model']);
+    try{addTo(mvcCart,sku,qty);mvcLog.push(['m','Model: regla OK, el carrito cambia']);mvcLog.push(['c','Controller: Redirect a /cart (Post/Redirect/Get)']);mvcLog.push(['v','Navegador → GET /cart; la View se renderiza con un view model nuevo']);mvcSnapshot();}
+    catch(e){mvcLog.push(['m','Model: regla RECHAZADA → '+e.message]);mvcLog.push(['c','Controller: devuelve la View con 422 y el mensaje']);mvcLog.push(['v','La View se renderiza con el error']);mvcSnapshot(e.message);}
+    mvcRender();
+  });
+  $('cReload').addEventListener('click',function(){mvcLog=[['v','Navegador → GET /cart; el servidor lee el Model y renderiza de nuevo']];mvcSnapshot();mvcRender();});
+  mvcSnapshot();mvcRender();
+
+  /* ---------- MVVM lab: the view observes ---------- */
+  var vmCart=newCart(),vm={selected:'',qty:1,status:'',lines:{},sub:0,disc:0,total:0},vmLog=[],listeners=[];
+  function vmRaise(name){vmLog.push(['vm','PropertyChanged("'+name+'")']);}
+  function canAdd(){return vm.selected!==''&&vm.qty>0;}
+  function canClear(){return count(vmCart)>0;}
+  function vmRefresh(){
+    var t=totals(vmCart);vm.lines={};Object.keys(vmCart.lines).forEach(function(k){vm.lines[k]=vmCart.lines[k];});
+    vmLog.push(['vm','Lines.CollectionChanged']);
+    if(vm.sub!==t.sub){vm.sub=t.sub;vmRaise('SubtotalText');}
+    if(vm.disc!==t.disc){vm.disc=t.disc;vmRaise('DiscountText');}
+    if(vm.total!==t.total){vm.total=t.total;vmRaise('TotalText');}
+    vmLog.push(['vm','Clear.CanExecuteChanged']);
+  }
+  function setSelected(v){if(vm.selected===v)return;vm.selected=v;vmRaise('SelectedProduct');vmLog.push(['vm','Add.CanExecuteChanged']);}
+  function setQty(v){if(vm.qty===v)return;vm.qty=v;vmRaise('Quantity');vmLog.push(['vm','Add.CanExecuteChanged']);}
+  function vmView(){ // the View: reacts to the notifications
+    var rows=Object.keys(vm.lines).map(function(k){return '<div class="line"><span>'+esc(NAME[k])+' ×'+vm.lines[k]+'</span><span>'+money(PRICE[k]*vm.lines[k])+'</span></div>';}).join('')||'<div class="line"><span>(carrito vacío)</span><span></span></div>';
+    $('vScreen').innerHTML='<b>Pantalla enlazada al ViewModel</b> (se redibuja sola)'+rows+'<div class="line"><span>Descuento</span><span>'+money(vm.disc)+'</span></div><div class="line"><b>Total</b><b>'+money(vm.total)+'</b></div>'+(vm.status?'<div>'+esc(vm.status)+'</div>':'');
+    $('vAdd').disabled=!canAdd();$('vClear').disabled=!canClear();
+    $('vLog').innerHTML=vmLog.slice(-14).map(function(l){return '<li class="'+l[0]+'">'+esc(l[1])+'</li>';}).join('');
+  }
+  $('vSel').addEventListener('change',function(){vmLog=[];setSelected($('vSel').value);vmView();});
+  $('vQty').addEventListener('input',function(){vmLog=[];var q=parseInt($('vQty').value,10);setQty(isNaN(q)?0:q);vmView();});
+  $('vAdd').addEventListener('click',function(){
+    if(!canAdd())return;vmLog=[['v','La vista invoca AddSelectedCommand.Execute()']];
+    try{addTo(vmCart,vm.selected,vm.qty);vm.status='Añadido '+vm.qty+' × '+NAME[vm.selected]+'.';vmLog.push(['m','Model: regla OK']);}
+    catch(e){vm.status=e.message;vmLog.push(['m','Model: regla rechazada → el ViewModel la convierte en StatusMessage (no es una excepción para la vista)']);}
+    vmRaise('StatusMessage');vmRefresh();vmView();
+  });
+  $('vClear').addEventListener('click',function(){
+    if(!canClear())return;vmLog=[['v','La vista invoca ClearCommand.Execute()']];
+    vmCart=newCart();vm.status='Carrito vaciado.';vmRaise('StatusMessage');vmRefresh();vmView();
+  });
+  vmView();
+
+  /* ---------- whose responsibility? ---------- */
+  var MODES={
+    mvc:{n:'MVC',opts:[['m','Model'],['c','Controller'],['v','View']],items:[
+      ['"No se pueden llevar más de 10 unidades de un producto"','m','Es una regla del negocio.'],
+      ['Elegir qué vista mostrar tras añadir un producto','c','El controlador decide la respuesta.'],
+      ['Pintar la tabla del carrito en HTML','v','Presentar es cosa de la vista.'],
+      ['Calcular el descuento del 10 % desde 100 €','m','Es negocio; la vista solo muestra el resultado.'],
+      ['Traducir "producto no existe" a un 404','c','Es la respuesta a la petición.'],
+      ['Redirigir tras un POST para que refrescar no repita la acción','c','Post/Redirect/Get lo decide el controlador.']]},
+    mvvm:{n:'MVVM',opts:[['m','Model'],['vm','ViewModel'],['v','View']],items:[
+      ['"No se pueden llevar más de 10 unidades de un producto"','m','Es una regla del negocio.'],
+      ['Decidir si el botón Añadir está habilitado (hay producto y cantidad > 0)','vm','El estado lógico vive en el comando (CanExecute), no en la vista.'],
+      ['Redibujar la lista cuando cambia el carrito','v','La vista observa PropertyChanged/CollectionChanged y se redibuja.'],
+      ['Formatear el total como "94.50 €"','vm','El ViewModel entrega datos listos para enlazar.'],
+      ['Convertir una regla rechazada en un mensaje de estado','vm','Es lógica de presentación: la vista no recibe excepciones.'],
+      ['Elegir el color o la animación de un botón','v','Apariencia pura: vive en la vista.']]}
+  };
+  var mode='mvc',gi=0,gs=0,gb=$('gameMode'),game=$('game');
+  Object.keys(MODES).forEach(function(k){
+    var b=document.createElement('button');b.textContent=MODES[k].n;
+    b.addEventListener('click',function(){mode=k;gi=0;gs=0;[].forEach.call(gb.children,function(x){x.classList.toggle('on',x===b);});showGame();});
+    gb.appendChild(b);
+  });
+  function showGame(){
+    var M=MODES[mode];
+    if(gi>=M.items.length){game.innerHTML='<h3>Resultado ('+M.n+'): '+gs+' / '+M.items.length+'</h3><p>'+(gs>=M.items.length-1?'Excelente reparto de responsabilidades.':'Repasa quién decide, quién presenta y quién pinta.')+'</p><button id="gAgain">Reintentar</button>';
+      $('gAgain').addEventListener('click',function(){gi=0;gs=0;showGame();});return;}
+    var it=M.items[gi];
+    game.innerHTML='<p><b>'+(gi+1)+'/'+M.items.length+'</b> '+esc(it[0])+'</p><div class="row">'+M.opts.map(function(o){return '<button data-k="'+o[0]+'"><span class="tag '+o[0]+'">'+esc(o[1])+'</span></button>';}).join('')+'</div><div class="msg" id="gMsg" aria-live="polite"></div>';
+    [].forEach.call(game.querySelectorAll('.row button'),function(b){
+      b.addEventListener('click',function(){
+        var ok=b.dataset.k===it[1];if(ok)gs++;
+        [].forEach.call(game.querySelectorAll('.row button'),function(x){x.disabled=true;});
+        var m=$('gMsg');m.className='msg '+(ok?'ok':'err');
+        var right=M.opts.filter(function(o){return o[0]===it[1];})[0][1];
+        m.innerHTML=(ok?'Correcto. ':'No: es del <b>'+esc(right)+'</b>. ')+esc(it[2])+' <button id="gNext">Siguiente</button>';
+        $('gNext').addEventListener('click',function(){gi++;showGame();});
+      });
+    });
+  }
+  gb.firstChild.click();
+
+  /* ---------- quiz ---------- */
+  var Q=[
+    ['¿MVC y MVVM son arquitecturas de toda la aplicación?',['Sí, reemplazan a Clean','No: son patrones de la capa de presentación','Solo MVC lo es'],1,'Viven dentro de la presentación de una arquitectura mayor (Layered, Clean, Hexagonal...).'],
+    ['¿Quién conoce al Model en MVC?',['Solo la vista','El controlador y la vista; el Model no los conoce a ellos','Nadie'],1,'El Model no depende de la vista ni del controlador: es la clave de la separación.'],
+    ['En MVVM, ¿qué conoce el ViewModel de la vista?',['Sus botones','Nada: la vista se enlaza a él','Su HTML'],1,'El ViewModel expone estado y comandos; la vista observa. No referencia tipos de vista.'],
+    ['¿Qué es un "ViewModel" en MVC?',['Un objeto activo con comandos','Una bolsa pasiva de datos para una vista','El controlador'],1,'Es pasivo: datos ya formateados, creados en cada petición.'],
+    ['El botón Añadir debe estar deshabilitado si no hay producto seleccionado. ¿Dónde se decide en MVVM?',['En el code-behind de la vista','En CanExecute del comando del ViewModel','En el Model'],1,'Microsoft lo recomienda: enlazar al estado del ViewModel en vez de habilitar/deshabilitar a mano.'],
+    ['Tras un POST de formulario en MVC, ¿por qué se redirige?',['Por velocidad','Para que refrescar la página no repita la acción (Post/Redirect/Get)','Porque es obligatorio'],1,'Evita que un F5 vuelva a añadir el producto.'],
+    ['Dos presentaciones (web y escritorio) necesitan la misma regla. ¿Dónde se escribe?',['En cada controlador/ViewModel','Una vez, en el Model','En la vista'],1,'Así web y escritorio la comparten y no se desincronizan.']
+  ];
+  var qi=0,score=0,qbox=$('quizBox');
+  function showQ(){
+    if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: distingues los dos patrones.':score>=4?'Bien. Repasa quién conoce a quién.':'Vuelve al laboratorio y compara los dos ciclos.')+'</p><button id="again">Reintentar</button>';
+      $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}
+    var q=Q[qi];
+    qbox.innerHTML='<p><b>'+(qi+1)+'/'+Q.length+'</b> '+esc(q[0])+'</p>'+q[1].map(function(o,i){return '<button class="opt" data-i="'+i+'">'+esc(o)+'</button>';}).join('')+'<div class="msg" id="qmsg" aria-live="polite"></div>';
+    [].forEach.call(qbox.querySelectorAll('.opt'),function(b){
+      b.addEventListener('click',function(){
+        var i=parseInt(b.dataset.i,10);
+        [].forEach.call(qbox.querySelectorAll('.opt'),function(x){x.disabled=true;});
+        b.classList.add(i===q[2]?'right':'wrong');
+        if(i!==q[2])qbox.querySelectorAll('.opt')[q[2]].classList.add('right'); else score++;
+        $('qmsg').innerHTML=esc(q[3])+' <button id="next">Siguiente</button>';
+        $('next').addEventListener('click',function(){qi++;showQ();});
+      });
+    });
+  }
+  showQ();
+})();
+</script>
+</body>
+</html>
