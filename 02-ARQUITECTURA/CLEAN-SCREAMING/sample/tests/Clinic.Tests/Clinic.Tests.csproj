@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.13" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Clinic.SharedKernel\Clinic.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\Patients\Clinic.Patients.Domain\Clinic.Patients.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Patients\Clinic.Patients.Application\Clinic.Patients.Application.csproj" />
+    <ProjectReference Include="..\..\src\Patients\Clinic.Patients.Adapters\Clinic.Patients.Adapters.csproj" />
+    <ProjectReference Include="..\..\src\Appointments\Clinic.Appointments.Domain\Clinic.Appointments.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Appointments\Clinic.Appointments.Application\Clinic.Appointments.Application.csproj" />
+    <ProjectReference Include="..\..\src\Appointments\Clinic.Appointments.Adapters\Clinic.Appointments.Adapters.csproj" />
+    <ProjectReference Include="..\..\src\Billing\Clinic.Billing.Domain\Clinic.Billing.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Billing\Clinic.Billing.Application\Clinic.Billing.Application.csproj" />
+    <ProjectReference Include="..\..\src\Billing\Clinic.Billing.Adapters\Clinic.Billing.Adapters.csproj" />
+    <ProjectReference Include="..\..\src\Clinic.Host\Clinic.Host.csproj" />
+  </ItemGroup>
+
+</Project>

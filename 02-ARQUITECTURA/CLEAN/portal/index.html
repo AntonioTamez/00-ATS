@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clean Architecture para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --domain:#e8b923;--app:#e0723a;--infra:#3a8fd9;--api:#7a5cc7;--ok:#2e8b57;--bad:#c0392b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:62ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover{border-color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:99px;color:#fff;font-weight:600}
+.layers{display:grid;gap:24px;grid-template-columns:minmax(0,1fr);align-items:start}
+@media(min-width:760px){.layers{grid-template-columns:340px 1fr}}
+.rings{position:relative;width:min(340px,100%);aspect-ratio:1;margin:0 auto}
+.ring{position:absolute;border-radius:50%;display:flex;justify-content:center;border:2px solid;cursor:pointer;font-size:.72rem;font-weight:700;padding-top:6px;transition:.15s}
+.ring span{pointer-events:none}
+.ring:hover,.ring.on{filter:brightness(1.08);box-shadow:0 0 0 3px currentColor}
+#r-api{inset:0;color:var(--api);background:color-mix(in srgb,var(--api) 14%,transparent)}
+#r-infra{inset:13%;color:var(--infra);background:color-mix(in srgb,var(--infra) 16%,transparent)}
+#r-app{inset:26%;color:var(--app);background:color-mix(in srgb,var(--app) 18%,transparent)}
+#r-domain{inset:39%;color:var(--domain);background:color-mix(in srgb,var(--domain) 25%,transparent);align-items:center;padding:0}
+.arrow{text-align:center;color:var(--muted);font-size:.85rem;margin-top:10px}
+ul.tight{margin:6px 0 12px;padding-left:20px}
+ul.tight li{margin:3px 0}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--bad);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top}
+.scroll{overflow-x:auto}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.steps button.on{background:var(--fg);color:var(--bg)}
+.flowbox{min-height:130px}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--infra)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#capas">Las capas</a><a href="#flujo">Una petición</a>
+  <a href="#estructura">Estructura</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>Clean Architecture<br>para novatos</h1>
+  <p class="lead">Una forma de organizar tu código para que las reglas de tu negocio no dependan de la base de datos, el framework web ni ninguna librería. Esta página te explica la idea, qué va en cada capa y cómo replicarla.</p>
+</header>
+
+<section id="que">
+  <h2>1. ¿Qué problema resuelve?</h2>
+  <div class="grid">
+    <div class="card"><h3>Sin arquitectura</h3>
+      <p>Un controller que valida, calcula, hace SQL y devuelve JSON. Para probar una regla necesitas servidor + base de datos. Cambiar de base de datos significa tocar todo.</p></div>
+    <div class="card"><h3>Con Clean Architecture</h3>
+      <p>Las reglas viven en el centro, sin conocer nada de afuera. La base de datos y la web son <b>detalles</b> enchufables. Pruebas rápidas, cambios localizados.</p></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>La Regla de Dependencia (la única que debes memorizar)</h3>
+    <p>El código de una capa solo puede <b>conocer</b> capas más internas. Nunca al revés.</p>
+    <blockquote style="margin:8px 0;color:var(--muted)">“Nada en un círculo interno puede saber nada sobre algo de un círculo externo.” — Robert C. Martin, 2012</blockquote>
+  </div>
+</section>
+
+<section id="capas">
+  <h2>2. Las capas (haz clic en los círculos)</h2>
+  <div class="layers">
+    <div>
+      <div class="rings" role="group" aria-label="Capas concéntricas">
+        <div class="ring" id="r-api" data-k="api" tabindex="0"><span>API / Frameworks</span></div>
+        <div class="ring" id="r-infra" data-k="infra" tabindex="0"><span>Infrastructure</span></div>
+        <div class="ring" id="r-app" data-k="app" tabindex="0"><span>Application</span></div>
+        <div class="ring" id="r-domain" data-k="domain" tabindex="0"><span>Domain</span></div>
+      </div>
+      <div class="arrow">↑ las dependencias apuntan hacia el centro ↑</div>
+    </div>
+    <div class="card" id="layer-detail" aria-live="polite"></div>
+  </div>
+
+  <div class="scroll card" style="margin-top:14px">
+    <table>
+      <tr><th>Capa</th><th>Proyecto .NET</th><th>Referencia a</th></tr>
+      <tr><td>Domain</td><td><code>TodoApp.Domain</code></td><td>nadie</td></tr>
+      <tr><td>Application</td><td><code>TodoApp.Application</code></td><td>Domain</td></tr>
+      <tr><td>Infrastructure</td><td><code>TodoApp.Infrastructure</code></td><td>Application</td></tr>
+      <tr><td>API</td><td><code>TodoApp.Api</code></td><td>Application + Infrastructure</td></tr>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>¿Dónde pongo este código? (3 preguntas)</h3>
+    <ol class="tight">
+      <li>¿Es una regla que existiría aunque no hubiera software? → <b>Domain</b></li>
+      <li>¿Es “lo que hace la aplicación” (orquestar pasos)? → <b>Application</b></li>
+      <li>¿Es un detalle técnico (SQL, HTTP, archivos, email)? → <b>Infrastructure / API</b></li>
+    </ol>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>El truco: puertos y adaptadores</h3>
+    <p>El caso de uso necesita guardar datos, pero no puede depender de la base de datos. Por eso <b>Application define una interfaz</b> (puerto) y <b>Infrastructure la implementa</b> (adaptador). El control va hacia afuera, pero la dependencia de código apunta hacia adentro.</p>
+    <pre><code>// Application  (define QUÉ necesita)
+public interface ITodoRepository { Task AddAsync(TodoItem item, CancellationToken ct); }
+
+// Infrastructure  (decide CÓMO se hace)
+internal sealed class InMemoryTodoRepository : ITodoRepository { ... }
+
+// Api/Program.cs  (los conecta)
+services.AddSingleton&lt;ITodoRepository, InMemoryTodoRepository&gt;();</code></pre>
+  </div>
+</section>
+
+<section id="flujo">
+  <h2>3. Recorrido de una petición</h2>
+  <p>Ejemplo: <code>POST /api/todos</code> con <code>{"title":"Aprender"}</code>.</p>
+  <div class="steps" id="steps"></div>
+  <div class="card flowbox" id="flow" aria-live="polite"></div>
+</section>
+
+<section id="estructura">
+  <h2>4. Estructura de carpetas</h2>
+<pre><code>TodoApp/
+├─ src/
+│  ├─ TodoApp.Domain/            ← reglas del negocio
+│  │  ├─ DomainException.cs
+│  │  └─ Todos/TodoItem.cs
+│  ├─ TodoApp.Application/       ← casos de uso + puertos
+│  │  ├─ Abstractions/ITodoRepository.cs, IClock.cs
+│  │  └─ Todos/CreateTodo.cs, CompleteTodo.cs, ListTodos.cs, TodoDto.cs
+│  ├─ TodoApp.Infrastructure/    ← adaptadores
+│  │  ├─ Persistence/InMemoryTodoRepository.cs
+│  │  └─ Time/SystemClock.cs
+│  └─ TodoApp.Api/               ← HTTP + composition root
+│     ├─ Program.cs
+│     └─ Todos/TodoEndpoints.cs, DomainExceptionHandler.cs
+└─ tests/TodoApp.Tests/          ← Domain, UseCases, Architecture, Api</code></pre>
+  <p>Orden recomendado para construir: <b>Domain → Application → Infrastructure → Api</b>, cada paso con su test. El proyecto completo está en <code>sample/</code> y la guía paso a paso en <code>docs/GUIA-CLEAN-ARCHITECTURE.md</code>.</p>
+</section>
+
+<section id="errores">
+  <h2>5. Errores típicos</h2>
+  <div class="scroll card">
+    <table>
+      <tr><th>Mal</th><th>Por qué</th><th>Bien</th></tr>
+      <tr><td class="no">Atributos de EF o <code>[Required]</code> en la entidad</td><td>Acopla el dominio a frameworks</td><td class="yes">Validar en la entidad, mapear en Infrastructure</td></tr>
+      <tr><td class="no">Devolver la entidad en la API</td><td>Expone el modelo interno</td><td class="yes">Devolver DTOs</td></tr>
+      <tr><td class="no"><code>if</code> de negocio en el caso de uso</td><td>La regla se duplica y se pierde</td><td class="yes">Ponerla en la entidad</td></tr>
+      <tr><td class="no"><code>DateTime.Now</code> en el dominio</td><td>No se puede testear</td><td class="yes">Inyectar <code>IClock</code></td></tr>
+      <tr><td class="no">Todo esto para un CRUD sin reglas</td><td>Sobre-ingeniería</td><td class="yes">Úsala cuando el negocio lo justifique</td></tr>
+    </table>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Protege la regla con un test</h3>
+    <pre><code>[Fact]
+public void Application_DependsOnlyOnDomain()
+{
+    var refs = Assembly.Load("TodoApp.Application").GetReferencedAssemblies()
+        .Select(a =&gt; a.Name!).Where(n =&gt; n.StartsWith("TodoApp.")).ToList();
+    Assert.Equal(["TodoApp.Domain"], refs);
+}</code></pre>
+    <p>Si alguien añade una referencia prohibida, el test falla. La arquitectura deja de ser una intención y pasa a ser verificable.</p>
+  </div>
+</section>
+
+<section id="quiz">
+  <h2>6. Comprueba lo aprendido</h2>
+  <div id="quizBox"></div>
+</section>
+
+<footer>
+  Fuentes: <a href="https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html">The Clean Architecture (R. C. Martin)</a>,
+  <a href="https://milanjovanovic.tech/blog/clean-architecture-dotnet">Milan Jovanović</a>,
+  <a href="https://www.luisllamas.es/en/aspnet-core-clean-architecture-layers/">luisllamas</a>.
+</footer>
+</div>
+
+<script>
+const LAYERS = {
+  domain:{name:"Domain (Entities)",color:"var(--domain)",
+    what:"Las reglas del negocio que valdrían aunque no existiera software. Es lo que menos cambia y más valor tiene.",
+    has:["Entidades (<code>TodoItem</code>)","Value objects","Excepciones de dominio","Reglas: título obligatorio, máx. 100 caracteres, no completar dos veces"],
+    no:["HTTP, JSON, SQL","DTOs","Inyección de dependencias","<code>DateTime.Now</code>"],
+    code:`public static TodoItem Create(string title, DateTimeOffset now)
+{
+    var normalized = title?.Trim() ?? "";
+    if (normalized.Length == 0)
+        throw new DomainException("A todo title is required.");
+    return new TodoItem(Guid.NewGuid(), normalized, now);
+}`},
+  app:{name:"Application (Use Cases)",color:"var(--app)",
+    what:"Lo que hace la aplicación: orquesta entidades y puertos para cumplir una intención del usuario. Un caso de uso = una clase.",
+    has:["Casos de uso (<code>CreateTodo</code>)","Puertos: <code>ITodoRepository</code>, <code>IClock</code>","DTOs (<code>TodoDto</code>)","Errores de aplicación (<code>NotFoundException</code>)"],
+    no:["Reglas de negocio (van en Domain)","EF Core, ASP.NET","Implementaciones de los puertos"],
+    code:`public async Task<TodoDto> ExecuteAsync(CreateTodoCommand cmd, CancellationToken ct = default)
+{
+    var item = TodoItem.Create(cmd.Title, clock.UtcNow); // regla en Domain
+    await repository.AddAsync(item, ct);                // puerto
+    return TodoDto.From(item);                          // DTO, no entidad
+}`},
+  infra:{name:"Infrastructure (Adapters)",color:"var(--infra)",
+    what:"Implementa los puertos con tecnología concreta. Es la capa que cambias cuando cambias de base de datos, proveedor de email o reloj.",
+    has:["Repositorios (EF Core, Dapper, en memoria)","Clientes de servicios externos","Reloj del sistema","<code>AddInfrastructure()</code> para registrar en DI"],
+    no:["Lógica de negocio","Conocer la capa Api"],
+    code:`internal sealed class InMemoryTodoRepository : ITodoRepository
+{
+    private readonly ConcurrentDictionary<Guid, TodoItem> _store = new();
+    public Task AddAsync(TodoItem item, CancellationToken ct)
+    { _store[item.Id] = item; return Task.CompletedTask; }
+    // ...
+}`},
+  api:{name:"API (Frameworks & Drivers)",color:"var(--api)",
+    what:"El borde con el mundo: HTTP entra, se llama al caso de uso, HTTP sale. También es el composition root: el único lugar que conoce todas las capas.",
+    has:["Endpoints / controllers delgados","<code>Program.cs</code> con la configuración de DI","Traducción de errores a códigos HTTP (422, 404)"],
+    no:["Lógica de negocio","Acceso directo a datos"],
+    code:`group.MapPost("/", async (CreateTodoRequest body, CreateTodo useCase, CancellationToken ct) =>
+{
+    var created = await useCase.ExecuteAsync(new CreateTodoCommand(body.Title), ct);
+    return Results.Created($"/api/todos/{created.Id}", created);
+});`}
+};
+const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function showLayer(k){
+  const L = LAYERS[k];
+  document.querySelectorAll(".ring").forEach(r=>r.classList.toggle("on", r.dataset.k===k));
+  document.getElementById("layer-detail").innerHTML =
+    `<h3><span class="tag" style="background:${L.color}">${L.name}</span></h3>
+     <p>${L.what}</p>
+     <p class="yes">Contiene</p><ul class="tight">${L.has.map(x=>`<li>${x}</li>`).join("")}</ul>
+     <p class="no">No debe contener</p><ul class="tight">${L.no.map(x=>`<li>${x}</li>`).join("")}</ul>
+     <pre><code>${esc(L.code)}</code></pre>`;
+}
+document.querySelectorAll(".ring").forEach(r=>{
+  r.addEventListener("click",e=>{e.stopPropagation();showLayer(r.dataset.k)});
+  r.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();showLayer(r.dataset.k)}});
+});
+showLayer("domain");
+
+const FLOW = [
+  {t:"1. API recibe",c:"var(--api)",h:"<code>TodoEndpoints</code> deserializa el JSON y crea un <code>CreateTodoCommand</code>. No decide nada de negocio."},
+  {t:"2. Caso de uso",c:"var(--app)",h:"<code>CreateTodo.ExecuteAsync</code> pide la hora a <code>IClock</code> y llama a <code>TodoItem.Create</code>."},
+  {t:"3. Domain valida",c:"var(--domain)",h:"<code>TodoItem.Create</code> aplica las reglas. Título vacío → lanza <code>DomainException</code>."},
+  {t:"4. Se guarda",c:"var(--infra)",h:"El caso de uso llama a <code>ITodoRepository.AddAsync</code>. En runtime responde <code>InMemoryTodoRepository</code>; el caso de uso no lo sabe."},
+  {t:"5. Respuesta",c:"var(--api)",h:"Se devuelve un <code>TodoDto</code> → <b>201 Created</b>. Si hubo <code>DomainException</code>, <code>DomainExceptionHandler</code> responde <b>422</b>; si no existe el id, <b>404</b>."}
+];
+const stepsEl = document.getElementById("steps"), flowEl = document.getElementById("flow");
+function showStep(i){
+  [...stepsEl.children].forEach((b,j)=>b.classList.toggle("on",i===j));
+  flowEl.innerHTML = `<h3><span class="tag" style="background:${FLOW[i].c}">${FLOW[i].t}</span></h3><p>${FLOW[i].h}</p>`;
+}
+FLOW.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.t;b.onclick=()=>showStep(i);stepsEl.appendChild(b)});
+showStep(0);
+
+const QUIZ = [
+  {q:"¿Hacia dónde apuntan las dependencias de código?",o:["Hacia afuera","Hacia el centro (Domain)","Da igual"],a:1,w:"La Regla de Dependencia: siempre hacia adentro."},
+  {q:"¿Dónde va la regla «un todo no se puede completar dos veces»?",o:["En el controller","En el caso de uso","En la entidad TodoItem"],a:2,w:"Es una regla del negocio: vive en el Domain para que no se duplique."},
+  {q:"¿Dónde se define la interfaz ITodoRepository?",o:["Application","Infrastructure","Api"],a:0,w:"El puerto lo define quien lo necesita (Application); Infrastructure lo implementa."},
+  {q:"¿Qué devuelve un caso de uso hacia la API?",o:["La entidad","Un DTO","Una fila de la base de datos"],a:1,w:"Solo datos planos cruzan la frontera, nunca entidades."},
+  {q:"¿Qué proyecto puede referenciar a todos los demás?",o:["Domain","Application","Api (composition root)"],a:2,w:"Es el único lugar que conecta las capas."}
+];
+const quizEl = document.getElementById("quizBox");
+QUIZ.forEach((item,qi)=>{
+  const d=document.createElement("div");d.className="card quiz";d.style.marginBottom="10px";
+  d.innerHTML=`<b>${qi+1}. ${item.q}</b>`;
+  const fb=document.createElement("p");fb.style.marginTop="8px";
+  item.o.forEach((t,oi)=>{
+    const b=document.createElement("button");b.className="opt";b.textContent=t;
+    b.onclick=()=>{
+      d.querySelectorAll(".opt").forEach(x=>x.classList.remove("right","wrong"));
+      const ok=oi===item.a; b.classList.add(ok?"right":"wrong");
+      fb.textContent=ok?"✔ Correcto. "+item.w:"✘ Intenta de nuevo.";
+    };
+    d.appendChild(b);
+  });
+  d.appendChild(fb);quizEl.appendChild(d);
+});
+
+const root=document.documentElement;
+try{const t=localStorage.getItem("theme");if(t)root.dataset.theme=t}catch(e){}
+document.getElementById("theme").onclick=()=>{
+  const dark=root.dataset.theme?root.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;
+  root.dataset.theme=dark?"light":"dark";
+  try{localStorage.setItem("theme",root.dataset.theme)}catch(e){}
+};
+</script>
+</body>
+</html>

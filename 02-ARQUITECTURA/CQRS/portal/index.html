@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CQRS para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --cmd:#d9622b;--qry:#3a8fd9;--evt:#7a5cc7;--ok:#2e8b57;--bad:#c0392b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:64ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.cmd{border-color:var(--cmd)}button.qry{border-color:var(--qry)}button.evt{border-color:var(--evt)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:top}
+.scroll{overflow-x:auto}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--bad);font-weight:600}
+/* lanes */
+.lanes{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:900px){.lanes{grid-template-columns:1fr 1fr 1fr}}
+.lane{border:2px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card)}
+.lane.w{border-color:var(--cmd)}.lane.e{border-color:var(--evt)}.lane.r{border-color:var(--qry)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
+input[type=text],input[type=number]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 8px;width:7.5em}
+select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 8px;max-width:100%}
+.kv{font-family:ui-monospace,Consolas,monospace;font-size:.85rem;background:var(--code);border-radius:8px;padding:8px 10px;margin:6px 0}
+.msg{min-height:2.8em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.9rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}
+.ev{list-style:none;margin:0;padding:0;font-family:ui-monospace,Consolas,monospace;font-size:.8rem}
+.ev li{padding:3px 8px;margin:3px 0;border-radius:6px;border-left:4px solid var(--evt);background:var(--code)}
+.ev li.pending{border-left-color:var(--bad)}
+.ev li.done{border-left-color:var(--ok);opacity:.8}
+.badge{display:inline-block;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:99px;color:#fff}
+.badge.stale{background:var(--bad)}.badge.fresh{background:var(--ok)}
+.seg button.on,.steps button.on{background:var(--fg);color:var(--bg)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.small{font-size:.85rem;color:var(--muted)}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--qry)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#sim">Simulador</a><a href="#niveles">Niveles</a>
+  <a href="#cuando">¿Lo necesito?</a><a href="#vs">vs otras</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>CQRS<br>para novatos</h1>
+  <p class="lead">Separar lo que <b>cambia</b> datos de lo que los <b>lee</b>. Dos modelos, cada uno hecho para su trabajo, unidos por eventos. Con un precio: la lectura puede ir un paso por detrás.</p>
+</header>
+
+<h2 id="que">1. La idea</h2>
+<div class="grid">
+  <div class="card"><h3 style="color:var(--cmd)">Command</h3><p>Una <b>intención</b> de negocio: "depositar 50". Cambia el estado, pasa por las reglas y devuelve casi nada (un id).</p></div>
+  <div class="card"><h3 style="color:var(--qry)">Query</h3><p>Una <b>pregunta</b>: "dame el resumen de la cuenta". Devuelve datos ya preparados para la pantalla y <b>nunca cambia nada</b>.</p></div>
+  <div class="card"><h3 style="color:var(--evt)">Eventos y projector</h3><p>Cada cambio deja un evento en un log. Un <i>projector</i> los lee y actualiza el modelo de lectura. Entre un paso y otro, la lectura está desactualizada.</p></div>
+</div>
+
+<h2 id="sim">2. Simulador: cuentas bancarias</h2>
+<p>Haz comandos a la izquierda. Fíjate: el <b>modelo de lectura (derecha) no cambia</b> hasta que el projector (centro) procesa los eventos.</p>
+<div class="lanes">
+  <div class="lane w">
+    <h3 style="color:var(--cmd)">Lado de escritura</h3>
+    <div class="row"><input type="text" id="owner" value="Ana" aria-label="Titular"><input type="number" id="od" value="50" min="0" aria-label="Descubierto"><button class="cmd" id="open">Abrir cuenta</button></div>
+    <div class="row"><select id="acc" aria-label="Cuenta"></select></div>
+    <div class="row"><input type="number" id="amt" value="100" step="0.01" aria-label="Importe">
+      <button class="cmd" id="dep">Depositar</button><button class="cmd" id="wd">Retirar</button><button class="cmd" id="cls">Cerrar</button></div>
+    <div class="kv" id="wstate">Sin cuentas.</div>
+    <div class="msg" id="cmsg" aria-live="polite"></div>
+  </div>
+  <div class="lane e">
+    <h3 style="color:var(--evt)">Log de eventos y projector</h3>
+    <div class="row">
+      <button class="evt" id="run">Ejecutar projector</button>
+      <button class="evt" id="rebuild">Reconstruir lectura</button>
+    </div>
+    <label class="small"><input type="checkbox" id="auto"> Projector automático (como el worker en segundo plano)</label>
+    <ul class="ev" id="events"><li>Sin eventos.</li></ul>
+    <div class="small" id="pend"></div>
+  </div>
+  <div class="lane r">
+    <h3 style="color:var(--qry)">Lado de lectura <span class="badge fresh" id="badge">al día</span></h3>
+    <div class="row"><button class="qry" id="qget">Consultar la cuenta</button><button class="qry" id="qtop">Top por saldo</button></div>
+    <div class="kv" id="rstate">Pulsa una consulta.</div>
+    <div class="small">Lo que ves es lo que sabe el modelo de lectura, no el de escritura.</div>
+  </div>
+</div>
+
+<h2 id="niveles">3. Tres niveles de CQRS</h2>
+<div class="steps seg" id="lv"></div>
+<div class="msg" id="lvMsg">Elige un nivel.</div>
+<p class="small" style="margin-top:8px">El ejemplo de este kit es el nivel 2, en memoria. No es Event Sourcing: el estado de <code>Account</code> se guarda tal cual y el log solo alimenta la lectura.</p>
+
+<h3 style="margin-top:24px">Cómo se ve en código</h3>
+<pre><code>// COMMAND: intención de negocio, devuelve un id o nada
+public sealed record DepositCommand(Guid AccountId, decimal Amount) : ICommand&lt;Unit&gt;;
+
+// handler: cargar → llamar a la regla del dominio → guardar (estado + eventos)
+account.Deposit(c.Amount, clock.GetUtcNow());
+await accounts.SaveAsync(account, ct);
+
+// QUERY: una pregunta, sin dominio
+public sealed record GetAccountQuery(Guid AccountId) : IQuery&lt;AccountSummary?&gt;;
+// Bank.Queries no referencia a ningún proyecto Bank.* (verificado con tests y con REA)</code></pre>
+
+<h2 id="cuando">4. ¿Realmente lo necesito?</h2>
+<p>Fowler lo advierte: <i>"you should be very cautious about using CQRS"</i>. Marca lo que se parece a tu caso:</p>
+<div class="card" id="check"></div>
+<div class="msg" id="checkMsg" style="margin-top:10px"></div>
+
+<h2 id="vs">5. Cómo se compara</h2>
+<div class="scroll"><table>
+<tr><th></th><th>CRUD</th><th>CQRS</th><th>Event Sourcing</th></tr>
+<tr><td>Modelo</td><td>Uno para todo</td><td>Uno para escribir, otro para leer</td><td>El estado es la secuencia de eventos</td></tr>
+<tr><td>Consistencia</td><td>Inmediata</td><td>Inmediata (nivel 1) o eventual (nivel 2)</td><td>Eventual en las vistas</td></tr>
+<tr><td>Complejidad</td><td>Baja</td><td>Media-alta</td><td>Alta</td></tr>
+<tr><td>Cuándo</td><td>Casi siempre</td><td>Reglas complejas / lecturas distintas</td><td>Cuando la historia es negocio</td></tr>
+</table></div>
+<p style="margin-top:10px">Se combina con DDD (modelo de escritura), con Clean/Hexagonal (organización) y con Vertical Slice (cada comando o consulta en su carpeta). No es lo mismo que Event Sourcing ni que Event-Driven.</p>
+
+<h2 id="errores">6. Errores típicos</h2>
+<div class="grid">
+  <div class="card"><h3>Comandos que devuelven datos</h3><p>Devuelve un id; que el cliente consulte. Si no, mezclas lectura y escritura otra vez.</p></div>
+  <div class="card"><h3>Ignorar la consistencia eventual</h3><p>El usuario hace algo y no lo ve. Diseña la pantalla para ello.</p></div>
+  <div class="card"><h3>Reglas en los handlers</h3><p>El handler orquesta; la regla vive en el dominio (<code>Account.Withdraw</code>).</p></div>
+  <div class="card"><h3>Projector sin idempotencia</h3><p>Un reintento duplica datos. Guarda el último evento aplicado.</p></div>
+  <div class="card"><h3>CQRS en un CRUD</h3><p>El doble de código para nada. Empieza simple.</p></div>
+  <div class="card"><h3>"CQRS = Event Sourcing"</h3><p>Son cosas distintas; no necesitas un broker ni eventos como fuente de verdad.</p></div>
+</div>
+
+<h2 id="quiz">7. Quiz</h2>
+<div class="card quiz" id="quizBox"></div>
+
+<footer>Kit completo: <code>docs/GUIA-CQRS.md</code>, <code>docs/CQRS-VS-OTRAS.md</code> y <code>sample/</code>.</footer>
+</div>
+
+<script>
+(function(){
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function $(id){return document.getElementById(id);}
+  function money(n){return Number(n).toFixed(2);}
+
+  try{var t=localStorage.getItem('cqrs-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}
+  $('theme').addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('cqrs-theme',next);}catch(e){}
+  });
+
+  /* ---------- simulator (mirrors the sample's rules) ---------- */
+  var accounts,log,rows,checkpoint,seq,names;
+  function reset(){accounts={};log=[];rows={};checkpoint=0;names=0;renderAll();}
+  function cmsg(ok,text){var m=$('cmsg');m.className='msg '+(ok?'ok':'err');m.textContent=text;}
+  function selId(){return $('acc').value;}
+
+  function push(e){e.seq=log.length+1;log.push(e);}
+  function open(){
+    var owner=$('owner').value.trim(),od=parseFloat($('od').value);
+    if(!owner){return cmsg(false,'Regla del dominio: el titular es obligatorio.');}
+    if(isNaN(od)||od<0){return cmsg(false,'Regla del dominio: el descubierto no puede ser negativo.');}
+    var id='acc-'+(++names);
+    accounts[id]={id:id,owner:owner,od:od,bal:0,status:'Open'};
+    push({t:'AccountOpened',id:id,owner:owner,od:od});
+    renderAll();$('acc').value=id;renderAll();
+    cmsg(true,'OpenAccountCommand aceptado → devuelve solo el id '+id+'. El modelo de lectura aún no lo conoce.');
+  }
+  function withAcc(fn){
+    var a=accounts[selId()];
+    if(!a){return cmsg(false,'NotFound: no hay cuenta seleccionada.');}
+    fn(a);renderAll();
+  }
+  function amount(){var n=parseFloat($('amt').value);return n;}
+  function validAmount(n){
+    if(isNaN(n)||n<=0){cmsg(false,'Regla del dominio: el importe debe ser positivo.');return false;}
+    if(Math.round(n*100)/100!==n){cmsg(false,'Regla del dominio: máximo 2 decimales.');return false;}
+    return true;
+  }
+  $('open').addEventListener('click',open);
+  $('dep').addEventListener('click',function(){withAcc(function(a){
+    var n=amount();if(a.status==='Closed')return cmsg(false,'Regla del dominio: la cuenta está cerrada.');
+    if(!validAmount(n))return;
+    a.bal=Math.round((a.bal+n)*100)/100;push({t:'MoneyDeposited',id:a.id,amount:n,after:a.bal});
+    cmsg(true,'DepositCommand aceptado → evento MoneyDeposited en el log.');
+  });});
+  $('wd').addEventListener('click',function(){withAcc(function(a){
+    var n=amount();if(a.status==='Closed')return cmsg(false,'Regla del dominio: la cuenta está cerrada.');
+    if(!validAmount(n))return;
+    if(a.bal-n<-a.od)return cmsg(false,'Regla del dominio: fondos insuficientes (saldo '+money(a.bal)+', descubierto '+money(a.od)+'). No se escribe ningún evento.');
+    a.bal=Math.round((a.bal-n)*100)/100;push({t:'MoneyWithdrawn',id:a.id,amount:n,after:a.bal});
+    cmsg(true,'WithdrawCommand aceptado → evento MoneyWithdrawn en el log.');
+  });});
+  $('cls').addEventListener('click',function(){withAcc(function(a){
+    if(a.status==='Closed')return cmsg(false,'Regla del dominio: la cuenta está cerrada.');
+    if(a.bal!==0)return cmsg(false,'Regla del dominio: solo se cierra con saldo cero.');
+    a.status='Closed';push({t:'AccountClosed',id:a.id});
+    cmsg(true,'CloseAccountCommand aceptado → evento AccountClosed.');
+  });});
+
+  /* projector */
+  function applyEvent(e){
+    var r=rows[e.id];
+    if(e.t==='AccountOpened'){rows[e.id]={id:e.id,owner:e.owner,od:e.od,bal:0,status:'Open',tx:[]};}
+    else if(e.t==='MoneyDeposited'&&r){r.bal=e.after;r.tx.push({type:'Deposit',amount:e.amount,after:e.after});}
+    else if(e.t==='MoneyWithdrawn'&&r){r.bal=e.after;r.tx.push({type:'Withdrawal',amount:e.amount,after:e.after});}
+    else if(e.t==='AccountClosed'&&r){r.status='Closed';}
+    checkpoint=e.seq;
+  }
+  function runProjector(){var n=0;while(checkpoint<log.length){applyEvent(log[checkpoint]);n++;}return n;}
+  $('run').addEventListener('click',function(){var n=runProjector();cmsg(true,'Projector: '+n+' evento(s) aplicado(s). Si lo ejecutas otra vez no aplica nada (idempotente).');renderAll();});
+  $('rebuild').addEventListener('click',function(){rows={};checkpoint=0;var n=runProjector();cmsg(true,'Reconstrucción: lectura vaciada y rehecha desde el log completo ('+n+' eventos).');renderAll();});
+  $('auto').addEventListener('change',renderAll);
+
+  /* queries read ONLY rows (the read model) */
+  $('qget').addEventListener('click',function(){
+    var id=selId(),r=rows[id],box=$('rstate');
+    if(!id){box.textContent='GetAccountQuery → sin cuenta seleccionada.';return;}
+    if(!r){box.textContent='GetAccountQuery('+id+') → 404 (el modelo de lectura aún no la conoce)';return;}
+    box.innerHTML='GetAccountQuery('+esc(id)+')<br>'+esc(r.owner)+' · saldo '+money(r.bal)+' · descubierto '+money(r.od)+' · '+esc(r.status)+' · '+r.tx.length+' mov.'+
+      (r.tx.length?'<br>'+r.tx.slice().reverse().map(function(x){return esc(x.type)+' '+money(x.amount)+' → '+money(x.after);}).join('<br>'):'');
+  });
+  $('qtop').addEventListener('click',function(){
+    var list=Object.keys(rows).map(function(k){return rows[k];}).filter(function(r){return r.status==='Open';})
+      .sort(function(a,b){return b.bal-a.bal||a.owner.localeCompare(b.owner);}).slice(0,3);
+    $('rstate').innerHTML='GetRichestAccountsQuery(3)<br>'+(list.length?list.map(function(r){return esc(r.owner)+' '+money(r.bal);}).join('<br>'):'(el modelo de lectura está vacío)');
+  });
+
+  function renderAll(){
+    if($('auto').checked)runProjector();
+    var keys=Object.keys(accounts),sel=$('acc').value;
+    $('acc').innerHTML=keys.length?keys.map(function(k){return '<option value="'+esc(k)+'">'+esc(k)+' ('+esc(accounts[k].owner)+')</option>';}).join(''):'<option value="">(sin cuentas)</option>';
+    if(keys.indexOf(sel)>=0)$('acc').value=sel;
+    var a=accounts[$('acc').value];
+    $('wstate').innerHTML=a?'Account '+esc(a.id)+'<br>saldo '+money(a.bal)+' · descubierto '+money(a.od)+' · '+esc(a.status):'Sin cuentas.';
+    $('events').innerHTML=log.length?log.map(function(e){
+      var d=e.seq<=checkpoint;
+      return '<li class="'+(d?'done':'pending')+'">#'+e.seq+' '+esc(e.t)+' '+esc(e.id)+(e.amount?' '+money(e.amount):'')+(d?' ✔ proyectado':' ⏳ pendiente')+'</li>';}).join(''):'<li>Sin eventos.</li>';
+    var pending=log.length-checkpoint;
+    $('pend').textContent=pending>0?pending+' evento(s) sin proyectar':'';
+    var b=$('badge');b.className='badge '+(pending>0?'stale':'fresh');b.textContent=pending>0?'desactualizado':'al día';
+  }
+  reset();
+
+  /* levels */
+  var LV=[
+    ['1. Mismo almacén','Dos caminos de código (handlers y modelos distintos) sobre la misma base. Consistencia inmediata. Es el primer paso razonable y el de mejor relación coste/beneficio.'],
+    ['2. Almacenes separados','Escritura y lectura en bases distintas, unidas por eventos. Consistencia eventual. Es el nivel de este ejemplo (en memoria).'],
+    ['3. + Event Sourcing','El estado de escritura son los eventos. Es otra técnica, independiente de CQRS, y añade complejidad: úsala solo si la historia de cambios es parte del negocio.']
+  ];
+  var lv=$('lv');
+  LV.forEach(function(l){
+    var b=document.createElement('button');b.textContent=l[0];
+    b.addEventListener('click',function(){[].forEach.call(lv.children,function(c){c.classList.toggle('on',c===b);});$('lvMsg').textContent=l[1];});
+    lv.appendChild(b);
+  });
+
+  /* checklist */
+  var CH=[
+    ['Mi dominio tiene reglas complejas que cambian a menudo',1],
+    ['Las pantallas muestran datos combinados muy distintos de lo que guardo',1],
+    ['Leo mucho más de lo que escribo y necesito escalarlos por separado',1],
+    ['Mis usuarios trabajan por tareas ("depositar", "cerrar") más que editando formularios',1],
+    ['Mi app es en esencia altas, bajas y modificaciones de tablas',-2],
+    ['No puedo permitirme que la pantalla muestre datos un instante desactualizados',-2],
+    ['El equipo nunca ha usado este patrón y hay plazo corto',-1]
+  ];
+  var ck=$('check');
+  CH.forEach(function(c,i){
+    var l=document.createElement('label');l.style.display='block';l.style.cursor='pointer';
+    l.innerHTML='<input type="checkbox" data-i="'+i+'"> '+esc(c[0]);ck.appendChild(l);
+  });
+  ck.addEventListener('change',function(){
+    var s=0;[].forEach.call(ck.querySelectorAll('input:checked'),function(x){s+=CH[parseInt(x.dataset.i,10)][1];});
+    $('checkMsg').textContent=s>=3?'Merece la pena evaluar CQRS, empezando por el nivel 1.':s>=1?'Dudoso: prueba primero a separar handlers y modelos sobre el mismo almacén (nivel 1).':'Probablemente un CRUD ordenado te basta. No pagues el coste de CQRS.';
+  });
+
+  /* quiz */
+  var Q=[
+    ['¿Qué devuelve normalmente un comando?',['El objeto completo para mostrar','Un id o nada','Una lista de DTOs'],1,'Los comandos cambian estado; para leer, se hace una query.'],
+    ['¿Puede una query cambiar datos?',['Sí, si es rápida','No, nunca','Solo con permiso de admin'],1,'"Queries never alter data" (Microsoft).'],
+    ['Acabas de abrir una cuenta y el GET devuelve 404. ¿Qué pasa?',['Hay un bug','El projector aún no actualizó el modelo de lectura','La cuenta no existe'],1,'Es consistencia eventual: el comando se aceptó, la lectura va un paso por detrás.'],
+    ['¿CQRS exige Event Sourcing?',['Sí','No, son técnicas independientes','Solo en .NET'],1,'Puedes tener CQRS sin Event Sourcing y viceversa. El ejemplo guarda el estado normalmente.'],
+    ['¿Por qué el projector guarda el último evento aplicado?',['Para ir más rápido','Para no aplicar un evento dos veces y poder retomar','Para borrar eventos viejos'],1,'Así es idempotente y se puede ejecutar de nuevo sin duplicar.'],
+    ['¿Qué pasa si se corrompe el modelo de lectura?',['Se pierden los datos','Se reconstruye desde el log de eventos','Hay que restaurar un backup de escritura'],1,'La lectura es derivada y desechable: se rehace con RebuildAsync.'],
+    ['Tu app son formularios de alta y edición sin reglas. ¿CQRS?',['Sí, siempre','No: un CRUD ordenado basta','Solo si hay microservicios'],1,'Fowler: "Many systems do fit a CRUD mental model, and so should be done in that style".']
+  ];
+  var qi=0,score=0,qbox=$('quizBox');
+  function showQ(){
+    if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: ya piensas en comandos y consultas.':score>=4?'Bien. Repasa la consistencia eventual.':'Vuelve al simulador y prueba el projector.')+'</p><button id="again">Reintentar</button>';
+      $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}
+    var q=Q[qi];
+    qbox.innerHTML='<p><b>'+(qi+1)+'/'+Q.length+'</b> '+esc(q[0])+'</p>'+q[1].map(function(o,i){return '<button class="opt" data-i="'+i+'">'+esc(o)+'</button>';}).join('')+'<div class="msg" id="qmsg" aria-live="polite"></div>';
+    [].forEach.call(qbox.querySelectorAll('.opt'),function(b){
+      b.addEventListener('click',function(){
+        var i=parseInt(b.dataset.i,10);
+        [].forEach.call(qbox.querySelectorAll('.opt'),function(x){x.disabled=true;});
+        b.classList.add(i===q[2]?'right':'wrong');
+        if(i!==q[2])qbox.querySelectorAll('.opt')[q[2]].classList.add('right'); else score++;
+        $('qmsg').innerHTML=esc(q[3])+' <button id="next">Siguiente</button>';
+        $('next').addEventListener('click',function(){qi++;showQ();});
+      });
+    });
+  }
+  showQ();
+})();
+</script>
+</body>
+</html>

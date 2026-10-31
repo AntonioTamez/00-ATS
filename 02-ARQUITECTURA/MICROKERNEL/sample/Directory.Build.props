@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+    Plugin staging: a project that sets <PluginStage> copies its build output to artifacts/<PluginStage>/<AssemblyName>/
+    after every build. That folder layout (one folder per plugin, folder name = assembly name) is what the kernel scans.
+    "Installing a plugin" in this sample is nothing more than having its folder there.
+  -->
+  <Target Name="StagePlugin" AfterTargets="Build" Condition="'$(PluginStage)' != ''">
+    <ItemGroup>
+      <StagedFile Include="$(OutDir)*.dll;$(OutDir)*.deps.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(StagedFile)" DestinationFolder="$(MSBuildThisFileDirectory)artifacts/$(PluginStage)/$(AssemblyName)" />
+  </Target>
+
+</Project>

@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arquitectura Onion para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --model:#e8b923;--dsvc:#d9622b;--app:#3a8fd9;--out:#7a5cc7;--ok:#2e8b57;--bad:#c0392b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:64ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover{border-color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:99px;color:#fff;font-weight:600}
+ul.tight{margin:6px 0 12px;padding-left:20px}ul.tight li{margin:3px 0}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--bad);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top}
+.scroll{overflow-x:auto}
+/* onion rings */
+.layers{display:grid;gap:24px;grid-template-columns:minmax(0,1fr);align-items:start}
+@media(min-width:760px){.layers{grid-template-columns:340px 1fr}}
+.rings{position:relative;width:min(340px,100%);aspect-ratio:1;margin:0 auto}
+.ring{position:absolute;border-radius:50%;display:flex;justify-content:center;border:2px solid;cursor:pointer;font-size:.68rem;font-weight:700;padding-top:6px;transition:.15s}
+.ring span{pointer-events:none;text-align:center}
+.ring:hover,.ring.on{filter:brightness(1.08);box-shadow:0 0 0 3px currentColor}
+#r-out{inset:0;color:var(--out);background:color-mix(in srgb,var(--out) 14%,transparent)}
+#r-app{inset:12%;color:var(--app);background:color-mix(in srgb,var(--app) 16%,transparent)}
+#r-dsvc{inset:25%;color:var(--dsvc);background:color-mix(in srgb,var(--dsvc) 18%,transparent)}
+#r-model{inset:38%;color:var(--model);background:color-mix(in srgb,var(--model) 26%,transparent);align-items:center;padding:0}
+.arrow{text-align:center;color:var(--muted);font-size:.85rem;margin-top:10px}
+/* layered vs onion */
+.seg{display:inline-flex;gap:6px;margin:6px 0}
+.seg button.on,.steps button.on{background:var(--fg);color:var(--bg)}
+.dep{display:flex;flex-direction:column;gap:6px;align-items:stretch;max-width:420px;margin:10px 0}
+.dep div{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);text-align:center;font-weight:600}
+.dep .a{color:var(--muted);text-align:center;border:0;background:none;font-weight:400;padding:0;font-size:.85rem}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.flowbox{min-height:110px}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.wiz label{display:block;margin:6px 0;cursor:pointer}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--app)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#anillos">Los anillos</a><a href="#flujo">Una petición</a>
+  <a href="#estructura">Estructura</a><a href="#vs">Comparativa</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>Arquitectura Onion<br>para novatos</h1>
+  <p class="lead">Una arquitectura en capas “dada la vuelta”: el <b>modelo de dominio</b> va en el centro y todo lo demás, incluida la base de datos, queda afuera. Aquí aprenderás qué resuelve, qué va en cada anillo y cómo replicarla.</p>
+</header>
+
+<section id="que">
+  <h2>1. ¿Qué problema resuelve?</h2>
+  <p>Jeffrey Palermo (2008) criticó las capas tradicionales: cada una depende de la de abajo, así que la lógica de negocio termina acoplada al acceso a datos. En sus palabras, <i>“las dependencias transitivas siguen siendo dependencias”</i>. Compara:</p>
+  <div class="seg" id="mode"></div>
+  <div class="card" id="modebox" aria-live="polite"></div>
+  <div class="card" style="margin-top:14px">
+    <h3>Los 3 principios (de Palermo)</h3>
+    <ul class="tight">
+      <li><b>Las capas internas definen interfaces; las externas las implementan.</b></li>
+      <li><b>El acoplamiento apunta hacia el centro.</b></li>
+      <li><b>El núcleo compila y se ejecuta sin la infraestructura.</b></li>
+    </ul>
+    <p>Y una diferencia clave: una capa puede usar directamente <b>cualquier capa más interna</b> (no solo la contigua). Lo que nunca puede es depender de una más externa.</p>
+    <p style="color:var(--muted)">Nota honesta: Palermo advierte que <b>no es para sitios web pequeños</b>; encaja en aplicaciones empresariales longevas con comportamiento complejo.</p>
+  </div>
+</section>
+
+<section id="anillos">
+  <h2>2. Los anillos (haz clic en cada uno)</h2>
+  <div class="layers">
+    <div>
+      <div class="rings" role="group" aria-label="Anillos concéntricos">
+        <div class="ring" id="r-out" data-k="out" tabindex="0"><span>Exterior<br>Infra · UI · Tests</span></div>
+        <div class="ring" id="r-app" data-k="app" tabindex="0"><span>Application Services</span></div>
+        <div class="ring" id="r-dsvc" data-k="dsvc" tabindex="0"><span>Domain Services</span></div>
+        <div class="ring" id="r-model" data-k="model" tabindex="0"><span>Domain<br>Model</span></div>
+      </div>
+      <div class="arrow">↑ todas las dependencias apuntan al centro ↑</div>
+    </div>
+    <div class="card" id="detail" aria-live="polite"></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <p style="color:var(--muted);margin:0">Matiz: en sus artículos, Palermo habla de un <b>núcleo</b> con infraestructura, UI y tests afuera, y dice que el número de capas varía. Los <b>cuatro anillos</b> son la forma en que lo enseñan fuentes secundarias; es una convención útil, no un mandato del autor.</p>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>¿Dónde pongo esta regla?</h3>
+    <ol class="tight">
+      <li>¿Afecta a <b>una sola entidad</b>? → dentro de la entidad (<code>Order.Place</code>).</li>
+      <li>¿Involucra <b>varias entidades</b>? → <b>servicio de dominio</b> (<code>OrderPlacementService</code>).</li>
+      <li>¿Es <b>orquestar pasos</b> (cargar, llamar al dominio, guardar)? → <b>servicio de aplicación</b>.</li>
+      <li>¿Es un detalle técnico (SQL, HTTP, reloj)? → <b>anillo exterior</b>.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="flujo">
+  <h2>3. Recorrido de una petición</h2>
+  <p>Ejemplo: <code>POST /api/orders</code> con 2 unidades a 60 € para un cliente.</p>
+  <div class="steps" id="steps"></div>
+  <div class="card flowbox" id="flow" aria-live="polite"></div>
+</section>
+
+<section id="estructura">
+  <h2>4. Estructura de la solución</h2>
+<pre><code>Shop/
+├─ src/
+│  ├─ Shop.Domain.Model/       ← anillo 1: Order, Customer, Money, DomainException
+│  ├─ Shop.Domain.Services/    ← anillo 2: IOrderRepository, ICustomerRepository, OrderPlacementService
+│  ├─ Shop.Application/        ← anillo 3: PlaceOrderService, CancelOrderService, DTOs, IClock
+│  ├─ Shop.Infrastructure/     ← anillo 4: repositorios, SystemClock
+│  └─ Shop.Api/                ← anillo 4: endpoints + composition root
+└─ tests/Shop.Tests/           modelo · servicios de dominio · aplicación · arquitectura · API</code></pre>
+  <div class="card">
+    <h3>Un detalle que sorprende: la infraestructura referencia varios anillos</h3>
+    <p>Es correcto y es la regla de Palermo: una capa externa puede usar cualquier capa interna. <code>Shop.Infrastructure</code> implementa interfaces del anillo 2 (<code>IOrderRepository</code>) y del anillo 3 (<code>IClock</code>), y reconstruye entidades del anillo 1.</p>
+    <pre><code>// anillo 2 define lo que necesita
+public interface IOrderRepository { Task&lt;Order?&gt; GetByIdAsync(Guid id, CancellationToken ct); ... }
+
+// anillo exterior lo implementa
+internal sealed class InMemoryOrderRepository : IOrderRepository { ... }</code></pre>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Verificación en el binario</h3>
+    <p>Los ensamblados compilados se inspeccionaron con REA (análisis estático de metadatos):</p>
+    <ul class="tight">
+      <li><code>Shop.Domain.Model.dll</code> → ninguna referencia <code>Shop.*</code></li>
+      <li><code>Shop.Domain.Services.dll</code> → solo <code>Shop.Domain.Model</code></li>
+      <li><code>Shop.Application.dll</code> → <code>Shop.Domain.Model</code> y <code>Shop.Domain.Services</code></li>
+      <li><code>Shop.Infrastructure.dll</code> → los tres anillos internos, <b>no</b> <code>Shop.Api</code></li>
+    </ul>
+  </div>
+</section>
+
+<section id="vs">
+  <h2>5. Onion vs Clean vs Hexagonal</h2>
+  <p>No son rivales: Clean cita a Hexagonal y a Onion como antecesoras. Cambia el énfasis.</p>
+  <div class="scroll card">
+    <table>
+      <tr><th></th><th>Hexagonal</th><th>Onion</th><th>Clean</th></tr>
+      <tr><td>Pregunta</td><td>¿Cómo conecto la app con el exterior?</td><td>¿Cómo evito que el negocio dependa de datos?</td><td>¿Cómo organizo todo alrededor de casos de uso?</td></tr>
+      <tr><td>Idea clave</td><td>Puertos y adaptadores</td><td>Dominio al centro</td><td>Regla de Dependencia</td></tr>
+      <tr><td>Dónde va <code>IRepository</code></td><td>Puerto de salida del núcleo</td><td>Anillo 2, junto al modelo</td><td>Anillo de Use Cases</td></tr>
+      <tr><td>Lógica entre entidades</td><td>—</td><td>Servicios de dominio</td><td>Entities</td></tr>
+    </table>
+  </div>
+  <div class="card wiz" style="margin-top:14px">
+    <h3>¿Cuál priorizo? Marca lo que te pasa</h3>
+    <label><input type="checkbox" data-w="o"> Mi dominio tiene reglas que involucran varias entidades</label>
+    <label><input type="checkbox" data-w="o"> Usamos vocabulario DDD (value objects, repositorios del dominio)</label>
+    <label><input type="checkbox" data-w="h"> Tengo varias puertas de entrada o tecnologías de salida intercambiables</label>
+    <label><input type="checkbox" data-w="c"> Quiero casos de uso como eje y una convención conocida por el equipo</label>
+    <label><input type="checkbox" data-w="n"> Es un CRUD simple, un prototipo o un sitio pequeño</label>
+    <p id="verdict" style="margin-top:10px;font-weight:600"></p>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Cuándo combinarlas (lo más común)</h3>
+    <p>Anillos de Onion dentro del núcleo + casos de uso como eje (Clean) + rigor de puertos y adaptadores en la frontera (Hexagonal) + tests de arquitectura. Detalle en <code>docs/ONION-VS-CLEAN-VS-HEXAGONAL.md</code>.</p>
+  </div>
+</section>
+
+<section id="errores">
+  <h2>6. Errores típicos</h2>
+  <div class="scroll card">
+    <table>
+      <tr><th>Mal</th><th>Por qué</th><th>Bien</th></tr>
+      <tr><td class="no">Interfaces de repositorio en Infrastructure</td><td>El núcleo dependería de lo externo</td><td class="yes">Definirlas en Domain Services</td></tr>
+      <tr><td class="no">Atributos de EF en <code>Order</code></td><td>Acopla el modelo a la persistencia</td><td class="yes">Mapear en Infrastructure</td></tr>
+      <tr><td class="no">Regla multi-entidad dentro del caso de uso</td><td>Se duplica y sale del dominio</td><td class="yes">Servicio de dominio</td></tr>
+      <tr><td class="no">Devolver entidades desde la API</td><td>Expone el modelo interno</td><td class="yes">DTOs</td></tr>
+      <tr><td class="no">Un anillo interno referencia a uno externo</td><td>Rompe la regla central</td><td class="yes">Invertir con una interfaz</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="quiz">
+  <h2>7. Comprueba lo aprendido</h2>
+  <div id="quizBox"></div>
+</section>
+
+<footer>
+  Fuentes: Jeffrey Palermo,
+  <a href="https://jeffreypalermo.com/2008/07/the-onion-architecture-part-1/">The Onion Architecture (partes 1–3)</a>;
+  <a href="https://herbertograca.com/2017/09/21/onion-architecture/">Herberto Graça</a> y
+  <a href="https://blog.ndepend.com/onion-architecture-layers">NDepend</a> para la división en cuatro anillos.
+  El proyecto de referencia está en <code>sample/</code>.
+</footer>
+</div>
+
+<script>
+const MODES={
+  layered:{n:"Capas tradicionales",h:`<div class="dep"><div>UI</div><div class="a">▼ depende de</div><div>Lógica de negocio</div><div class="a">▼ depende de</div><div>Acceso a datos / BD</div></div>
+    <p><span class="no">Problema:</span> la base de datos es la base de todo. Cambiar la tecnología de datos sacude a la lógica de negocio.</p>`},
+  onion:{n:"Onion",h:`<div class="dep"><div>UI · Infraestructura · Tests</div><div class="a">▼ dependen de (cualquier capa interna)</div><div>Application Services</div><div class="a">▼</div><div>Domain Services</div><div class="a">▼</div><div>Domain Model</div></div>
+    <p><span class="yes">Resultado:</span> la base de datos es un detalle externo que implementa interfaces del núcleo. El núcleo se compila y prueba sin ella.</p>`}
+};
+const modeEl=document.getElementById("mode"), modeBox=document.getElementById("modebox");
+function setMode(k){[...modeEl.children].forEach(b=>b.classList.toggle("on",b.dataset.k===k));modeBox.innerHTML=`<h3>${MODES[k].n}</h3>${MODES[k].h}`}
+Object.keys(MODES).forEach(k=>{const b=document.createElement("button");b.dataset.k=k;b.textContent=MODES[k].n;b.onclick=()=>setMode(k);modeEl.appendChild(b)});
+setMode("layered");
+
+const R={
+  model:{n:"1 · Domain Model",c:"var(--model)",w:"El centro: el estado y el comportamiento que representan la verdad del negocio. Solo depende de sí mismo.",
+    has:["Entidades: <code>Order</code>, <code>Customer</code>","Value objects: <code>Money</code>","<code>DomainException</code>","Reglas de una sola entidad"],
+    no:["Interfaces de repositorio","Casos de uso","HTTP, SQL, DI"],
+    code:`public void Place(Money discount, DateTimeOffset now)
+{
+    if (Status != OrderStatus.Draft) throw new DomainException("Only a draft order can be placed.");
+    if (_lines.Count == 0) throw new DomainException("An order needs at least one line.");
+    ...
+}`},
+  dsvc:{n:"2 · Domain Services",c:"var(--dsvc)",w:"Primer anillo alrededor del modelo: las interfaces de repositorio y la lógica de negocio que involucra varias entidades.",
+    has:["<code>IOrderRepository</code>, <code>ICustomerRepository</code>","<code>OrderPlacementService</code>: el descuento depende del pedido <i>y</i> del cliente"],
+    no:["Orquestación de casos de uso","Acceso a datos real"],
+    code:`public Money CalculateDiscount(Order order, Customer customer)
+{
+    var percent = 0m;
+    if (order.Subtotal.Amount >= BulkThreshold) percent += BulkDiscountPercent;
+    if (customer.IsLoyal) percent += LoyaltyDiscountPercent;
+    return order.Subtotal.Percent(percent);
+}`},
+  app:{n:"3 · Application Services",c:"var(--app)",w:"Los casos de uso: cargan datos vía interfaces, llaman al dominio y devuelven DTOs. No contienen reglas de negocio.",
+    has:["<code>PlaceOrderService</code>, <code>CancelOrderService</code>…","DTOs (<code>OrderDto</code>)","<code>IClock</code> (solo lo necesita este anillo)"],
+    no:["Reglas de negocio","EF Core, ASP.NET"],
+    code:`var customer = await customers.GetByIdAsync(command.CustomerId, ct) ?? throw new NotFoundException(...);
+var order = Order.Create(customer.Id);
+foreach (var line in command.Lines) order.AddLine(line.Sku, line.Quantity, new Money(line.UnitPrice));
+placement.Place(order, customer, clock.UtcNow);   // servicio de dominio
+await orders.AddAsync(order, ct);
+return OrderDto.From(order);`},
+  out:{n:"4 · Exterior",c:"var(--out)",w:"Lo que cambia seguido: infraestructura, UI y tests. Implementa las interfaces de los anillos internos y es el composition root.",
+    has:["Repositorios (<code>InMemoryOrderRepository</code>, o EF Core)","<code>SystemClock</code>","Endpoints HTTP y traducción de errores a 422/404","Tests"],
+    no:["Lógica de negocio"],
+    code:`builder.Services.AddApplication().AddInfrastructure();   // composition root
+app.MapShopEndpoints();`}
+};
+const detail=document.getElementById("detail");
+function showRing(k){
+  const x=R[k];
+  document.querySelectorAll(".ring").forEach(r=>r.classList.toggle("on",r.dataset.k===k));
+  detail.innerHTML=`<h3><span class="tag" style="background:${x.c}">${x.n}</span></h3><p>${x.w}</p>
+    <p class="yes">Contiene</p><ul class="tight">${x.has.map(i=>`<li>${i}</li>`).join("")}</ul>
+    <p class="no">No debe contener</p><ul class="tight">${x.no.map(i=>`<li>${i}</li>`).join("")}</ul>
+    <pre><code>${x.code.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</code></pre>`;
+}
+document.querySelectorAll(".ring").forEach(r=>{
+  r.addEventListener("click",e=>{e.stopPropagation();showRing(r.dataset.k)});
+  r.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();showRing(r.dataset.k)}});
+});
+showRing("model");
+
+const FLOW=[
+  {t:"1. API recibe",c:"var(--out)",h:"El endpoint deserializa el JSON y crea un <code>PlaceOrderCommand</code>. Llama a <code>PlaceOrderService</code>."},
+  {t:"2. Application",c:"var(--app)",h:"<code>PlaceOrderService</code> pide el cliente a <code>ICustomerRepository</code> (interfaz del anillo 2) y crea un <code>Order</code> con sus líneas."},
+  {t:"3. Domain Model",c:"var(--model)",h:"<code>Order.AddLine</code> valida SKU y cantidad &gt; 0. <code>Money</code> garantiza importes no negativos."},
+  {t:"4. Domain Service",c:"var(--dsvc)",h:"<code>OrderPlacementService.Place</code> calcula el descuento: subtotal 120 ≥ 100 → 10 % = 12,00. Coloca el pedido y registra la compra en el cliente."},
+  {t:"5. Se guarda",c:"var(--out)",h:"El servicio de aplicación llama a <code>IOrderRepository.AddAsync</code>; en runtime responde <code>InMemoryOrderRepository</code> (anillo exterior)."},
+  {t:"6. Respuesta",c:"var(--out)",h:"Se devuelve un <code>OrderDto</code> con total 108,00 → <b>201 Created</b>. Si saltó <code>DomainException</code> → <b>422</b>; si no existe el cliente → <b>404</b>."}
+];
+const stepsEl=document.getElementById("steps"), flowEl=document.getElementById("flow");
+function showStep(i){
+  [...stepsEl.children].forEach((b,j)=>b.classList.toggle("on",i===j));
+  flowEl.innerHTML=`<h3><span class="tag" style="background:${FLOW[i].c}">${FLOW[i].t}</span></h3><p>${FLOW[i].h}</p>`;
+}
+FLOW.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.t;b.onclick=()=>showStep(i);stepsEl.appendChild(b)});
+showStep(0);
+
+const boxes=[...document.querySelectorAll(".wiz input")], verdict=document.getElementById("verdict");
+function judge(){
+  const c={o:0,h:0,c:0,n:0};boxes.forEach(b=>{if(b.checked)c[b.dataset.w]++});
+  const act=c.o+c.h+c.c;
+  verdict.textContent = act+c.n===0 ? "" :
+    c.n>0 && act===0 ? "Ninguna por ahora: un proyecto bien ordenado basta (Palermo desaconseja Onion en sitios pequeños)." :
+    [c.o,c.h,c.c].filter(v=>v>0).length>1 ? "Combínalas: anillos de Onion dentro, casos de uso como eje y puertos/adaptadores en la frontera." :
+    c.o>0 ? "Prioriza Onion: servicios de dominio y repositorios como concepto del dominio." :
+    c.h>0 ? "Prioriza Hexagonal: puertos de entrada/salida y tests de contrato." :
+            "Prioriza Clean: casos de uso como eje y una convención de capas conocida.";
+}
+boxes.forEach(b=>b.onchange=judge);
+
+const QUIZ=[
+  {q:"¿Qué es lo que está en el centro de Onion?",o:["La base de datos","El modelo de dominio","La UI"],a:1,w:"“La base de datos no es el centro. Es externa.”"},
+  {q:"¿Dónde se define IOrderRepository?",o:["En Infrastructure","En el anillo 2 (Domain Services), junto al modelo","En la Api"],a:1,w:"Las capas internas definen interfaces; las externas las implementan."},
+  {q:"El descuento depende del pedido y del cliente. ¿Dónde va esa regla?",o:["En un servicio de dominio","En el controller","En Infrastructure"],a:0,w:"Una regla que involucra varias entidades y no encaja en ninguna es un servicio de dominio."},
+  {q:"¿Puede Infrastructure referenciar a Domain.Model directamente, saltándose Application?",o:["No, solo a la capa contigua","Sí: una capa externa puede usar cualquier capa interna","Solo en tests"],a:1,w:"Es la diferencia con las capas tradicionales, donde cada capa solo usa la de abajo."},
+  {q:"¿Qué debe devolver un servicio de aplicación hacia la UI?",o:["La entidad Order","Un DTO (OrderDto)","Un registro de la base de datos"],a:1,w:"Las entidades no salen del anillo de aplicación."},
+  {q:"¿Para qué tipo de sistema advierte Palermo que NO es adecuada?",o:["Aplicaciones empresariales longevas","Sitios web pequeños","Sistemas con dominio complejo"],a:1,w:"Encaja en aplicaciones longevas con comportamiento complejo."}
+];
+const quizEl=document.getElementById("quizBox");
+QUIZ.forEach((it,qi)=>{
+  const d=document.createElement("div");d.className="card quiz";d.style.marginBottom="10px";
+  d.innerHTML=`<b>${qi+1}. ${it.q}</b>`;
+  const fb=document.createElement("p");fb.style.marginTop="8px";
+  it.o.forEach((t,oi)=>{
+    const b=document.createElement("button");b.className="opt";b.textContent=t;
+    b.onclick=()=>{d.querySelectorAll(".opt").forEach(x=>x.classList.remove("right","wrong"));
+      const ok=oi===it.a;b.classList.add(ok?"right":"wrong");fb.textContent=ok?"✔ Correcto. "+it.w:"✘ Intenta de nuevo."};
+    d.appendChild(b);
+  });
+  d.appendChild(fb);quizEl.appendChild(d);
+});
+
+const root=document.documentElement;
+try{const t=localStorage.getItem("theme");if(t)root.dataset.theme=t}catch(e){}
+document.getElementById("theme").onclick=()=>{
+  const dark=root.dataset.theme?root.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;
+  root.dataset.theme=dark?"light":"dark";
+  try{localStorage.setItem("theme",root.dataset.theme)}catch(e){}
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arquitectura Hexagonal para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --core:#e0723a;--drv:#3a8fd9;--drn:#7a5cc7;--ok:#2e8b57;--bad:#c0392b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:64ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover{border-color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:99px;color:#fff;font-weight:600}
+ul.tight{margin:6px 0 12px;padding-left:20px}ul.tight li{margin:3px 0}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--bad);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top}
+.scroll{overflow-x:auto}
+/* hexagon map */
+.map{display:grid;gap:12px;grid-template-columns:1fr;align-items:center}
+@media(min-width:760px){.map{grid-template-columns:1fr 1.3fr 1fr}}
+.col{display:flex;flex-direction:column;gap:10px}
+.col h4{margin:0;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:center}
+.node{text-align:center;font-weight:600;border-width:2px;padding:10px 8px}
+.node.drv{border-color:var(--drv);color:var(--drv)}
+.node.drn{border-color:var(--drn);color:var(--drn)}
+.node.on{background:currentColor}
+.node.on span{color:var(--bg)}
+.hex{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);background:color-mix(in srgb,var(--core) 22%,var(--card));
+  min-height:280px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:30px 12%;text-align:center;gap:6px;border:0;color:var(--fg);border-radius:0}
+.hex b{color:var(--core);font-size:1.1rem}
+.hex small{color:var(--muted)}
+.port{font-size:.75rem;font-family:ui-monospace,Consolas,monospace;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+.arrow{color:var(--muted);font-size:.85rem;text-align:center;margin-top:8px}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.steps button.on,.seg button.on{background:var(--fg);color:var(--bg)}
+.seg{display:inline-flex;gap:6px;margin:6px 0}
+.flowbox{min-height:120px}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.wiz label{display:block;margin:6px 0;cursor:pointer}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--drv)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#mapa">El hexágono</a><a href="#flujo">Una petición</a>
+  <a href="#estructura">Estructura</a><a href="#vs">vs Clean</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>Arquitectura Hexagonal<br>para novatos</h1>
+  <p class="lead">También llamada <b>Puertos y Adaptadores</b>. Tu aplicación vive en el centro y habla con el mundo (web, consola, base de datos, email) solo a través de <i>puertos</i> que ella misma define. Aquí aprenderás qué es, qué va en cada parte y cómo replicarla.</p>
+</header>
+
+<section id="que">
+  <h2>1. ¿Qué problema resuelve?</h2>
+  <div class="grid">
+    <div class="card"><h3>El problema (Cockburn, 2005)</h3>
+      <p>La lógica de negocio se mezcla con la UI (no puedes probarla sin pantalla ni usarla desde un batch) y con la base de datos (si cambia o no está disponible, todo se frena). <b>Es el mismo error de diseño</b>: lógica enredada con interacciones externas.</p></div>
+    <div class="card"><h3>La solución</h3>
+      <p>Separar <b>dentro</b> y <b>fuera</b>. Dentro: dominio y casos de uso. Fuera: todo lo demás. Se conectan por <b>puertos</b> (interfaces) y <b>adaptadores</b> (traductores a una tecnología). Así la app puede ser manejada igual por un usuario, un test o un script.</p></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Vocabulario en 4 líneas</h3>
+    <ul class="tight">
+      <li><b>Puerto:</b> una “conversación con propósito”; una interfaz definida por el núcleo.</li>
+      <li><b>Adaptador:</b> traduce entre un puerto y una tecnología (HTTP, SQL, archivo, consola).</li>
+      <li><b>Primario / driving:</b> quien <i>maneja</i> la app (usuario, test). Entra por un puerto de <b>entrada</b>.</li>
+      <li><b>Secundario / driven:</b> lo que la app <i>maneja</i> (BD, email). Sale por un puerto de <b>salida</b>.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="mapa">
+  <h2>2. El hexágono (haz clic en cada pieza)</h2>
+  <div class="map">
+    <div class="col">
+      <h4>Adaptadores primarios<br>(conducen la app)</h4>
+      <button class="node drv" data-k="rest"><span>REST API</span></button>
+      <button class="node drv" data-k="cli"><span>CLI</span></button>
+      <button class="node drv" data-k="tests"><span>Tests</span></button>
+    </div>
+    <div class="hex" role="img" aria-label="Núcleo de la aplicación">
+      <span class="port">IAddBook · ILendBook · IReturnBook · IListBooks</span>
+      <b>CORE (hexágono)</b>
+      <small>Dominio: <code>Book</code>, <code>Loan</code><br>Servicios: reglas + orquestación</small>
+      <span class="port">IBookRepository · IClock · IOverdueNotifier</span>
+    </div>
+    <div class="col">
+      <h4>Adaptadores secundarios<br>(la app los conduce)</h4>
+      <button class="node drn" data-k="repo"><span>Repositorios (Memoria / JSON)</span></button>
+      <button class="node drn" data-k="notifier"><span>Notificador</span></button>
+      <button class="node drn" data-k="clock"><span>Reloj</span></button>
+    </div>
+  </div>
+  <div class="arrow">Puertos de entrada a la izquierda · puertos de salida a la derecha · todas las dependencias apuntan al núcleo</div>
+  <div class="card" id="detail" style="margin-top:14px" aria-live="polite"></div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>Regla de dependencia (en código)</h3>
+    <ul class="tight">
+      <li>El <b>núcleo no referencia ningún adaptador</b> (ni ASP.NET, ni JSON, ni consola).</li>
+      <li>Los adaptadores <b>referencian al núcleo</b>, nunca al revés.</li>
+      <li>Los adaptadores <b>no se conocen entre sí</b>.</li>
+      <li>Los <b>puertos los define el núcleo</b>, aunque los implemente el exterior.</li>
+    </ul>
+    <pre><code>// Core define QUÉ necesita (puerto de salida)
+public interface IBookRepository { Task&lt;Book?&gt; GetByIdAsync(Guid id, CancellationToken ct); ... }
+
+// Adapters.Outbound decide CÓMO (dos adaptadores, mismo puerto)
+public sealed class InMemoryBookRepository : IBookRepository { ... }
+public sealed class JsonFileBookRepository  : IBookRepository { ... }
+
+// El composition root de cada puerta elige cuál enchufar
+services.AddLibraryCore().AddOutboundAdapters(jsonFilePath);</code></pre>
+  </div>
+</section>
+
+<section id="flujo">
+  <h2>3. Recorrido de una petición</h2>
+  <p>Mismo caso de uso, dos puertas distintas. Elige la puerta y avanza por los pasos.</p>
+  <div class="seg" id="door"></div>
+  <div class="steps" id="steps"></div>
+  <div class="card flowbox" id="flow" aria-live="polite"></div>
+</section>
+
+<section id="estructura">
+  <h2>4. Estructura de la solución</h2>
+<pre><code>Library/
+├─ src/
+│  ├─ Library.Core/                  ← el hexágono (no referencia a nadie)
+│  │  ├─ Domain/                     Book, Loan, DomainException
+│  │  ├─ Ports/Inbound/              IAddBook, ILendBook, IReturnBook, IListBooks
+│  │  ├─ Ports/Outbound/             IBookRepository, IClock, IOverdueNotifier
+│  │  └─ Services/                   implementan los puertos de entrada
+│  ├─ Library.Adapters.Outbound/     ← secundarios: InMemory, JsonFile, Clock, Notifier
+│  ├─ Library.Adapters.Rest/         ← primario HTTP + composition root
+│  └─ Library.Adapters.Cli/          ← primario consola + composition root
+└─ tests/Library.Tests/              dominio · servicios · contrato · arquitectura · adaptadores</code></pre>
+  <div class="card">
+    <h3>Tests: la clave hexagonal</h3>
+    <ul class="tight">
+      <li><b>Servicios:</b> se prueban con fakes de los puertos de salida (reloj fijo, notificador espía).</li>
+      <li><b>Contrato:</b> la <i>misma</i> suite corre contra cada adaptador de <code>IBookRepository</code>. Si un adaptador nuevo la pasa, el núcleo puede usarlo sin enterarse.</li>
+      <li><b>Arquitectura:</b> un test falla si el núcleo referencia un adaptador.</li>
+    </ul>
+    <pre><code>public static TheoryData&lt;string&gt; Adapters =&gt; new() { "memory", "json" };
+
+[Theory, MemberData(nameof(Adapters))]
+public async Task Update_PersistsLoan(string kind) { /* mismo test, distinto adaptador */ }</code></pre>
+  </div>
+</section>
+
+<section id="vs">
+  <h2>5. Hexagonal vs Clean Architecture</h2>
+  <p>No son rivales: <b>Martin cita Hexagonal como uno de los antecesores</b> que combina en Clean. Cambia el énfasis.</p>
+  <div class="scroll card">
+    <table>
+      <tr><th></th><th>Hexagonal</th><th>Clean</th></tr>
+      <tr><td>Dice…</td><td>cómo se <b>conecta</b> la app con el exterior</td><td>cómo se <b>organiza</b> la app por dentro</td></tr>
+      <tr><td>Idea clave</td><td>Dentro/fuera, puertos y adaptadores</td><td>Regla de Dependencia hacia el centro</td></tr>
+      <tr><td>Estructura interna</td><td>No la prescribe</td><td>Entities → Use Cases → Adapters → Frameworks</td></tr>
+      <tr><td>Foco</td><td>Simetría de actores externos</td><td>Capas concéntricas</td></tr>
+    </table>
+  </div>
+
+  <div class="card wiz" style="margin-top:14px">
+    <h3>¿Cuál priorizo? Marca lo que te pasa</h3>
+    <label><input type="checkbox" data-w="h"> Tengo varias puertas de entrada (API, CLI, jobs, colas…)</label>
+    <label><input type="checkbox" data-w="h"> Quiero tecnologías de salida intercambiables (otra BD, otro proveedor)</label>
+    <label><input type="checkbox" data-w="c"> Mi dominio tiene reglas ricas y va a crecer</label>
+    <label><input type="checkbox" data-w="c"> Necesito una convención clara de capas para el equipo</label>
+    <label><input type="checkbox" data-w="n"> Es un CRUD simple, un prototipo o un script</label>
+    <p id="verdict" style="margin-top:10px;font-weight:600"></p>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h3>Cuándo combinarlas (lo más común)</h3>
+    <p>Clean <b>dentro</b> del hexágono (entidades, casos de uso, DTOs) + rigor hexagonal <b>en la frontera</b> (puertos de entrada y salida, adaptadores primarios y secundarios, tests de contrato).</p>
+    <p>Detalle completo en <code>docs/HEXAGONAL-VS-CLEAN.md</code>.</p>
+  </div>
+</section>
+
+<section id="errores">
+  <h2>6. Errores típicos</h2>
+  <div class="scroll card">
+    <table>
+      <tr><th>Mal</th><th>Por qué</th><th>Bien</th></tr>
+      <tr><td class="no">El núcleo referencia ASP.NET o EF</td><td>Pierde independencia</td><td class="yes">Solo abstracciones; lo técnico en adaptadores</td></tr>
+      <tr><td class="no">Puertos con forma de tecnología (<code>ISqlTable</code>)</td><td>La BD se filtra al núcleo</td><td class="yes">Puerto según la necesidad del negocio</td></tr>
+      <tr><td class="no">Lógica de negocio en el controller o el CLI</td><td>Se duplica en cada puerta</td><td class="yes">En dominio/servicios</td></tr>
+      <tr><td class="no">Un adaptador llama a otro</td><td>Acoplamiento lateral</td><td class="yes">Todo pasa por el núcleo</td></tr>
+      <tr><td class="no">Devolver entidades por los puertos</td><td>Expone el modelo interno</td><td class="yes">DTOs y commands</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="quiz">
+  <h2>7. Comprueba lo aprendido</h2>
+  <div id="quizBox"></div>
+</section>
+
+<footer>
+  Fuentes: <a href="https://alistair.cockburn.us/hexagonal-architecture/">Hexagonal Architecture (A. Cockburn)</a>,
+  <a href="https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html">The Clean Architecture (R. C. Martin)</a>.
+  El proyecto de referencia está en <code>sample/</code>.
+</footer>
+</div>
+
+<script>
+const D = {
+  rest:{t:"Adaptador primario: REST",c:"var(--drv)",w:"Traduce HTTP a llamadas a puertos de entrada. Sin reglas de negocio.",
+    code:`group.MapPost("/{id:guid}/lend", async (Guid id, LendBookRequest body, ILendBook port, CancellationToken ct) =>
+    Results.Ok(await port.ExecuteAsync(new LendBookCommand(id, body.Borrower), ct)));`,
+    note:"Traduce también los errores del núcleo a HTTP (422, 404)."},
+  cli:{t:"Adaptador primario: CLI",c:"var(--drv)",w:"Otra puerta al mismo núcleo: lee argumentos, llama a los mismos puertos de entrada, imprime y devuelve un exit code.",
+    code:`case ["lend", var id, .. var who] when Guid.TryParse(id, out var bookId):
+    Print(await lend.ExecuteAsync(new LendBookCommand(bookId, string.Join(' ', who)), ct));
+    return 0;`,
+    note:"Si añades esta puerta, no tocas ni una línea del dominio."},
+  tests:{t:"Actor primario: Tests",c:"var(--drv)",w:"Para Cockburn, un test automático es un actor primario más. Por eso la app se prueba sin UI ni BD, llamando a los puertos.",
+    code:`var returned = await new ReturnBookService(repo, clock, spy).ExecuteAsync(book.Id);
+Assert.Equal(["DDD:Ana"], spy.Notified);`,
+    note:"Los fakes de los puertos de salida son los “mocks” de los que habla el patrón."},
+  repo:{t:"Adaptadores secundarios: repositorios",c:"var(--drn)",w:"Dos implementaciones del mismo puerto IBookRepository. El núcleo no sabe cuál recibió.",
+    code:`services.AddSingleton&lt;IBookRepository, InMemoryBookRepository&gt;();   // o
+services.AddSingleton&lt;IBookRepository&gt;(_ =&gt; new JsonFileBookRepository(path));`,
+    note:"El formato de almacenamiento (BookRecord) es privado del adaptador."},
+  notifier:{t:"Adaptador secundario: notificador",c:"var(--drn)",w:"El núcleo avisa de un préstamo vencido sin saber si es consola, email o SMS.",
+    code:`if (loan.IsOverdueAt(clock.UtcNow))
+    await notifier.NotifyOverdueAsync(book, loan, ct);`,
+    note:"Cambiar a email = escribir otro adaptador de IOverdueNotifier."},
+  clock:{t:"Adaptador secundario: reloj",c:"var(--drn)",w:"El tiempo también es una dependencia externa. Con un puerto, los tests controlan la hora.",
+    code:`public interface IClock { DateTimeOffset UtcNow { get; } }`,
+    note:"Sin esto no podrías probar “devuelto con retraso” sin esperar 14 días."}
+};
+const esc=s=>s.replace(/&(?!lt;|gt;)/g,"&amp;");
+const detail=document.getElementById("detail");
+function show(k){
+  const x=D[k];
+  document.querySelectorAll(".node").forEach(n=>n.classList.toggle("on",n.dataset.k===k));
+  detail.innerHTML=`<h3><span class="tag" style="background:${x.c}">${x.t}</span></h3><p>${x.w}</p><pre><code>${x.code}</code></pre><p>${x.note}</p>`;
+}
+document.querySelectorAll(".node").forEach(n=>n.onclick=()=>show(n.dataset.k));
+show("rest");
+
+const DOORS={
+  rest:{n:"REST",first:"El endpoint <code>POST /api/books/{id}/lend</code> recibe el JSON y crea un <code>LendBookCommand</code>.",
+        last:"Se responde <b>200 OK</b> con el <code>BookDto</code>. Si saltó <code>DomainException</code> → <b>422</b>; si no existe el libro → <b>404</b>."},
+  cli:{n:"CLI",first:"El comando <code>lend &lt;id&gt; Ana</code> se parsea y crea un <code>LendBookCommand</code>.",
+        last:"Se imprime el libro y el exit code es <b>0</b>. Si hubo error de negocio: mensaje <code>Error: …</code> y exit code <b>1</b>."}
+};
+const COMMON=[
+  {t:"Puerto de entrada",c:"var(--drv)",h:"El adaptador llama a <code>ILendBook.ExecuteAsync(command)</code>. No sabe qué clase lo implementa."},
+  {t:"Servicio",c:"var(--core)",h:"<code>LendBookService</code> pide el libro a <code>IBookRepository</code> y la hora a <code>IClock</code>."},
+  {t:"Dominio",c:"var(--core)",h:"<code>Book.Lend</code> aplica las reglas: prestatario obligatorio, libro disponible, vence en 14 días."},
+  {t:"Puerto de salida",c:"var(--drn)",h:"<code>IBookRepository.UpdateAsync</code> guarda. En runtime responde el adaptador que eligió el composition root."}
+];
+let door="rest", step=0;
+const doorEl=document.getElementById("door"), stepsEl=document.getElementById("steps"), flowEl=document.getElementById("flow");
+function steps(){
+  const d=DOORS[door];
+  return [{t:`1. ${d.n} recibe`,c:"var(--drv)",h:d.first},
+          ...COMMON.map((s,i)=>({...s,t:`${i+2}. ${s.t}`})),
+          {t:`6. ${d.n} responde`,c:"var(--drv)",h:d.last}];
+}
+function render(){
+  const S=steps();
+  [...doorEl.children].forEach(b=>b.classList.toggle("on",b.dataset.d===door));
+  stepsEl.innerHTML="";
+  S.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.t;b.className=i===step?"on":"";b.onclick=()=>{step=i;render()};stepsEl.appendChild(b)});
+  flowEl.innerHTML=`<h3><span class="tag" style="background:${S[step].c}">${S[step].t}</span></h3><p>${S[step].h}</p>`;
+}
+Object.keys(DOORS).forEach(k=>{const b=document.createElement("button");b.dataset.d=k;b.textContent="Puerta: "+DOORS[k].n;b.onclick=()=>{door=k;render()};doorEl.appendChild(b)});
+render();
+
+const boxes=[...document.querySelectorAll(".wiz input")], verdict=document.getElementById("verdict");
+function judge(){
+  const c={h:0,c:0,n:0};boxes.forEach(b=>{if(b.checked)c[b.dataset.w]++});
+  verdict.textContent = c.h+c.c+c.n===0 ? "" :
+    c.n>0 && c.h+c.c===0 ? "Ninguna por ahora: un proyecto bien ordenado basta." :
+    c.h>0 && c.c>0 ? "Combínalas: Clean por dentro, puertos y adaptadores en la frontera." :
+    c.h>0 ? "Prioriza el vocabulario Hexagonal: puertos de entrada/salida y tests de contrato." :
+            "Prioriza Clean: capas claras y reglas en el dominio. Añade puertos cuando aparezca la segunda integración.";
+}
+boxes.forEach(b=>b.onchange=judge);
+
+const QUIZ=[
+  {q:"¿Qué es un puerto?",o:["Una clase que habla con la base de datos","Una interfaz definida por el núcleo que describe una conversación","Un puerto TCP de la aplicación"],a:1,w:"Es una “conversación con propósito”, definida por el núcleo."},
+  {q:"¿Qué tipo de adaptador es el controller REST?",o:["Primario (driving)","Secundario (driven)","Ninguno, es parte del núcleo"],a:0,w:"Conduce la app: llama a un puerto de entrada."},
+  {q:"¿Y el repositorio JSON?",o:["Primario","Secundario (driven)","Parte del dominio"],a:1,w:"La app lo conduce a través de un puerto de salida."},
+  {q:"¿Quién define IBookRepository?",o:["El adaptador de persistencia","El núcleo","El framework"],a:1,w:"El núcleo define lo que necesita; el exterior lo implementa."},
+  {q:"¿Para qué sirve un test de contrato?",o:["Probar que un adaptador cumple su puerto","Probar el controller","Medir el rendimiento"],a:0,w:"La misma suite corre contra cada adaptador del mismo puerto."},
+  {q:"¿Hexagonal y Clean son incompatibles?",o:["Sí, hay que elegir una","No: Clean absorbe la idea de Hexagonal y suelen combinarse","Solo en microservicios"],a:1,w:"Martin cita Hexagonal como antecesor de Clean."}
+];
+const quizEl=document.getElementById("quizBox");
+QUIZ.forEach((it,qi)=>{
+  const d=document.createElement("div");d.className="card quiz";d.style.marginBottom="10px";
+  d.innerHTML=`<b>${qi+1}. ${it.q}</b>`;
+  const fb=document.createElement("p");fb.style.marginTop="8px";
+  it.o.forEach((t,oi)=>{
+    const b=document.createElement("button");b.className="opt";b.textContent=t;
+    b.onclick=()=>{d.querySelectorAll(".opt").forEach(x=>x.classList.remove("right","wrong"));
+      const ok=oi===it.a;b.classList.add(ok?"right":"wrong");fb.textContent=ok?"✔ Correcto. "+it.w:"✘ Intenta de nuevo."};
+    d.appendChild(b);
+  });
+  d.appendChild(fb);quizEl.appendChild(d);
+});
+
+const root=document.documentElement;
+try{const t=localStorage.getItem("theme");if(t)root.dataset.theme=t}catch(e){}
+document.getElementById("theme").onclick=()=>{
+  const dark=root.dataset.theme?root.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;
+  root.dataset.theme=dark?"light":"dark";
+  try{localStorage.setItem("theme",root.dataset.theme)}catch(e){}
+};
+</script>
+</body>
+</html>

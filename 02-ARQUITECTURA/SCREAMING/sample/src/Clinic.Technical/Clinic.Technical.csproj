@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    DO NOT COPY THIS PROJECT. It is the BAD EXAMPLE of this kit.
+    It does a small part of what Clinic does, but it is organized by TECHNICAL role
+    (Controllers / Services / Repositories / Models). Open the folder and ask: what does this system do?
+    You cannot tell. That is the point of the comparison.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

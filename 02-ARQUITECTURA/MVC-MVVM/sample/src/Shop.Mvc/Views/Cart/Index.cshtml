@@ -1,0 +1,42 @@
+@model CartIndexViewModel
+
+<h1>Your cart</h1>
+
+@if (Model.Error is not null)
+{
+    <p class="error" role="alert">@Model.Error</p>
+}
+
+@if (Model.IsEmpty)
+{
+    <p id="empty">Your cart is empty.</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>Name</th><th>Qty</th><th>Unit</th><th>Total</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var line in Model.Lines)
+        {
+            <tr>
+                <td>@line.Name</td>
+                <td>@line.Quantity</td>
+                <td>@line.UnitPriceText</td>
+                <td>@line.LineTotalText</td>
+                <td>
+                    <form method="post" asp-controller="Cart" asp-action="Remove">
+                        <input type="hidden" name="sku" value="@line.Sku" />
+                        <button type="submit">Remove</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <p>Subtotal: <span id="subtotal">@Model.SubtotalText</span></p>
+    <p>Discount: <span id="discount">@Model.DiscountText</span></p>
+    <p><strong>Total: <span id="total">@Model.TotalText</span></strong></p>
+
+    <form method="post" asp-controller="Cart" asp-action="Clear"><button type="submit">Clear cart</button></form>
+}

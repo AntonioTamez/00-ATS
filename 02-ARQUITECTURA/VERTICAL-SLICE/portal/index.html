@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vertical Slice para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --hi:#e0723a;--blue:#3a8fd9;--ok:#2e8b57;--bad:#c0392b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:64ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover{border-color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:99px;color:#fff;font-weight:600}
+ul.tight{margin:6px 0 12px;padding-left:20px}ul.tight li{margin:3px 0}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--bad);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top}
+.scroll{overflow-x:auto}
+.seg{display:inline-flex;gap:6px;margin:6px 0;flex-wrap:wrap}
+.seg button.on,.steps button.on{background:var(--fg);color:var(--bg)}
+/* matrix */
+.matrix{display:grid;grid-template-columns:110px repeat(5,minmax(52px,1fr));gap:4px;font-size:.78rem;min-width:420px}
+.matrix .h{font-weight:700;text-align:center;color:var(--muted);padding:2px}
+.matrix .r{font-weight:700;color:var(--muted);display:flex;align-items:center}
+.cell{height:34px;border-radius:6px;border:1px solid var(--line);background:var(--card);transition:.15s}
+.cell.on{background:var(--hi);border-color:var(--hi)}
+.cell.col{background:color-mix(in srgb,var(--blue) 12%,var(--card))}
+.cell.col.on{background:var(--hi)}
+.legend{font-size:.85rem;color:var(--muted);margin-top:8px}
+/* anatomy */
+.parts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:8px 0}
+.part{text-align:center;font-weight:600;border:2px solid var(--blue);color:var(--blue)}
+.part.on{background:var(--blue);color:var(--bg)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.flowbox{min-height:110px}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.wiz label{display:block;margin:6px 0;cursor:pointer}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#slice">Anatomía</a><a href="#flujo">Una petición</a>
+  <a href="#estructura">Estructura</a><a href="#vs">vs Capas</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>Vertical Slice<br>para novatos</h1>
+  <p class="lead">En vez de organizar el código por <i>capas técnicas</i> (controllers, servicios, repositorios), lo organizas por <b>funcionalidad</b>. Cada funcionalidad es una “rebanada” que contiene todo lo que necesita, del HTTP a la base de datos.</p>
+</header>
+
+<section id="que">
+  <h2>1. ¿Qué problema resuelve?</h2>
+  <p>Un cambio real casi siempre es una <b>funcionalidad</b> (“permitir cerrar un ticket”). En una arquitectura por capas, eso toca una pieza en cada capa. Elige qué cambio quieres hacer y mira qué se modifica:</p>
+  <div class="seg" id="mode"></div>
+  <div class="seg" id="feat"></div>
+  <div class="card scroll"><div class="matrix" id="matrix" role="img" aria-label="Matriz de capas por funcionalidad"></div>
+    <p class="legend" id="legend"></p></div>
+  <div class="card" style="margin-top:14px">
+    <h3>La idea de Bogard</h3>
+    <blockquote style="margin:6px 0;color:var(--muted)">“Minimize coupling between slices, and maximize coupling in a slice.”</blockquote>
+    <ul class="tight">
+      <li><b>Entre slices:</b> casi nada. Una slice no llama a otra.</li>
+      <li><b>Dentro de una slice:</b> todo junto: request, lógica, respuesta, endpoint.</li>
+      <li>Una funcionalidad nueva <b>solo añade código</b>: no modificas código compartido ni temes efectos colaterales.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="slice">
+  <h2>2. Anatomía de una slice (haz clic)</h2>
+  <div class="parts" id="parts"></div>
+  <div class="card" id="detail" aria-live="polite"></div>
+  <div class="card" style="margin-top:14px">
+    <h3>Cada slice elige su enfoque</h3>
+    <div class="scroll"><table>
+      <tr><th>Slice</th><th>Tipo</th><th>Enfoque</th></tr>
+      <tr><td><code>OpenTicket</code>, <code>AssignTicket</code>, <code>CloseTicket</code></td><td>Comando (escribe)</td><td>Carga la entidad <code>Ticket</code>, llama a su método, guarda</td></tr>
+      <tr><td><code>GetTicket</code></td><td>Query (lee)</td><td>Proyección directa a un DTO, sin entidad</td></tr>
+      <tr><td><code>ListTickets</code></td><td>Query (lee)</td><td>Filtro + paginación + validación propia</td></tr>
+    </table></div>
+    <p style="margin-top:10px;color:var(--muted)">Sin repositorios obligatorios: el handler usa el <code>AppDbContext</code> directamente. Sin mediator obligatorio: el endpoint llama al handler.</p>
+  </div>
+</section>
+
+<section id="flujo">
+  <h2>3. Recorrido de una petición</h2>
+  <p>Ejemplo: <code>POST /api/tickets/{id}/close</code> con una resolución.</p>
+  <div class="steps" id="steps"></div>
+  <div class="card flowbox" id="flow" aria-live="polite"></div>
+</section>
+
+<section id="estructura">
+  <h2>4. Estructura de la solución</h2>
+<pre><code>Helpdesk/
+├─ src/Helpdesk.Api/
+│  ├─ Common/                    ← poco y justificado
+│  │  ├─ Ticket.cs               reglas de negocio compartidas
+│  │  ├─ AppDbContext.cs
+│  │  ├─ Errors.cs               errores → HTTP (422, 400, 404)
+│  │  └─ FeatureRegistration.cs  único sitio que lista las slices
+│  └─ Features/
+│     ├─ OpenTicket/    OpenTicket.cs     (Request · Response · Handler · Endpoint)
+│     ├─ AssignTicket/  AssignTicket.cs
+│     ├─ CloseTicket/   CloseTicket.cs
+│     ├─ GetTicket/     GetTicket.cs
+│     └─ ListTickets/   ListTickets.cs
+└─ tests/Helpdesk.Tests/         entidad · cada slice · API · aislamiento</code></pre>
+  <div class="card">
+    <h3>¿Qué va en <code>Common</code>?</h3>
+    <ul class="tight">
+      <li><span class="yes">Sí:</span> las <b>reglas de negocio</b> de un concepto que varias slices modifican (<code>Ticket</code>), el <code>DbContext</code>, el traductor de errores.</li>
+      <li><span class="no">No:</span> formas de respuesta, validaciones de una petición, consultas: se quedan <b>dentro de su slice</b>, aunque se parezcan a otra.</li>
+    </ul>
+    <p>Una pequeña duplicación entre slices suele costar menos que acoplarlas. Lo que no debe copiarse son las <b>reglas</b> de negocio.</p>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Cómo se impone la frontera</h3>
+    <p>Hay un solo proyecto, así que el <b>compilador no impide</b> que una slice use a otra. Por eso existe un test de aislamiento que falla si una slice nombra a otra. Además, los binarios compilados se verificaron con REA (análisis estático de llamadas IL):</p>
+    <ul class="tight">
+      <li>937 llamadas analizadas: 195 dentro de una misma slice, 27 hacia <code>Common</code>.</li>
+      <li><b>0 llamadas entre slices</b> y 0 de <code>Common</code> hacia una slice (salvo el registro).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="vs">
+  <h2>5. Vertical Slice vs Clean / Hexagonal / Onion</h2>
+  <p>No es “lo contrario”: son <b>ejes distintos</b>. Las otras responden <i>cómo protejo el negocio de la tecnología</i>; Vertical Slice responde <i>cómo organizo el código para que los cambios sean locales</i>.</p>
+  <div class="scroll card"><table>
+    <tr><th></th><th>Clean · Onion · Hexagonal</th><th>Vertical Slice</th></tr>
+    <tr><td>Eje</td><td>Por rol técnico (capas)</td><td>Por funcionalidad</td></tr>
+    <tr><td>Regla</td><td>Dependencias hacia el centro</td><td>Poco acoplamiento entre slices</td></tr>
+    <tr><td>Datos</td><td>Detrás de una interfaz</td><td><code>DbContext</code> directo</td></tr>
+    <tr><td>Dominio</td><td>Uniforme</td><td>Cada slice elige</td></tr>
+    <tr><td>Proyectos</td><td>Varios (el compilador impone)</td><td>Normalmente uno (los tests imponen)</td></tr>
+    <tr><td>Riesgo típico</td><td>Sobre-ingeniería en CRUD</td><td>Acoplamiento silencioso / duplicación de reglas</td></tr>
+  </table></div>
+  <div class="card wiz" style="margin-top:14px">
+    <h3>¿Cuál priorizo? Marca lo que te pasa</h3>
+    <label><input type="checkbox" data-w="s"> Las funcionalidades son bastante independientes entre sí (mucho CRUD o consultas distintas)</label>
+    <label><input type="checkbox" data-w="s"> Varias personas trabajan en funcionalidades en paralelo y quiero evitar conflictos</label>
+    <label><input type="checkbox" data-w="s"> Mi equipo reconoce code smells y sabe refactorizar</label>
+    <label><input type="checkbox" data-w="l"> Hay lógica de negocio compleja compartida por muchas funcionalidades</label>
+    <label><input type="checkbox" data-w="l"> Necesito que el compilador garantice las fronteras</label>
+    <label><input type="checkbox" data-w="n"> Es un prototipo o un CRUD mínimo</label>
+    <p id="verdict" style="margin-top:10px;font-weight:600"></p>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3>Cuándo combinarlas</h3>
+    <p>Slices como estructura principal + un dominio compartido rico donde haga falta (como <code>Ticket</code>) + puertos y adaptadores solo dentro de las slices que integran algo externo. Detalle en <code>docs/VERTICAL-SLICE-VS-CAPAS.md</code>.</p>
+  </div>
+</section>
+
+<section id="errores">
+  <h2>6. Errores típicos</h2>
+  <div class="scroll card"><table>
+    <tr><th>Mal</th><th>Por qué</th><th>Bien</th></tr>
+    <tr><td class="no">Una slice llama a otra</td><td>Recrea el acoplamiento que querías evitar</td><td class="yes">Duplicar lo pequeño, o extraer a <code>Common</code> si es una regla</td></tr>
+    <tr><td class="no">Volver a crear <code>Services/</code> y <code>Repositories/</code> globales</td><td>Organizas otra vez por capa técnica</td><td class="yes">Cada slice usa su <code>DbContext</code></td></tr>
+    <tr><td class="no">Copiar reglas de negocio entre handlers</td><td>Se desincronizan</td><td class="yes">Reglas en la entidad compartida</td></tr>
+    <tr><td class="no"><code>Common</code> crece sin control</td><td>Se vuelve otra capa</td><td class="yes">Solo lo que varias slices necesitan por sus reglas</td></tr>
+    <tr><td class="no">Equipo sin criterio para refactorizar</td><td>Bogard: “this pattern is likely not for you”</td><td class="yes">Capas con más guía hasta ganar criterio</td></tr>
+  </table></div>
+</section>
+
+<section id="quiz">
+  <h2>7. Comprueba lo aprendido</h2>
+  <div id="quizBox"></div>
+</section>
+
+<footer>
+  Fuentes: <a href="https://www.jimmybogard.com/vertical-slice-architecture/">Vertical Slice Architecture (Jimmy Bogard)</a>,
+  <a href="https://milanjovanovic.tech/blog/when-to-choose-vertical-slice-architecture">Milan Jovanović</a>.
+  El proyecto de referencia está en <code>sample/</code>.
+</footer>
+</div>
+
+<script>
+const LAYERS=["Api","Application","Domain","Infra"];
+const FEATS=["Open","Assign","Close","Get","List"];
+const matrix=document.getElementById("matrix"), legend=document.getElementById("legend");
+let mode="layers", feat=2;
+function drawMatrix(){
+  matrix.innerHTML="";
+  matrix.appendChild(Object.assign(document.createElement("div"),{className:"h"}));
+  FEATS.forEach(f=>matrix.appendChild(Object.assign(document.createElement("div"),{className:"h",textContent:f})));
+  LAYERS.forEach(l=>{
+    matrix.appendChild(Object.assign(document.createElement("div"),{className:"r",textContent:mode==="layers"?l:""}));
+    FEATS.forEach((_,j)=>{
+      const c=document.createElement("div");
+      c.className="cell"+(mode==="slices"?" col":"");
+      const touched = j===feat;
+      if(touched) c.classList.add("on");
+      c.title = mode==="layers" ? l+" · "+FEATS[j] : FEATS[j]+" (slice)";
+      matrix.appendChild(c);
+    });
+  });
+  legend.textContent = mode==="layers"
+    ? `Por capas: añadir/cambiar “${FEATS[feat]}” toca una pieza en cada fila (${LAYERS.length} capas), repartidas por proyectos distintos.`
+    : `Vertical Slice: “${FEATS[feat]}” vive en una sola columna (una carpeta). Las demás slices no se tocan.`;
+}
+function seg(el,items,get,set){
+  el.innerHTML="";
+  items.forEach((it,i)=>{const b=document.createElement("button");b.textContent=it;b.className=get(i)?"on":"";b.onclick=()=>{set(i);render()};el.appendChild(b)});
+}
+function render(){
+  seg(document.getElementById("mode"),["Arquitectura por capas","Vertical Slice"],i=>(i===0)===(mode==="layers"),i=>{mode=i===0?"layers":"slices"});
+  seg(document.getElementById("feat"),FEATS.map(f=>"Cambiar: "+f),i=>i===feat,i=>{feat=i});
+  drawMatrix();
+}
+render();
+
+const PARTS={
+  Request:{c:"Lo que entra: solo los datos que esta petición necesita.",code:`public sealed record Request(string Resolution);`},
+  Handler:{c:"La lógica de la petición. Usa el AppDbContext directamente y delega las reglas en la entidad.",code:`public sealed class Handler(AppDbContext db, TimeProvider clock)
+{
+    public async Task<Response> Handle(Guid id, Request request, CancellationToken ct)
+    {
+        var ticket = await db.Tickets.FindAsync([id], ct)
+                     ?? throw new NotFoundException($"Ticket '{id}' was not found.");
+
+        ticket.Close(request.Resolution, clock.GetUtcNow());   // regla en la entidad
+        await db.SaveChangesAsync(ct);
+
+        return new Response(ticket.Id, ticket.Status.ToString(), ticket.ClosedAt!.Value);
+    }
+}`},
+  Response:{c:"Lo que sale: una forma propia de esta slice, no compartida con las demás.",code:`public sealed record Response(Guid Id, string Status, DateTimeOffset ClosedAt);`},
+  Endpoint:{c:"El mapeo HTTP de esta slice. Se registra con una línea en FeatureRegistration.",code:`public static class Endpoint
+{
+    public static void Map(IEndpointRouteBuilder app) =>
+        app.MapPost("/api/tickets/{id:guid}/close", async (Guid id, Request request, Handler handler, CancellationToken ct) =>
+            Results.Ok(await handler.Handle(id, request, ct)));
+}`}
+};
+const partsEl=document.getElementById("parts"), detail=document.getElementById("detail");
+function showPart(k){
+  [...partsEl.children].forEach(b=>b.classList.toggle("on",b.dataset.k===k));
+  detail.innerHTML=`<h3><span class="tag" style="background:var(--blue)">${k}</span> <small style="color:var(--muted)">CloseTicket</small></h3><p>${PARTS[k].c}</p><pre><code>${PARTS[k].code.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</code></pre>`;
+}
+Object.keys(PARTS).forEach(k=>{const b=document.createElement("button");b.className="part card";b.dataset.k=k;b.textContent=k;b.onclick=()=>showPart(k);partsEl.appendChild(b)});
+showPart("Handler");
+
+const FLOW=[
+  {t:"1. Endpoint",h:"<code>CloseTicket.Endpoint</code> recibe el POST, enlaza <code>id</code> y <code>Request</code> y llama a su <code>Handler</code>."},
+  {t:"2. Handler busca",h:"<code>db.Tickets.FindAsync</code>: lee directamente del <code>DbContext</code>. Si no existe → <code>NotFoundException</code> → <b>404</b>."},
+  {t:"3. Entidad decide",h:"<code>Ticket.Close</code> aplica las reglas: resolución obligatoria y no cerrar dos veces. Si se viola → <code>DomainException</code> → <b>422</b>."},
+  {t:"4. Se guarda",h:"<code>SaveChangesAsync</code> persiste el cambio. La hora viene de <code>TimeProvider</code>, así el test controla el reloj."},
+  {t:"5. Respuesta",h:"El handler devuelve el <code>Response</code> propio de la slice → <b>200 OK</b>. <code>ErrorHandler</code> (en <code>Common</code>) traduce las excepciones a HTTP."}
+];
+const stepsEl=document.getElementById("steps"), flowEl=document.getElementById("flow");
+function showStep(i){
+  [...stepsEl.children].forEach((b,j)=>b.classList.toggle("on",i===j));
+  flowEl.innerHTML=`<h3><span class="tag" style="background:var(--blue)">${FLOW[i].t}</span></h3><p>${FLOW[i].h}</p>`;
+}
+FLOW.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.t;b.onclick=()=>showStep(i);stepsEl.appendChild(b)});
+showStep(0);
+
+const boxes=[...document.querySelectorAll(".wiz input")], verdict=document.getElementById("verdict");
+function judge(){
+  const c={s:0,l:0,n:0};boxes.forEach(b=>{if(b.checked)c[b.dataset.w]++});
+  verdict.textContent = c.s+c.l+c.n===0 ? "" :
+    c.n>0 && c.s+c.l===0 ? "Ninguna por ahora: un proyecto bien ordenado basta." :
+    c.s>0 && c.l>0 ? "Combínalas: slices como estructura, con un dominio compartido rico y, si hace falta, proyectos separados por módulo." :
+    c.s>0 ? "Prioriza Vertical Slice (y mantén el test de aislamiento entre slices)." :
+            "Prioriza capas (Clean/Onion/Hexagonal): lógica compartida compleja y fronteras impuestas por el compilador.";
+}
+boxes.forEach(b=>b.onchange=judge);
+
+const QUIZ=[
+  {q:"¿Cómo organiza el código Vertical Slice?",o:["Por capa técnica","Por funcionalidad / petición","Por tipo de archivo"],a:1,w:"Cada funcionalidad es una slice con todo lo que necesita."},
+  {q:"¿Qué debe minimizarse según Bogard?",o:["El acoplamiento dentro de una slice","El acoplamiento entre slices","El número de tests"],a:1,w:"“Minimize coupling between slices, and maximize coupling in a slice.”"},
+  {q:"¿Puede la slice CloseTicket llamar a la slice GetTicket?",o:["Sí, para reutilizar","No: las slices no se llaman entre sí","Solo en los tests"],a:1,w:"Si hay una regla compartida va a la entidad o a Common; si es pequeño, se duplica."},
+  {q:"¿Dónde viven las reglas de negocio de Ticket que usan varias slices?",o:["Copiadas en cada handler","En la entidad compartida (Common)","En el endpoint"],a:1,w:"Así no se desincronizan."},
+  {q:"Hay un solo proyecto. ¿Quién impide que una slice use a otra?",o:["El compilador","Tests de aislamiento (y revisión)","Nadie hace falta"],a:1,w:"Dentro de un proyecto el compilador no ayuda: hace falta un test."},
+  {q:"¿Cuándo advierte Bogard que el patrón “no es para ti”?",o:["Si el equipo no sabe cuándo la lógica debe pasar al dominio","Si usas .NET","Si tienes más de 5 funcionalidades"],a:0,w:"Exige criterio para reconocer smells y refactorizar."}
+];
+const quizEl=document.getElementById("quizBox");
+QUIZ.forEach((it,qi)=>{
+  const d=document.createElement("div");d.className="card quiz";d.style.marginBottom="10px";
+  d.innerHTML=`<b>${qi+1}. ${it.q}</b>`;
+  const fb=document.createElement("p");fb.style.marginTop="8px";
+  it.o.forEach((t,oi)=>{
+    const b=document.createElement("button");b.className="opt";b.textContent=t;
+    b.onclick=()=>{d.querySelectorAll(".opt").forEach(x=>x.classList.remove("right","wrong"));
+      const ok=oi===it.a;b.classList.add(ok?"right":"wrong");fb.textContent=ok?"✔ Correcto. "+it.w:"✘ Intenta de nuevo."};
+    d.appendChild(b);
+  });
+  d.appendChild(fb);quizEl.appendChild(d);
+});
+
+const root=document.documentElement;
+try{const t=localStorage.getItem("theme");if(t)root.dataset.theme=t}catch(e){}
+document.getElementById("theme").onclick=()=>{
+  const dark=root.dataset.theme?root.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;
+  root.dataset.theme=dark?"light":"dark";
+  try{localStorage.setItem("theme",root.dataset.theme)}catch(e){}
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The BUSINESS functions. Each one is a small, stateless handler that receives an event and a context.
+    They know the platform's contracts (Faas.Runtime) and the ports they need (IOrderStore), nothing else:
+    not the platform's host, not another function, not a concrete store.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Faas.Runtime\Faas.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

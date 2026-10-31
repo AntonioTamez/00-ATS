@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Shop.ConsoleView/Shop.ConsoleView.csproj" />
+    <Project Path="src/Shop.Model/Shop.Model.csproj" />
+    <Project Path="src/Shop.Mvc/Shop.Mvc.csproj" />
+    <Project Path="src/Shop.ViewModels/Shop.ViewModels.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Shop.Tests/Shop.Tests.csproj" />
+  </Folder>
+</Solution>

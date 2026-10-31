@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monolito modular para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --cat:#2e8b57;--ord:#3a8fd9;--not:#7a5cc7;--host:#d9622b;--ok:#2e8b57;--bad:#c0392b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:64ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre code{background:none;padding:0}
+ul.tight{margin:6px 0 12px;padding-left:20px}ul.tight li{margin:3px 0}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--bad);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top}
+.scroll{overflow-x:auto}
+/* module map */
+.map{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:760px){.map{grid-template-columns:repeat(3,1fr)}}
+.mod{border:2px solid var(--line);border-radius:12px;padding:12px;background:var(--card);cursor:pointer;text-align:left;font:inherit;color:var(--fg)}
+.mod[data-m=cat]{border-color:var(--cat)}.mod[data-m=ord]{border-color:var(--ord)}.mod[data-m=not]{border-color:var(--not)}
+.mod.on{box-shadow:0 0 0 3px color-mix(in srgb,var(--fg) 25%,transparent)}
+.mod h3{margin:0 0 6px}
+.pub{border:1px dashed var(--ok);border-radius:8px;padding:4px 8px;font-size:.82rem;margin:4px 0;color:var(--ok)}
+.priv{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:.82rem;margin:4px 0;background:var(--code);color:var(--muted)}
+.priv b{color:var(--fg)}
+.arrows{font-size:.85rem;color:var(--muted);margin:8px 0}
+/* simulator */
+.sim{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:760px){.sim{grid-template-columns:1fr 1.2fr}}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+select,input{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
+input[type=number]{width:5.5em}
+.stock{display:flex;gap:8px;flex-wrap:wrap}
+.pill{padding:3px 10px;border-radius:99px;border:2px solid var(--cat);font-size:.85rem;font-weight:600}
+.trace{list-style:none;margin:0;padding:0;font-family:ui-monospace,Consolas,monospace;font-size:.82rem}
+.trace li{padding:4px 8px;border-left:4px solid var(--line);margin:3px 0;background:var(--code);border-radius:0 6px 6px 0}
+.trace li.cat{border-left-color:var(--cat)}.trace li.ord{border-left-color:var(--ord)}.trace li.not{border-left-color:var(--not)}
+.trace li.bad{border-left-color:var(--bad)}
+.msg{min-height:3em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}
+/* matrix */
+.matrix td,.matrix th{text-align:center}
+.matrix td button{width:100%}
+.matrix td.ok{background:color-mix(in srgb,var(--ok) 18%,transparent)}
+.matrix td.bad{background:color-mix(in srgb,var(--bad) 18%,transparent)}
+.seg button.on,.steps button.on{background:var(--fg);color:var(--bg)}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+footer{margin-top:48px;color:var(--muted);font-size:.9rem}
+a{color:var(--ord)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav aria-label="Secciones">
+  <a href="#que">Qué es</a><a href="#mapa">Módulos</a><a href="#sim">Simulador</a>
+  <a href="#reglas">Reglas</a><a href="#vs">vs otras</a><a href="#errores">Errores</a><a href="#quiz">Quiz</a>
+  <button id="theme" aria-label="Cambiar tema">Tema</button>
+</nav>
+
+<header>
+  <h1>Monolito modular<br>para novatos</h1>
+  <p class="lead">Un solo programa, un solo despliegue, pero dividido en <b>módulos que no pueden meterse en las tripas de los demás</b>. Las fronteras de los microservicios, sin la red.</p>
+</header>
+
+<h2 id="que">1. El problema</h2>
+<div class="grid">
+  <div class="card"><h3>Monolito sin fronteras</h3><p>Todo llama a todo. Cambias "pedidos" y se rompe "catálogo". Con los años: <i>big ball of mud</i>.</p></div>
+  <div class="card"><h3>Microservicios</h3><p>Fronteras reales, pero con red, consistencia eventual y muchos despliegues. Un precio alto si no lo necesitas.</p></div>
+  <div class="card"><h3>Monolito modular</h3><p>Un proceso. Cada módulo oculta su interior (<code>internal</code>), expone un <b>contrato</b> y tiene sus <b>propios datos</b>. Las reglas se vigilan con tests.</p></div>
+</div>
+
+<h2 id="mapa">2. Los módulos del ejemplo (haz clic)</h2>
+<p>Una tienda con tres módulos. Cada uno tiene una parte <span class="yes">pública</span> (Contracts) y otra <b>privada</b> (Core).</p>
+<div class="map" id="map"></div>
+<div class="card" id="mapInfo" style="margin-top:12px"></div>
+<pre><code>Notifications ──(evento OrderPlaced)──► Ordering ──(ICatalogApi)──► Catalog</code></pre>
+
+<h2 id="sim">3. Simulador: haz un pedido</h2>
+<p>Elige productos y mira cómo viaja la petición entre módulos. Solo cruza fronteras a través de <b>contratos</b> y <b>eventos</b>.</p>
+<div class="sim">
+  <div class="card">
+    <h3>Stock en Catalog</h3>
+    <div class="stock" id="stock"></div>
+    <h3 style="margin-top:14px">Pedido</h3>
+    <div class="row">
+      <select id="sku"></select>
+      <input id="qty" type="number" min="0" value="1" aria-label="Cantidad">
+      <button id="add">Añadir línea</button>
+    </div>
+    <div class="msg" id="draft">Sin líneas.</div>
+    <div class="row">
+      <button id="place">Hacer pedido</button>
+      <button id="cancel" disabled>Cancelar último pedido</button>
+      <button id="reset">Reiniciar</button>
+    </div>
+    <div class="msg" id="result" aria-live="polite"></div>
+  </div>
+  <div class="card">
+    <h3>Traza de la petición</h3>
+    <ol class="trace" id="trace" aria-live="polite"><li>Aún no hay actividad.</li></ol>
+    <h3 style="margin-top:14px">Buzón de Notifications</h3>
+    <ul class="tight" id="mail"><li>Vacío.</li></ul>
+  </div>
+</div>
+
+<h2 id="reglas">4. Las reglas: ¿quién puede referenciar a quién?</h2>
+<p>Haz clic en una celda para ver si la referencia <b>fila → columna</b> está permitida y por qué.</p>
+<div class="scroll"><table class="matrix" id="matrix"></table></div>
+<div class="msg" id="ruleMsg" style="margin-top:10px">Elige una celda.</div>
+
+<h3 style="margin-top:28px">Cómo se ve en código</h3>
+<pre><code>// Catalog.Core: lo ÚNICO público
+public static class CatalogModule {
+    public static IServiceCollection AddCatalogModule(this IServiceCollection s) { ... }
+}
+internal sealed class CatalogApi : ICatalogApi { ... }   // nadie fuera lo ve
+internal sealed class ProductStore { ... }               // datos propios
+
+// Ordering.Core solo conoce el CONTRATO de Catalog:
+internal sealed class OrderingApi(ICatalogApi catalog, ...) { ... }
+
+// Host: el único que conoce a todos
+builder.Services.AddCatalogModule();
+builder.Services.AddOrderingModule();
+builder.Services.AddNotificationsModule();</code></pre>
+
+<h2 id="vs">5. Cómo se compara</h2>
+<div class="scroll"><table>
+<tr><th></th><th>Capas (N-tier)</th><th>Monolito modular</th><th>Microservicios</th></tr>
+<tr><td>Se corta por</td><td>Capa técnica</td><td>Capacidad de negocio</td><td>Capacidad de negocio</td></tr>
+<tr><td>Despliegue</td><td>1</td><td>1</td><td>N</td></tr>
+<tr><td>Fronteras</td><td>Convención</td><td>Compilador + tests</td><td>Red</td></tr>
+<tr><td>Datos</td><td>Compartidos</td><td>Por módulo</td><td>Por servicio</td></tr>
+<tr><td>Coste operativo</td><td>Bajo</td><td>Bajo</td><td>Alto</td></tr>
+</table></div>
+<p style="margin-top:10px">Combina bien: <b>cada módulo puede usar Clean, Vertical Slice o DDD por dentro</b>. Los módulos son la división de primer nivel.</p>
+
+<h3>¿Qué usaría yo?</h3>
+<div class="steps seg" id="wiz"></div>
+<div class="msg" id="wizMsg">Elige tu situación.</div>
+
+<h2 id="errores">6. Errores típicos</h2>
+<div class="grid">
+  <div class="card"><h3>Carpetas, no proyectos</h3><p>Sin proyectos separados e <code>internal</code>, cualquier <code>using</code> salta la frontera.</p></div>
+  <div class="card"><h3>SharedKernel gordo</h3><p>Si todo vive en lo compartido, todo depende de todo. Debe ser diminuto y sin negocio.</p></div>
+  <div class="card"><h3>JOIN entre módulos</h3><p>Los datos dejan de ser de alguien. Referencia por id y pide datos por contrato.</p></div>
+  <div class="card"><h3>Ciclos</h3><p>Si A llama a B y B a A, no se pueden separar nunca. Usa un evento o extrae un tercero.</p></div>
+  <div class="card"><h3>Creer que los eventos son fiables</h3><p>Aquí viven en memoria: si el proceso cae, se pierden. Producción pide <i>outbox</i>.</p></div>
+  <div class="card"><h3>Módulos = capas</h3><p>"Data" y "Services" no son módulos. Un módulo es una capacidad: Pedidos, Catálogo...</p></div>
+</div>
+
+<h2 id="quiz">7. Quiz</h2>
+<div class="card quiz" id="quizBox"></div>
+
+<footer>
+  Kit completo: <code>docs/GUIA-MODULAR-MONOLITH.md</code>, <code>docs/MODULAR-MONOLITH-VS-OTRAS.md</code> y <code>sample/</code>.
+</footer>
+</div>
+
+<script>
+(function(){
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function $(id){return document.getElementById(id);}
+
+  /* theme */
+  try{var t=localStorage.getItem('mm-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}
+  $('theme').addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('mm-theme',next);}catch(e){}
+  });
+
+  /* module map */
+  var MODS={
+    cat:{name:'Catalog',pub:['ICatalogApi','ProductInfo','ReservationResult'],priv:['Product','ProductStore','CatalogApi'],entry:'CatalogModule',
+      text:'Dueño de los productos y del stock. No depende de ningún otro módulo. La regla "no se vende más de lo que hay" vive solo aquí.'},
+    ord:{name:'Ordering',pub:['IOrderingApi','OrderDto','OrderPlaced','OrderCancelled'],priv:['Order','OrderStore','OrderingApi'],entry:'OrderingModule',
+      text:'Dueño de los pedidos. Pide stock a Catalog por su contrato (ICatalogApi) y publica eventos cuando algo pasa. No sabe que Notifications existe.'},
+    not:{name:'Notifications',pub:['INotificationsApi','NotificationDto'],priv:['NotificationLog','SendOrderConfirmation','SendCancellationNotice'],entry:'NotificationsModule',
+      text:'Reacciona a OrderPlaced y OrderCancelled. Nadie la llama para enviar: se suscribe a eventos de Ordering.'}
+  };
+  var map=$('map');
+  Object.keys(MODS).forEach(function(k){
+    var m=MODS[k];
+    var b=document.createElement('button');b.className='mod';b.dataset.m=k;
+    b.innerHTML='<h3>'+esc(m.name)+'</h3>'+
+      '<div class="pub">Contracts (público)<br>'+m.pub.map(esc).join(', ')+'</div>'+
+      '<div class="priv"><b>Core (internal)</b><br>'+m.priv.map(esc).join(', ')+'<br><b>público:</b> '+esc(m.entry)+'</div>';
+    b.addEventListener('click',function(){
+      [].forEach.call(map.children,function(c){c.classList.toggle('on',c===b);});
+      $('mapInfo').innerHTML='<b>'+esc(m.name)+'.</b> '+esc(m.text);
+    });
+    map.appendChild(b);
+  });
+  map.firstChild.click();
+
+  /* simulator */
+  var PRODUCTS=[{sku:'BOOK-1',name:'Libro',price:30,stock:10},{sku:'MUG-1',name:'Taza',price:12.5,stock:5},{sku:'PEN-1',name:'Bolígrafo',price:2,stock:100}];
+  var stock,lines,mail,lastOrder,trace;
+  function reset(){
+    stock={};PRODUCTS.forEach(function(p){stock[p.sku]=p.stock;});
+    lines=[];mail=[];lastOrder=null;trace=[];
+    $('result').textContent='';$('result').className='msg';
+    render();
+  }
+  function price(sku){return PRODUCTS.filter(function(p){return p.sku===sku;})[0].price;}
+  function log(mod,text,bad){trace.push({mod:mod,text:text,bad:!!bad});}
+  function render(){
+    $('stock').innerHTML=PRODUCTS.map(function(p){return '<span class="pill">'+esc(p.sku)+': '+stock[p.sku]+'</span>';}).join('');
+    $('draft').textContent=lines.length?lines.map(function(l){return l.qty+' x '+l.sku;}).join(' + '):'Sin líneas.';
+    $('cancel').disabled=!(lastOrder&&lastOrder.status==='Placed');
+    $('trace').innerHTML=trace.length?trace.map(function(t){return '<li class="'+(t.bad?'bad':t.mod)+'">'+esc(t.text)+'</li>';}).join(''):'<li>Aún no hay actividad.</li>';
+    $('mail').innerHTML=mail.length?mail.map(function(m){return '<li>'+esc(m)+'</li>';}).join(''):'<li>Vacío.</li>';
+  }
+  $('sku').innerHTML=PRODUCTS.map(function(p){return '<option value="'+esc(p.sku)+'">'+esc(p.sku)+' ('+p.price+' €)</option>';}).join('');
+  $('add').addEventListener('click',function(){
+    var q=parseInt($('qty').value,10);if(isNaN(q))q=0;
+    lines.push({sku:$('sku').value,qty:q});render();
+  });
+  $('reset').addEventListener('click',reset);
+  $('place').addEventListener('click',function(){
+    trace=[];var res=$('result');
+    if(!lines.length){res.className='msg err';res.textContent='Ordering: un pedido necesita al menos una línea.';log('ord','Ordering.Validate → error: sin líneas',true);render();return;}
+    if(lines.some(function(l){return l.qty<=0;})){res.className='msg err';res.textContent='Ordering: cada línea necesita una cantidad positiva.';log('ord','Ordering.Validate → error: cantidad no positiva',true);render();return;}
+    log('ord','Ordering.PlaceAsync(command)');
+    var reserved=[],failed=null;
+    for(var i=0;i<lines.length;i++){
+      var l=lines[i];
+      log('ord','→ ICatalogApi.ReserveAsync("'+l.sku+'", '+l.qty+')   [contrato público]');
+      if(stock[l.sku]<l.qty){
+        log('cat','Catalog: stock insuficiente de '+l.sku+' (hay '+stock[l.sku]+')',true);
+        failed='No hay stock suficiente de '+l.sku+'.';break;
+      }
+      stock[l.sku]-=l.qty;reserved.push(l);
+      log('cat','Catalog: reservadas '+l.qty+' de '+l.sku+' → precio '+price(l.sku));
+    }
+    if(failed){
+      reserved.forEach(function(r){stock[r.sku]+=r.qty;log('ord','→ ICatalogApi.ReleaseAsync("'+r.sku+'", '+r.qty+')   [compensación manual]');});
+      res.className='msg err';res.textContent='Pedido rechazado: '+failed+(reserved.length?' Se liberó lo ya reservado.':'');
+      render();return;
+    }
+    var total=lines.reduce(function(a,l){return a+price(l.sku)*l.qty;},0);
+    lastOrder={status:'Placed',lines:lines.slice(),total:total};
+    log('ord','Ordering: pedido guardado en su propio almacén (total '+total.toFixed(2)+')');
+    log('ord','→ IEventBus.Publish(OrderPlaced)   [evento de integración]');
+    log('not','Notifications: SendOrderConfirmation recibe OrderPlaced');
+    mail.push('Pedido confirmado. Total: '+total.toFixed(2));
+    res.className='msg ok';res.textContent='Pedido creado. Total '+total.toFixed(2)+' €.';
+    lines=[];render();
+  });
+  $('cancel').addEventListener('click',function(){
+    trace=[];
+    log('ord','Ordering.CancelAsync(orderId)');
+    lastOrder.lines.forEach(function(l){stock[l.sku]+=l.qty;log('ord','→ ICatalogApi.ReleaseAsync("'+l.sku+'", '+l.qty+')');log('cat','Catalog: stock devuelto de '+l.sku);});
+    lastOrder.status='Cancelled';
+    log('ord','→ IEventBus.Publish(OrderCancelled)');
+    log('not','Notifications: SendCancellationNotice recibe OrderCancelled');
+    mail.push('Pedido cancelado.');
+    $('result').className='msg ok';$('result').textContent='Pedido cancelado y stock devuelto.';
+    render();
+  });
+  reset();
+
+  /* rule matrix */
+  var NODES=['Catalog.Core','Catalog.Contracts','Ordering.Core','Ordering.Contracts','Notifications.Core','SharedKernel'];
+  var RULES={
+    'Ordering.Core>Catalog.Contracts':[true,'Un módulo puede depender del contrato público de otro. Es la forma de pedir algo a Catalog.'],
+    'Ordering.Core>Catalog.Core':[false,'Jamás: saltarías la frontera y acoplarías Ordering a la implementación de Catalog.'],
+    'Notifications.Core>Ordering.Contracts':[true,'Para suscribirse a OrderPlaced solo necesita el contrato de Ordering.'],
+    'Notifications.Core>Ordering.Core':[false,'Jamás: Notifications no debe ver cómo se guarda un pedido.'],
+    'Catalog.Core>Ordering.Contracts':[false,'Crearía un ciclo Catalog ↔ Ordering. Si Catalog necesita saber algo de pedidos, que Ordering publique un evento.'],
+    'Catalog.Core>Notifications.Contracts':[false,'No está declarado. Cada dependencia entre módulos debe ser explícita y estar justificada.']
+  };
+  function rule(from,to){
+    if(from===to)return [false,'Un proyecto no se referencia a sí mismo.'];
+    var k=from+'>'+to;if(RULES[k])return RULES[k];
+    if(to==='SharedKernel'&&from!=='SharedKernel')return [true,'Todos pueden usar el SharedKernel (diminuto: bus de eventos y reloj).'];
+    if(from==='SharedKernel')return [false,'El SharedKernel no puede conocer a ningún módulo.'];
+    if(from.indexOf('.Contracts')>0&&to.indexOf('.Core')>0)return [false,'Un Contracts jamás depende de un Core: sería filtrar la implementación al exterior.'];
+    if(from.split('.')[0]===to.split('.')[0]&&from.indexOf('.Core')>0&&to.indexOf('.Contracts')>0)return [true,'Un Core siempre depende de su propio Contracts (implementa sus interfaces).'];
+    if(from.split('.')[0]===to.split('.')[0])return [false,'Un Contracts no depende de su Core.'];
+    return [false,'Dependencia entre módulos no declarada: añádela solo si el negocio lo exige y sin crear ciclos.'];
+  }
+  var tbl=$('matrix'),h='<tr><th>desde ↓ / hacia →</th>'+NODES.map(function(n){return '<th>'+esc(n)+'</th>';}).join('')+'</tr>';
+  NODES.forEach(function(f){h+='<tr><th>'+esc(f)+'</th>'+NODES.map(function(t){
+    var r=rule(f,t);return '<td class="'+(f===t?'':(r[0]?'ok':'bad'))+'"><button data-f="'+esc(f)+'" data-t="'+esc(t)+'" aria-label="'+esc(f)+' a '+esc(t)+'">'+(f===t?'·':(r[0]?'✔':'✘'))+'</button></td>';}).join('')+'</tr>';});
+  tbl.innerHTML=h;
+  tbl.addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;
+    var r=rule(b.dataset.f,b.dataset.t);
+    var m=$('ruleMsg');m.className='msg '+(r[0]?'ok':'err');
+    m.textContent=b.dataset.f+' → '+b.dataset.t+': '+(r[0]?'PERMITIDO. ':'PROHIBIDO. ')+r[1];
+  });
+
+  /* wizard */
+  var WIZ=[
+    ['App pequeña, dominio simple','Un solo proyecto ordenado. Los módulos serían burocracia.'],
+    ['Varias áreas de negocio, un despliegue','Monolito modular. Es exactamente su caso.'],
+    ['Un área necesita escalar aparte','Extrae ese módulo a un servicio y deja el resto en el monolito.'],
+    ['Muchos equipos con releases independientes','Microservicios, si tienes DevOps maduro. El monolito modular te deja las costuras listas.'],
+    ['No sé dónde están las fronteras','Primero entiende el negocio (DDD estratégico). Partir mal es caro en ambos mundos.']
+  ];
+  var wiz=$('wiz');
+  WIZ.forEach(function(w,i){
+    var b=document.createElement('button');b.textContent=w[0];
+    b.addEventListener('click',function(){
+      [].forEach.call(wiz.children,function(c){c.classList.toggle('on',c===b);});
+      $('wizMsg').textContent=w[1];
+    });
+    wiz.appendChild(b);
+  });
+
+  /* quiz */
+  var Q=[
+    ['¿Qué es lo único público de Catalog.Core?',['Todas sus clases','El entry point CatalogModule','El ProductStore'],1,'Todo lo demás es internal. El host solo necesita AddCatalogModule() y MapCatalogEndpoints().'],
+    ['Ordering necesita saber si hay stock. ¿Cómo lo hace?',['Referencia Catalog.Core y lee ProductStore','Llama a ICatalogApi (Catalog.Contracts)','Consulta directamente la tabla de productos'],1,'Solo a través del contrato público. Nunca la implementación ni los datos.'],
+    ['¿Quién conoce a Notifications?',['Ordering, porque la llama','Solo el host, que la registra','Catalog'],1,'Ordering publica un evento y no sabe quién escucha. Notifications se suscribe sola.'],
+    ['Un pedido falla en la segunda línea por falta de stock. ¿Qué pasa con la primera?',['Se queda reservada','Ordering la libera a mano (compensación)','Una transacción entre módulos la revierte'],1,'No hay transacción entre módulos; hay que compensar explícitamente (o usar una saga).'],
+    ['¿Qué rompe más la idea de módulo?',['Que dos módulos compartan una tabla','Que un módulo publique un evento','Que cada módulo tenga su almacén'],0,'Los datos compartidos eliminan la frontera: nadie es dueño de nada.'],
+    ['¿Qué pasa en el sample si un suscriptor lanza una excepción?',['El pedido falla','Se registra el error y el resto sigue; el evento no se reintenta','El evento se reintenta solo'],1,'El bus en memoria aísla al publicador, pero sin outbox no hay reintento ni garantía.'],
+    ['¿El monolito modular es un paso obligatorio hacia microservicios?',['Sí, siempre','No: es una arquitectura válida por sí sola','Solo en empresas grandes'],1,'Muchos sistemas nunca necesitan salir de aquí; si lo necesitas, las costuras ya están hechas.']
+  ];
+  var qi=0,score=0,qbox=$('quizBox');
+  function showQ(){
+    if(qi>=Q.length){qbox.innerHTML='<h3>Resultado: '+score+' / '+Q.length+'</h3><p>'+(score>=6?'Excelente: ya piensas en módulos.':score>=4?'Bien. Repasa las reglas de referencia.':'Vuelve a la sección 4 y al simulador.')+'</p><button id="again">Reintentar</button>';
+      $('again').addEventListener('click',function(){qi=0;score=0;showQ();});return;}
+    var q=Q[qi];
+    qbox.innerHTML='<p><b>'+(qi+1)+'/'+Q.length+'</b> '+esc(q[0])+'</p>'+q[1].map(function(o,i){return '<button class="opt" data-i="'+i+'">'+esc(o)+'</button>';}).join('')+'<div class="msg" id="qmsg" aria-live="polite"></div>';
+    [].forEach.call(qbox.querySelectorAll('.opt'),function(b){
+      b.addEventListener('click',function(){
+        var i=parseInt(b.dataset.i,10);
+        [].forEach.call(qbox.querySelectorAll('.opt'),function(x){x.disabled=true;});
+        b.classList.add(i===q[2]?'right':'wrong');
+        if(i!==q[2])qbox.querySelectorAll('.opt')[q[2]].classList.add('right'); else score++;
+        $('qmsg').innerHTML=esc(q[3])+' <button id="next">Siguiente</button>';
+        $('next').addEventListener('click',function(){qi++;showQ();});
+      });
+    });
+  }
+  showQ();
+})();
+</script>
+</body>
+</html>

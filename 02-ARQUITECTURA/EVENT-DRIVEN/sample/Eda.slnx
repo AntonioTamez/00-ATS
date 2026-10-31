@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Eda.Host/Eda.Host.csproj" />
+    <Project Path="src/Eda.Inventory/Eda.Inventory.csproj" />
+    <Project Path="src/Eda.Messaging/Eda.Messaging.csproj" />
+    <Project Path="src/Eda.Notifications/Eda.Notifications.csproj" />
+    <Project Path="src/Eda.Orders/Eda.Orders.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Eda.Tests/Eda.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Clinic.Billing.Application\Clinic.Billing.Application.csproj" />
+    <ProjectReference Include="..\Clinic.Billing.Domain\Clinic.Billing.Domain.csproj" />
+    <ProjectReference Include="..\..\Clinic.SharedKernel\Clinic.SharedKernel.csproj" />
+    <!-- The ONLY place where Billing touches another capability: it implements the port Appointments asked for. -->
+    <ProjectReference Include="..\..\Appointments\Clinic.Appointments.Application\Clinic.Appointments.Application.csproj" />
+  </ItemGroup>
+
+</Project>

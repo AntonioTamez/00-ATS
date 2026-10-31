@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microkernel y plugins para novatos</title>
+<style>
+:root{
+  --bg:#f7f7f5;--fg:#1c1c1a;--muted:#5d5d57;--card:#fff;--line:#deded8;--code:#f0f0ea;
+  --ok:#2e8b57;--bad:#c0392b;--warn:#b7791f;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+}
+:root[data-theme="dark"]{--bg:#151514;--fg:#ececE6;--muted:#a4a49b;--card:#1e1e1c;--line:#34342f;--code:#262623;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 64px}
+header{padding:40px 0 8px}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px;line-height:1.15}
+h2{font-size:1.5rem;margin:48px 0 8px}
+h3{margin:0 0 6px;font-size:1.05rem}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:1.1rem;max-width:66ch}
+nav{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;margin:0 -16px;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+nav a{color:var(--fg);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:.9rem;border:1px solid var(--line)}
+nav a:hover{background:var(--card)}
+nav button{margin-left:auto}
+button{font:inherit;cursor:pointer;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){border-color:var(--muted)}
+button:disabled{opacity:.45;cursor:not-allowed}
+input[type=number]{font:inherit;width:6em;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+pre{background:var(--code);border-radius:8px;padding:12px 14px;overflow-x:auto;font:13px/1.5 ui-monospace,Consolas,monospace;margin:8px 0}
+code{font-family:ui-monospace,Consolas,monospace;background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+.small{font-size:.85rem;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.plug{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.plug.on{border-color:var(--ok)}
+.plug input{margin-top:5px}
+.two{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:800px){.two{grid-template-columns:1fr 1fr}}
+ul.log{list-style:none;margin:0;padding:0}
+ul.log li{padding:5px 8px;border-left:4px solid var(--line);margin:4px 0;background:var(--code);border-radius:4px;font-size:.92rem}
+ul.log li.ok{border-color:var(--ok)}ul.log li.bad{border-color:var(--bad)}ul.log li.warn{border-color:var(--warn)}
+.msg{min-height:2.6em;padding:8px 10px;border-radius:8px;background:var(--code);font-size:.92rem}
+.msg.err{border-left:4px solid var(--bad)}.msg.ok{border-left:4px solid var(--ok)}
+.seg button.on{background:var(--fg);color:var(--bg)}
+.quiz .opt{display:block;width:100%;text-align:left;margin:6px 0}
+.quiz .opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Microkernel y plugins para novatos</h1>
+  <p class="lead">Un núcleo chiquito que no conoce a nadie, y plugins que se enchufan copiando una carpeta. Probalo: instalá plugins buenos y malos y mirá qué hace el núcleo.</p>
+</header>
+<nav>
+  <a href="#idea">La idea</a><a href="#lab">Laboratorio</a><a href="#identidad">Identidad de tipos</a><a href="#limites">Límites</a><a href="#quiz">Quiz</a>
+  <button id="theme" type="button">Tema</button>
+</nav>
+
+<section id="idea">
+<h2>1. La idea</h2>
+<div class="grid">
+  <div class="card"><h3>Contrato</h3><p>Lo único que conocen ambos lados. Chico y estable: <code>IShippingCarrier</code> con un solo método.</p></div>
+  <div class="card"><h3>Núcleo</h3><p>Descubre plugins, los carga aislados y los compara. No sabe cuántos hay ni cómo se llaman.</p></div>
+  <div class="card"><h3>Plugins</h3><p>Cada uno referencia solo el contrato. Se instala copiando su carpeta; se desinstala borrándola.</p></div>
+</div>
+<pre>Host ──► Kernel ──► Contracts ◄── Carriers.Standard
+                         ▲
+                         └───────── Carriers.Express
+(Kernel y plugins no se conocen: se encuentran en una carpeta, en tiempo de ejecución)</pre>
+</section>
+
+<section id="lab">
+<h2>2. Laboratorio: instalá plugins</h2>
+<p>Marcá las carpetas que querés poner en <code>plugins/</code>. El simulador sigue las mismas reglas del sample (orden de carpetas, rechazos, aislamiento de fallos).</p>
+<div class="row"><label>Peso (kg) <input type="number" id="kg" value="2" min="0" step="0.5"></label>
+<label>Distancia (km) <input type="number" id="km" value="100" min="0" step="50"></label></div>
+<div class="two">
+  <div id="plugList"></div>
+  <div>
+    <h3>Lo que hace el núcleo</h3>
+    <ul class="log" id="log"></ul>
+    <div class="msg" id="verdict"></div>
+  </div>
+</div>
+</section>
+
+<section id="identidad">
+<h2>3. El error número uno: el contrato copiado</h2>
+<p>Un plugin se construyó <b>trayendo su propia copia</b> de <code>Shipping.Contracts.dll</code>. ¿Qué pasa al cargarlo?</p>
+<div class="row seg" id="idButtons"></div>
+<pre id="idCode"></pre>
+<div class="msg" id="idMsg"></div>
+</section>
+
+<section id="limites">
+<h2>4. Lo que NO es</h2>
+<div class="grid">
+  <div class="card"><h3>No es un sandbox</h3><p>Los plugins corren en el mismo proceso. El núcleo aísla <i>errores honestos</i> (excepciones, datos inválidos), no código malicioso ni bucles infinitos.</p></div>
+  <div class="card"><h3>Descargar es cooperativo</h3><p><code>Unload()</code> solo inicia el proceso; termina cuando el GC recolecta y nadie retiene referencias a tipos del plugin.</p></div>
+  <div class="card"><h3>No son microservicios</h3><p>Es una sola aplicación, un solo proceso, sin red. Lo "micro" es el tamaño del núcleo.</p></div>
+</div>
+</section>
+
+<section id="quizSection">
+<h2 id="quiz">5. Quiz</h2>
+<div class="card quiz" id="quizBox"></div>
+</section>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+
+try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t;}catch(e){}
+$("theme").addEventListener("click",()=>{
+  const dark=document.documentElement.dataset.theme==="dark"||(!document.documentElement.dataset.theme&&matchMedia("(prefers-color-scheme: dark)").matches);
+  const next=dark?"light":"dark";document.documentElement.dataset.theme=next;
+  try{localStorage.setItem("theme",next);}catch(e){}
+});
+
+/* ---------- plugin simulator (mirrors the sample's rules) ---------- */
+const round2 = (x) => Math.round(x * 100) / 100;
+const plugins = [
+  { folder: "Carriers.Express", id: "express", contract: 1, attr: true, desc: "Rápido y caro: hasta 20 kg.",
+    quote: (kg, km) => kg > 20 ? null : { id: "express", price: round2(12 + 1.2 * kg + 0.03 * km), days: km <= 1000 ? 1 : 2 } },
+  { folder: "Carriers.Standard", id: "standard", contract: 1, attr: true, desc: "Barato y lento: hasta 30 kg.",
+    quote: (kg, km) => kg > 30 ? null : { id: "standard", price: round2(5 + 0.5 * kg + 0.01 * km), days: 3 + Math.floor(km / 500) } },
+  { folder: "Fixtures.BundledContracts", id: "bundled", contract: 1, attr: true, desc: "Bien portado, pero trajo su propia copia del contrato.",
+    quote: () => ({ id: "bundled", price: 9.99, days: 4 }) },
+  { folder: "Fixtures.Faulty", id: "faulty", contract: 1, attr: true, desc: "Lanza una excepción al cotizar.",
+    quote: () => { throw new Error("InvalidOperationException: boom"); } },
+  { folder: "Fixtures.FutureContract", id: "future", contract: 99, attr: true, desc: "Escrito para la versión 99 del contrato.",
+    quote: () => ({ id: "future", price: 1, days: 1 }) },
+  { folder: "Fixtures.Impostor", id: "impostor", contract: 1, attr: true, desc: "Responde con una cotización firmada por otro.",
+    quote: () => ({ id: "standard", price: 1, days: 1 }) },
+  { folder: "Fixtures.NotAPlugin", id: "forgotten", contract: 1, attr: false, desc: "Implementa la interfaz pero olvidó [Carrier].",
+    quote: () => ({ id: "forgotten", price: 1, days: 1 }) },
+  { folder: "Fixtures.StandardClone", id: "standard", contract: 1, attr: true, desc: "Otro plugin que reclama el id \"standard\".",
+    quote: () => ({ id: "standard", price: 0.5, days: 1 }) }
+];
+const installed = new Set(["Carriers.Express", "Carriers.Standard"]);
+
+function simulate(kg, km) {
+  const lines = [], loaded = [];
+  const folders = plugins.filter(p => installed.has(p.folder)).sort((a, b) => a.folder < b.folder ? -1 : a.folder > b.folder ? 1 : 0);
+  for (const p of folders) {
+    if (!p.attr) { lines.push(["bad", `Rechazado ${p.folder}: implementa IShippingCarrier pero no tiene [Carrier]`]); continue; }
+    if (p.contract !== 1) { lines.push(["bad", `Rechazado ${p.folder}: apunta a la versión de contrato ${p.contract}, el núcleo soporta 1`]); continue; }
+    const dup = loaded.find(l => l.id.toLowerCase() === p.id.toLowerCase());
+    if (dup) { lines.push(["bad", `Rechazado ${p.folder}: id duplicado '${p.id}' (ya lo provee ${dup.folder})`]); continue; }
+    loaded.push(p);
+    lines.push(["ok", `Cargado ${p.folder} como '${p.id}'`]);
+  }
+  const quotes = [];
+  if (kg <= 0) { lines.push(["bad", "Parcela inválida: el peso debe ser positivo (el núcleo la rechaza antes de llamar a los plugins)"]); return { lines, quotes, loaded, invalid: true }; }
+  if (km < 0) { lines.push(["bad", "Parcela inválida: la distancia no puede ser negativa"]); return { lines, quotes, loaded, invalid: true }; }
+  for (const p of loaded) {
+    try {
+      const q = p.quote(kg, km);
+      if (q === null) { lines.push(["warn", `${p.id}: no sirve esta parcela`]); continue; }
+      if (q.id !== p.id) lines.push(["bad", `${p.id}: falló - respondió con una cotización firmada por '${q.id}'`]);
+      else if (q.price <= 0 || q.days < 0) lines.push(["bad", `${p.id}: falló - precio o plazo inválido`]);
+      else { quotes.push(q); lines.push(["ok", `${p.id}: ${q.price.toFixed(2)} en ${q.days} día(s)`]); }
+    } catch (e) {
+      lines.push(["bad", `${p.id}: falló - ${e.message}`]);
+    }
+  }
+  quotes.sort((a, b) => a.price - b.price || a.days - b.days || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  return { lines, quotes, loaded, invalid: false };
+}
+
+function renderLab() {
+  const kg = parseFloat($("kg").value), km = parseInt($("km").value, 10);
+  const r = simulate(Number.isFinite(kg) ? kg : 0, Number.isFinite(km) ? km : 0);
+  const ul = $("log");
+  ul.textContent = "";
+  if (installed.size === 0) { const li = document.createElement("li"); li.textContent = "La carpeta plugins/ está vacía: el núcleo corre igual, sin cotizar nada."; ul.appendChild(li); }
+  r.lines.forEach(([cls, text]) => { const li = document.createElement("li"); li.className = cls; li.textContent = text; ul.appendChild(li); });
+  const v = $("verdict");
+  if (r.invalid) { v.textContent = "Sin cotizaciones: la parcela es inválida."; v.className = "msg err"; }
+  else if (r.quotes.length) { v.textContent = `Más barato: ${r.quotes[0].id} (${r.quotes[0].price.toFixed(2)}). Los fallos de otros plugins no cambiaron esto.`; v.className = "msg ok"; }
+  else { v.textContent = "Nadie sirve esta parcela."; v.className = "msg err"; }
+}
+
+const list = $("plugList");
+plugins.forEach(p => {
+  const label = document.createElement("label");
+  label.className = "plug" + (installed.has(p.folder) ? " on" : "");
+  const cb = document.createElement("input");
+  cb.type = "checkbox"; cb.checked = installed.has(p.folder);
+  cb.addEventListener("change", () => {
+    if (cb.checked) installed.add(p.folder); else installed.delete(p.folder);
+    label.classList.toggle("on", cb.checked);
+    renderLab();
+  });
+  const box = document.createElement("div");
+  const name = document.createElement("b"); name.textContent = p.folder;
+  const d = document.createElement("div"); d.className = "small"; d.textContent = p.desc;
+  box.append(name, d);
+  label.append(cb, box);
+  list.appendChild(label);
+});
+$("kg").addEventListener("input", renderLab);
+$("km").addEventListener("input", renderLab);
+renderLab();
+
+/* ---------- type identity ---------- */
+const identity = {
+  naive: {
+    label: "Núcleo ingenuo",
+    code: "// El contexto de carga resuelve TODO desde la carpeta del plugin\nvar path = resolver.ResolveAssemblyToPath(name);\nreturn path is null ? null : LoadFromAssemblyPath(path);\n\n// Resultado: el plugin usa SU Shipping.Contracts.dll\n// typeof(IShippingCarrier) del núcleo != IShippingCarrier del plugin",
+    msg: "Para el runtime son dos tipos distintos con el mismo nombre. El núcleo no encuentra ninguna clase que implemente SU interfaz: 'no class implementing IShippingCarrier'.",
+    cls: "err"
+  },
+  guarded: {
+    label: "Núcleo del sample",
+    code: "if (name.Name == ContractsAssembly) return null;   // el contrato SIEMPRE del anfitrión\nvar path = resolver.ResolveAssemblyToPath(name);\nreturn path is null ? null : LoadFromAssemblyPath(path);\n\n// Resultado: aunque la carpeta traiga su copia, se ignora.",
+    msg: "El plugin se carga bien: su interfaz es la del anfitrión. El test del fixture BundledContracts lo demuestra, y la mutación que quita esa línea lo rompe.",
+    cls: "ok"
+  },
+  fixed: {
+    label: "Arreglo en el plugin",
+    code: "<ProjectReference Include=\"..\\Shipping.Contracts\\Shipping.Contracts.csproj\">\n  <Private>false</Private>\n</ProjectReference>\n<!-- No copia Shipping.Contracts.dll a la carpeta del plugin -->",
+    msg: "La primera defensa es no copiar el contrato (un test revisa las carpetas construidas). La del núcleo es la segunda red de seguridad.",
+    cls: "ok"
+  }
+};
+function showId(key) {
+  $("idCode").textContent = identity[key].code;
+  $("idMsg").textContent = identity[key].msg;
+  $("idMsg").className = "msg " + identity[key].cls;
+  [...$("idButtons").children].forEach(b => b.classList.toggle("on", b.dataset.key === key));
+}
+Object.keys(identity).forEach(key => {
+  const b = document.createElement("button");
+  b.type = "button"; b.dataset.key = key; b.textContent = identity[key].label;
+  b.addEventListener("click", () => showId(key));
+  $("idButtons").appendChild(b);
+});
+showId("naive");
+
+/* ---------- quiz ---------- */
+const questions = [
+  { q: "Querés agregar un transportista nuevo. ¿Qué tocás en el núcleo?",
+    o: ["Nada: copiás la carpeta del plugin","Agregás un caso al switch de transportistas","Recompilás con una referencia nueva"], a: 0,
+    e: "Ese es el punto del estilo: el núcleo descubre, no enumera." },
+  { q: "¿Qué debe referenciar un plugin?",
+    o: ["El núcleo y el contrato","Solo el contrato","Los demás plugins"], a: 1,
+    e: "Referenciar el núcleo o a otros plugins crea acoplamiento que mata la extensibilidad. Un test lo vigila." },
+  { q: "El plugin 'Faulty' lanza una excepción. ¿Qué debería pasar?",
+    o: ["La aplicación se cae","Se registra como fallo y los demás plugins siguen cotizando","Se descarta toda la cotización"], a: 1,
+    e: "El núcleo aísla cada llamada. Ojo: esto cubre errores honestos, no código malicioso." },
+  { q: "'No encuentro ninguna clase que implemente IShippingCarrier', pero el plugin sí la implementa. Causa más probable:",
+    o: ["El plugin trajo su propia copia del contrato","Falta el atributo en el host","El GC la recolectó"], a: 0,
+    e: "Identidad de tipos: dos copias de la misma interfaz son dos tipos distintos." },
+  { q: "¿Es un microkernel en proceso un buen sandbox para código de terceros no confiable?",
+    o: ["Sí, cada plugin tiene su contexto","No: corre en el mismo proceso","Sí, si es collectible"], a: 1,
+    e: "Microsoft lo advierte: el código no confiable no se carga de forma segura en un proceso de confianza." },
+  { q: "Llamaste a Unload() y el contexto sigue vivo. ¿Qué miras primero?",
+    o: ["Si algo retiene referencias a tipos o instancias del plugin","Si el plugin es de 32 bits","Si hay más de 2 plugins"], a: 0,
+    e: "La descarga es cooperativa: referencias estáticas, hilos del plugin, handles fuertes la impiden." },
+  { q: "Tenés una sola implementación que nunca va a cambiar. ¿Plugin?",
+    o: ["Sí, por si acaso","No: una interfaz y una clase alcanzan","Sí, siempre es mejor"], a: 1,
+    e: "El estilo tiene costos (carga dinámica, versionado). Úsalo cuando hay variantes reales." }
+];
+let qi = 0, score = 0;
+function renderQuiz() {
+  const box = $("quizBox");
+  box.textContent = "";
+  if (qi >= questions.length) {
+    const p = document.createElement("p");
+    p.textContent = `Resultado: ${score} de ${questions.length}.`;
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = "Reintentar";
+    b.addEventListener("click", () => { qi = 0; score = 0; renderQuiz(); });
+    box.append(p, b);
+    return;
+  }
+  const q = questions[qi];
+  const h = document.createElement("h3"); h.textContent = `${qi + 1}/${questions.length} · ${q.q}`;
+  const fb = document.createElement("div"); fb.className = "msg"; fb.setAttribute("aria-live", "polite");
+  const next = document.createElement("button"); next.type = "button"; next.textContent = "Siguiente"; next.disabled = true;
+  next.addEventListener("click", () => { qi++; renderQuiz(); });
+  const opts = [];
+  q.o.forEach((text, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "opt"; b.textContent = text;
+    b.addEventListener("click", () => {
+      opts.forEach(x => x.disabled = true);
+      const right = i === q.a;
+      if (right) score++;
+      b.classList.add(right ? "right" : "wrong");
+      opts[q.a].classList.add("right");
+      fb.textContent = (right ? "¡Correcto! " : "No exactamente. ") + q.e;
+      fb.className = "msg " + (right ? "ok" : "err");
+      next.disabled = false;
+    });
+    opts.push(b);
+  });
+  box.append(h, ...opts, fb, next);
+}
+renderQuiz();
+</script>
+</body>
+</html>

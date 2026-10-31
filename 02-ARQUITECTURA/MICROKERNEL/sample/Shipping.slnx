@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Shipping.Contracts/Shipping.Contracts.csproj" />
+    <Project Path="src/Shipping.Host/Shipping.Host.csproj" />
+    <Project Path="src/Shipping.Kernel/Shipping.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/src/plugins/">
+    <Project Path="src/plugins/Carriers.Express/Carriers.Express.csproj" />
+    <Project Path="src/plugins/Carriers.Standard/Carriers.Standard.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Shipping.Tests/Shipping.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Fixtures/">
+    <Project Path="tests/Fixtures/Fixtures.BundledContracts/Fixtures.BundledContracts.csproj" />
+    <Project Path="tests/Fixtures/Fixtures.Faulty/Fixtures.Faulty.csproj" />
+    <Project Path="tests/Fixtures/Fixtures.FutureContract/Fixtures.FutureContract.csproj" />
+    <Project Path="tests/Fixtures/Fixtures.Impostor/Fixtures.Impostor.csproj" />
+    <Project Path="tests/Fixtures/Fixtures.NotAPlugin/Fixtures.NotAPlugin.csproj" />
+    <Project Path="tests/Fixtures/Fixtures.StandardClone/Fixtures.StandardClone.csproj" />
+  </Folder>
+</Solution>

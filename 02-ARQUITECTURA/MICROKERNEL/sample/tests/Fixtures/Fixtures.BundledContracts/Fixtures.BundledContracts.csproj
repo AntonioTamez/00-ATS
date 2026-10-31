@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Copies the plugin's own dependencies next to it and produces the .deps.json the kernel's resolver reads. -->
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <PluginStage>fixtures</PluginStage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- DELIBERATE MISTAKE: no <Private>false</Private>, so Shipping.Contracts.dll is copied next to this plugin. -->
+    <ProjectReference Include="..\..\..\src\Shipping.Contracts\Shipping.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Clinic.Host/Clinic.Host.csproj" />
+    <Project Path="src/Clinic.SharedKernel/Clinic.SharedKernel.csproj" />
+  </Folder>
+  <Folder Name="/src/Appointments/">
+    <Project Path="src/Appointments/Clinic.Appointments.Adapters/Clinic.Appointments.Adapters.csproj" />
+    <Project Path="src/Appointments/Clinic.Appointments.Application/Clinic.Appointments.Application.csproj" />
+    <Project Path="src/Appointments/Clinic.Appointments.Domain/Clinic.Appointments.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Billing/">
+    <Project Path="src/Billing/Clinic.Billing.Adapters/Clinic.Billing.Adapters.csproj" />
+    <Project Path="src/Billing/Clinic.Billing.Application/Clinic.Billing.Application.csproj" />
+    <Project Path="src/Billing/Clinic.Billing.Domain/Clinic.Billing.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Patients/">
+    <Project Path="src/Patients/Clinic.Patients.Adapters/Clinic.Patients.Adapters.csproj" />
+    <Project Path="src/Patients/Clinic.Patients.Application/Clinic.Patients.Application.csproj" />
+    <Project Path="src/Patients/Clinic.Patients.Domain/Clinic.Patients.Domain.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Clinic.Tests/Clinic.Tests.csproj" />
+  </Folder>
+</Solution>
