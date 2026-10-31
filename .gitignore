@@ -1,0 +1,27 @@
+# .NET build output
+[Bb]in/
+[Oo]bj/
+**/sample/artifacts/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# Secrets / environment
+.env
+.env.*
+!.env.example
+
+# Local agent tooling
+.atl/
+.codegraph/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
