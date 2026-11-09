@@ -50,6 +50,91 @@ The shell itself is hexagonal, so phase 2 adds a new driving adapter instead of 
 The core never contains language-specific code. Everything that depends on a language lives in a
 **language pack**, so packs can be added or changed without touching the core.
 
+### Solution overview (Phase 1)
+
+```mermaid
+flowchart TB
+    Dev(["👩‍💻 Developer<br/>(EN / ES)"])
+
+    subgraph Host["Claude Code — host adapter (archshell-claude-code)"]
+        Skills["Skills<br/>arch-select · arch-feature · arch-grow"]
+        Agents["Agents<br/>arch-elicitor · arch-verifier"]
+        Hooks["Hooks<br/>PostToolUse → fast checks<br/>Stop → full gates"]
+        AI["AI agent<br/>(own GitHub identity, no admin)"]
+    end
+
+    subgraph Core["archshell-core — Python engine (language/host/vendor agnostic)"]
+        Catalog["PatternCatalog<br/>18 pattern cards"]
+        Selector["PatternSelector<br/>deterministic scoring"]
+        Elicitor["Elicitor<br/>≤ 5 plain-language questions"]
+        Charter["CharterWriter"]
+        Scaffolder["Scaffolder"]
+        TestGen["ArchTestGenerator"]
+        Gates["GateRunner"]
+        Workflow["FeatureWorkflow<br/>spec → RED → implement → gates<br/>max 5 attempts"]
+    end
+
+    subgraph Pack["archshell-dotnet — language pack (.NET 10)"]
+        Templates["Templates<br/>18 patterns + 3 combinations"]
+        NetTests["NetArchTest / ArchUnitNET<br/>contract tests"]
+        Build["dotnet build -warnaserror<br/>dotnet test"]
+    end
+
+    subgraph Repo["Developer's new project (Git repo)"]
+        ADR["docs/adr/0001 + growth ADRs"]
+        ArchMd["ARCHITECTURE.md"]
+        Yaml["architecture.yaml<br/>(source of truth)"]
+        Code["Solution + projects<br/>(ProjectReferences wired)"]
+        ArchTests["tests/Architecture.Tests<br/>(generated, protected)"]
+        Owners["CODEOWNERS"]
+        CIfile[".github/workflows/archshell.yml"]
+    end
+
+    subgraph GitHub["GitHub — outside the agent's reach"]
+        Verify["archshell verify<br/>no LLM · deterministic"]
+        Protect["Branch protection<br/>+ human PR approval"]
+    end
+
+    Dev -->|request| Skills
+    Skills --> Selector
+    Catalog --> Selector
+    Selector -->|low confidence| Elicitor
+    Elicitor -->|question| Dev
+    Selector -->|proposal + tradeoffs| Dev
+    Dev -->|confirm| Charter
+
+    Charter -->|atomic with scaffold| ADR & ArchMd & Yaml
+    Charter --> Scaffolder
+    Scaffolder --> Templates
+    Templates --> Code
+    TestGen --> NetTests --> ArchTests
+    Yaml --> TestGen
+    Scaffolder --> Owners & CIfile
+
+    Dev -->|feature| Workflow
+    Workflow --> AI
+    AI -->|edits| Code
+    Hooks --> Gates
+    Gates --> Build
+    Gates -->|fail| AI
+    Workflow -->|needs module| Dev
+    Dev -->|approve growth| Yaml
+
+    Repo -->|push / PR| Verify
+    Verify --> Protect
+    Protect -->|CODEOWNERS approval| Dev
+```
+
+The diagram shows four flows:
+1. **Selection:** the request is scored against the catalog; when confidence is low, the Elicitor asks
+   the developer; the developer confirms the proposal.
+2. **Charter + scaffold (one atomic operation):** the ADR, `ARCHITECTURE.md`, and `architecture.yaml`
+   are written, the project is scaffolded from templates, and architecture tests are generated from the yaml.
+3. **Features:** the agent edits code, hooks trigger the gates, failures go back to the agent (max 5
+   attempts), and any charter growth needs developer approval.
+4. **External control:** every push or pull request runs `archshell verify` in CI, and charter changes
+   need human approval through `CODEOWNERS`. The agent cannot reach this layer.
+
 ### Language pack contract
 
 A language pack implements the `LanguagePack` port:
@@ -63,6 +148,14 @@ A language pack implements the `LanguagePack` port:
 | `gates()` | `dotnet build -warnaserror`, `dotnet test` (architecture, contract, unit) |
 | `naming(rule)` | C# naming conventions (PascalCase types, `I` prefix for interfaces) |
 | `supported_patterns()` | Patterns with a template in this pack |
+| `block_map(pattern)` | Intent-to-building-block mapping table per pattern |
+| `scaffold_feature(plan)` | Building-block templates (handler, port, adapter, endpoint, entity, tests) |
+| `generate_contracts(plan)` | C# interfaces, records, and the OpenAPI fragment from contract data |
+| `diff_public_contracts(old, new)` | `PublicApiAnalyzers` surface + OpenAPI diff (breaking changes) |
+| `diff_surface(plan, code)` | Roslyn comparison of planned vs. actual members and signatures |
+| `generate_composition(plans)` | DI registration and endpoint mapping; migrations via `dotnet ef migrations add` |
+| `generate_policies(plans)` | Policy file read by the cross-cutting pipeline (MediatR behaviors or middleware) |
+| `inflections()` | Fixed, versioned singular/plural table for name normalization |
 
 Packs are discovered as Python entry points (`archshell.language_packs`). Each pack declares the
 contract version it implements, and the core refuses packs with an incompatible version.
@@ -240,15 +333,47 @@ Enforcement layers, from strongest to weakest:
 ## 5. Per-feature workflow
 
 ```
-read charter → spec (S1..Sn) → ask if gaps → scaffold from pattern templates
-→ define ports/contracts → RED test → LLM implements → gates (build, arch, contract, unit)
+bootstrap (once): charter + scaffold + feature backlog, atomically; no business code
+
+per feature:
+read charter → spec (S1..Sn) → ask if gaps → LLM labels intents or policies + tokens (x3 consensus)
+→ engine derives feature plan (growth proposed first if needed) + LLM proposes contracts as data
+→ one confirmation, only of new business decisions (none needed if fully derived)
+→ engine scaffolds blocks, contracts, composition, and policies atomically (byte-identical) → contracts frozen
+→ RED test → LLM fills bodies + private members → gates (build, arch, contract, unit, plan + surface conformance)
 → fail = reject and retry (max 5 attempts per spec item) | pass = done
 ```
 
+- **Confirmation records:** every confirmation (growth, vocabulary, plan, extension, contract revision,
+  breaking change) writes a committed record under `CODEOWNERS`; the pull request review is the real
+  approval, and `archshell verify` fails on a protected change without a matching record.
+- **Confirm only new decisions:** the developer is asked only about new vocabulary terms, charter growth,
+  new or changed public contracts, and breaking changes; derived structure is shown collapsed.
+- **Domain vocabulary:** protected list of nouns and verbs that every generated name comes from; a new
+  term triggers an explicit synonym question.
+- **Plan extension:** the agent may only reclassify or add a spec item, with a cited reason; the engine
+  re-derives, the developer confirms the delta; at most 2 per spec item, each counts as an attempt.
+- **Surface and composition:** the plan fixes each type's members and signatures (agent adds only
+  private members); DI, endpoint, and policy files are generated and protected.
+- **Policies:** authorization, audit, and transaction rules are data in the policy file, applied by
+  the template's pipeline, never written in method bodies.
+- **Breaking changes:** compared against the merge base; the additive (expand/contract) version is
+  offered first; if declined, every consumer becomes a consumer-adaptation block in the plan.
+
+- **Feature plan:** the model only labels each spec item with intents from a closed set plus
+  verb/noun tokens; the pack's mapping table, the naming rules, and an existing-block check derive
+  the building blocks. Disagreement across the 3 classification runs becomes a question. The plan is
+  stored at `features/<id>/plan.yaml` and protected; the per-edit check blocks files outside it.
+- **Contracts:** proposed as data (closed type set, existing types reused), rendered by the pack,
+  confirmed in plain language, and frozen before RED. Breaking changes to public contracts need a
+  recorded confirmation, enforced by the gates and `archshell verify`.
+- **Backlog:** `docs/feature-backlog.md` holds the capabilities of the initial request per module;
+  each item runs this workflow.
+
 - **Gate timing:** fast checks (dependency and naming rules) run after every edit; the full gates
   run when the agent reports a task done and whenever the session stops.
-- **Charter growth:** if a feature needs a module or contract the charter does not declare, the
-  shell proposes the growth and applies it only after the developer confirms (and, in CI, after the
+- **Charter growth:** if a feature needs a module or contract location the charter does not
+  declare, the shell proposes the growth before showing the plan and applies it only after the developer confirms (and, in CI, after the
   charter owners approve the pull request).
 - **Misfit:** if a feature only fits by changing the pattern, the shell stops after the 5th attempt
   with a report (failing rule, what the agent tried, best guess why). It never changes or relaxes a
@@ -293,7 +418,10 @@ Exit criteria:
 - Given three sample requests, it selects the expected pattern(s) or asks a discriminating question.
 - It writes the ADR, `ARCHITECTURE.md`, `architecture.yaml`, and generated architecture tests.
 - The gates detect 100% of a seeded-violation corpus (features written on purpose to break each
-  rule type) for every shipped template.
+  rule type, including plan, surface, record, composition, and breaking-change violations) for every
+  shipped template.
+- Every one of the 21 templates ships the full feature workflow; a reference feature per intent runs
+  end to end on each.
 
 ### Phase 2 – Standalone CLI
 
@@ -316,3 +444,11 @@ Exit criteria:
 | D8 | Project scope | **Decided**: new (greenfield) projects only |
 | D9 | Distribution | **Decided**: open source; the community contributes packs, adapters, and providers |
 | D10 | Language | **Decided**: the conversation follows the user (English or Spanish); all generated code and docs are in English |
+| D11 | Feature structure | **Decided**: intents (closed set, 3-run consensus) + pack mapping table derive a confirmed, protected feature plan; scaffolding is template-only |
+| D12 | Contracts | **Decided**: proposed as data, generated by the pack, confirmed in plain language, frozen before RED; breaking-change check on public contracts |
+| D13 | Initial request | **Decided**: bootstrap writes no business code; capabilities become an editable feature backlog |
+| D14 | Trust anchor for feature artifacts | **Decided**: committed confirmation records under `CODEOWNERS`; PR approval is authoritative |
+| D15 | Confirmation burden | **Decided**: confirm only new business decisions, at most one confirmation per feature |
+| D16 | Names | **Decided**: protected domain vocabulary plus a versioned inflection table; synonymy is always asked |
+| D17 | Cross-cutting rules | **Decided**: policies as data (`authorization`, `audit`, `transaction`) applied by the template pipeline |
+| D18 | Launch breadth | **Decided**: all 21 templates ship the full feature workflow; an intent may be declared not applicable per pattern |
