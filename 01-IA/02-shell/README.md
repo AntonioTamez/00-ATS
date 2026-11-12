@@ -363,7 +363,7 @@ read charter → spec (S1..Sn) → ask if gaps → LLM labels intents or policie
 - **Feature plan:** the model only labels each spec item with intents from a closed set plus
   verb/noun tokens; the pack's mapping table, the naming rules, and an existing-block check derive
   the building blocks. Disagreement across the 3 classification runs becomes a question. The plan is
-  stored at `features/<id>/plan.yaml` and protected; the per-edit check blocks files outside it.
+  stored at `.archshell/features/<slug>/plan.yaml` and protected; the per-edit check blocks files outside it.
 - **Contracts:** proposed as data (closed type set, existing types reused), rendered by the pack,
   confirmed in plain language, and frozen before RED. Breaking changes to public contracts need a
   recorded confirmation, enforced by the gates and `archshell verify`.
@@ -452,3 +452,4 @@ Exit criteria:
 | D16 | Names | **Decided**: protected domain vocabulary plus a versioned inflection table; synonymy is always asked |
 | D17 | Cross-cutting rules | **Decided**: policies as data (`authorization`, `audit`, `transaction`) applied by the template pipeline |
 | D18 | Launch breadth | **Decided**: all 21 templates ship the full feature workflow; an intent may be declared not applicable per pattern |
+| D19 | Architecture | **Decided**: see the architecture spine `_bmad-output/initiative-archshell/architecture-archshell/architecture-archshell.md` (AD-1–AD-23); it supersedes this README where they differ |

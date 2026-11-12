@@ -1,6 +1,6 @@
 # ArchShell PRD – Addendum
 
-This addendum holds the technical rationale behind the PRD for downstream architecture work: where the design lives, which mechanisms were chosen or rejected for FR-43–FR-60, and a market digest. When this addendum and the PRD conflict, the PRD wins.
+The architecture spine (`../architecture-archshell/architecture-archshell.md`) holds the binding technical decisions. This addendum holds the technical rationale behind the PRD for downstream architecture work: where the design lives, which mechanisms were chosen or rejected for FR-43–FR-60, and a market digest. When this addendum and the PRD conflict, the PRD wins.
 
 ## Technical Design Reference
 
@@ -46,7 +46,7 @@ Rejected alternative for feature structure: always scaffolding a pattern's full 
 
 Covers FR-47–FR-51. Chosen: the model proposes contracts as data, the pack generates the code, and the developer confirms a plain-language summary of each new or changed public contract (FR-49, FR-59).
 
-Candidate .NET tooling for FR-51: `Microsoft.CodeAnalysis.PublicApiAnalyzers` (public C# API surface) and an OpenAPI diff tool for HTTP contracts. Final tool choice belongs to architecture.
+Breaking-change detection (FR-51) compares contract data, not compiled code; the earlier candidate tooling (`PublicApiAnalyzers`, an OpenAPI diff) is superseded. See the architecture spine, AD-13.
 
 Rejected alternatives: the developer writes contracts by hand, which defeats *Delegate* for the target user with low-to-medium experience. The model writes contract code that the developer confirms, which produces nondeterministic signatures, and a junior developer cannot meaningfully review C# contracts.
 

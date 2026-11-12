@@ -2,7 +2,7 @@
 title: ArchShell PRD
 status: final
 created: 2026-10-30
-updated: 2026-11-08
+updated: 2026-11-11
 ---
 
 # ArchShell PRD
@@ -76,12 +76,12 @@ Realized by: FR-13, FR-18–FR-30, FR-41, FR-43–FR-51, FR-53, FR-55–FR-59.
 - **Critical driver:** a driver that resolving could change the top candidate (FR-4).
 - **Domain vocabulary:** the project's closed list of business nouns (entities and concepts) and the verbs allowed on each; the only source of names for generated code (FR-58).
 - **Driver:** a project characteristic extracted from the request (for example domain complexity, read/write asymmetry), or `unknown`.
-- **Extension contract:** the versioned interface a language pack, host adapter, or provider implements (FR-36); not a feature contract.
+- **Extension contract:** the versioned interface a language pack, host adapter, provider, or CI provider implements (FR-36); not a feature contract.
 - **Feature plan:** the confirmed list of a feature's spec items, intents, building blocks, file paths, names, and contracts; the only structure the agent may create for that feature. A plan is *confirmed* either by the developer's confirmation or, when it carries no new business decisions, by the derived path of FR-59, whose confirmation record is marked *derived, no new decisions*.
 - **Gate:** a blocking check (build, architecture, contract, unit tests); any failure rejects the change.
 - **Golden set:** the fixed set of sample requests with expected patterns used to calibrate and measure pattern selection (see Success metrics). The *intent golden set* is the equivalent set of sample spec items with expected intents and tokens (7.2).
 - **Intent:** the kind of change a spec item asks for, from the closed, versioned intent set defined in FR-43.
-- **Language pack / host adapter / provider:** extension plugins for a programming language, an agent runtime, and a model vendor.
+- **Language pack / host adapter / provider / CI provider:** extension plugins for a programming language, an agent runtime, a model vendor, and a CI platform.
 - **Pattern card:** catalog entry for one architecture pattern: signals, anti-signals, combinations, exclusions, discriminating questions.
 - **Policy:** a cross-cutting rule declared as data for an operation (authorization, audit, transaction) and applied by the template's pipeline, never written in method bodies (FR-60).
 - **Seeded-violation corpus:** a fixed set of features written on purpose to break each rule type, run against every shipped project template; its members are listed in Success metrics.
@@ -247,7 +247,9 @@ Every gate failure names the violated rule, the file, and the violation, in a fo
 - It fails if any project reference violates `may_depend_on`.
 - It fails if a change to `architecture.yaml` has no matching charter-growth confirmation record (FR-32, FR-53).
 - It fails if any change to the protected set (FR-14) has no matching confirmation record (FR-53), or if a record's confirmed content does not match the committed change.
-- It regenerates each feature's scaffold and contract code from its confirmed plan (FR-24, FR-48) and fails if the committed generated code differs.
+- It regenerates every generated file (architecture tests, contract code, composition and policy files, project references, and the trust-anchor files of FR-14) and fails if the committed version differs.
+- Scaffolded files that the agent completes are written once and never regenerated; they are checked by plan and surface conformance (FR-46, FR-56).
+- It uses the core and pack versions recorded in the project (FR-62) and needs no network beyond package restore; the trust status comes from the recorded trust capability (FR-64).
 - It runs the full gates (FR-21).
 - It also runs the checks that other FRs assign to it: plan conformance (FR-46), surface conformance (FR-56), composition-file regeneration (FR-57), breaking-change confirmation (FR-51), and the backlog warning (FR-52).
 - ArchShell generates the CI workflow file; documentation explains how to make the check required for merging (branch protection).
@@ -315,7 +317,7 @@ Intent classification runs three times per spec item. Agreement means all three 
 **Consequences (testable):**
 - A disagreement is never resolved by majority vote or by the model alone.
 - The question offers closed choices in plain language: each disagreeing reading, plus *"neither, reshape this item"*, which returns the item to the spec step (FR-23). Free-text answers are not mapped by the model.
-- Consensus is on by default and can be turned off in configuration; when it is off, ArchShell accepts a single classification run.
+- Consensus is on by default and can be turned off in configuration (a protected change, FR-14); when it is off, ArchShell accepts a single classification run.
 
 **Plan and contracts (steps 5 and 7)**
 
@@ -373,7 +375,7 @@ ArchShell scaffolds the feature's structure from the language pack's building-bl
 - Scaffolding, contract generation, composition (FR-57), and freeze (FR-50) form one atomic step. If the session stops during it, ArchShell rolls back to the confirmed plan and regenerates from it on resume; a confirmed plan is never left partially applied.
 - Scaffolding the same feature plan twice produces byte-identical files.
 - Scaffolded files contain the fixed structure (types, signatures, locations); the agent only fills bodies and adds private members (enforced by FR-56).
-- Data migrations (intent `data_migration`) are created by the language pack through its toolchain (for example `dotnet ef migrations add`), not written by hand.
+- Data migrations (intent `data_migration`) are created by the language pack through its toolchain (for example `dotnet ef migrations add`), not written by hand. Each migration is created once, with a name and timestamp fixed by the plan, and is never regenerated.
 
 #### FR-48: Contract generation
 ArchShell generates the contract code (for example interfaces, data types, and the OpenAPI fragment) from the confirmed contract data, using the language pack's contract templates.
@@ -412,7 +414,7 @@ The feature plan fixes the public and internal surface of every planned type: it
 - The check runs in the full gates (FR-21) and in `archshell verify` (FR-41), and in the per-edit check (FR-20) when it fits the per-edit latency budget (NFR-1).
 
 #### FR-51: Breaking-change detection
-When a feature changes an existing public contract, ArchShell compares it with the previous version without a model and lists every breaking change.
+When a feature changes an existing public contract, ArchShell compares the confirmed contract data with the previous version, without a model and without building the code, and lists every breaking change.
 **Consequences (testable):**
 - The previous version is the contract at the merge base with the default branch, both in session and in `archshell verify`.
 - Breaking changes include at least: a removed or renamed operation or field, a changed type, a new required input, a narrowed optionality, and a public contract changed to an internal contract (kind change, FR-47). A language pack may detect more (FR-33).
@@ -443,6 +445,7 @@ When a gate fails, ArchShell rejects the change and the agent retries, up to 5 a
 - An attempt is one run of the full gates (FR-21), one plan extension (FR-54), or one contract revision (FR-50).
 - Per-edit check blocks (FR-20) do not count as attempts.
 - The count resets when the developer rephrases the spec or fixes code by hand.
+- Attempt, extension, and revision counts are committed with the feature plan, so a new clone or a deleted file cannot reset them; `archshell verify` fails if a count exceeds its bound (FR-26, FR-54).
 
 #### FR-27: Exhaustion report
 After the 5th failed attempt, ArchShell stops and shows a report.
@@ -483,7 +486,7 @@ Growth can never change the chosen pattern(s) or their rules.
 #### FR-32: Regeneration after growth
 After confirmed growth, ArchShell regenerates `architecture.yaml`, the generated architecture tests, project references, and `ARCHITECTURE.md` consistently.
 **Consequences (testable):**
-- Each growth is recorded with date and reason as a new ADR (for example `0002-add-notifications-module.md`) that adds to, and never supersedes, the original architecture ADR.
+- Each growth is recorded with date and reason as a new ADR named after the growth (for example `growth-notifications.md`; the original is `architecture.md`) that adds to, and never supersedes, the original architecture ADR.
 
 ### 4.7 Extensibility
 
@@ -504,13 +507,26 @@ A host adapter packages the core's workflow for an agent runtime (skills, agents
 A provider lets the engine call a model directly when the host has no native agent (Phase 2). Every model output is validated against a core-owned schema; invalid output gets a bounded retry, then becomes an error.
 
 #### FR-36: Versioned extension contracts
-Packs, adapters, and providers declare the extension contract version they implement; the core refuses incompatible versions with a clear message.
+Packs, adapters, providers, and CI providers declare the extension contract version they implement; the core refuses incompatible versions with a clear message.
 
 #### FR-37: Extension conformance gate
 A new pack, adapter, provider, or custom project template (FR-38) is enabled only after it passes the extension conformance suite (golden set + engine interface tests) with the same thresholds as the launch pack, adapter, and provider.
 **Consequences (testable):**
 - Contributors can run the extension conformance suite locally before submitting.
 - For a language pack, the suite also checks every supported pattern: a complete mapping table (FR-33), byte-identical scaffolding (FR-24), the reference feature per intent, and detection of the full seeded-violation corpus (see Success metrics).
+
+#### FR-62: Explicit upgrade
+A project records the core and language pack versions that generated it, and every check uses those versions.
+**Consequences (testable):**
+- A newer ArchShell release never changes an existing project's generated files on its own.
+- `archshell upgrade` regenerates the generated files with the new versions and migrates ArchShell's own files; the developer commits the result in a pull request. It never rewrites scaffolded files the agent completed.
+- ArchShell refuses to run on files written by a different version of its formats and points to `archshell upgrade`.
+
+#### FR-63: CI providers
+`archshell verify` works the same on any CI platform. The CI workflow file and the owners file are produced by a CI provider extension.
+**Consequences (testable):**
+- GitHub ships at launch; other platforms are added as CI providers without core changes.
+- A CI provider is accepted only if its platform can require owner approval for specific paths.
 
 #### FR-38: Custom pattern cards
 Teams can add their own pattern cards through an optional, configured extra catalog path.
@@ -541,9 +557,9 @@ All generated code and documentation are written in English, regardless of the c
 #### FR-14: Charter tamper protection
 ArchShell detects and blocks changes to the protected set that do not come from a confirmation flow with a matching confirmation record (FR-53), whether the developer, a teammate, or the agent makes them.
 **Consequences (testable):**
-- The protected set includes `architecture.yaml`, the generated architecture tests, project references (`<ProjectReference>`) in `.csproj` files (package references and other settings stay editable), build settings that affect the gates (for example warnings as errors in `Directory.Build.props`), the inclusion of the test projects in the solution, ArchShell's hook configuration, confirmed feature plans (FR-45), generated contract code (FR-48), generated composition files (FR-57), the generated policy file (FR-60), the domain vocabulary (FR-58), and the confirmation records themselves (FR-53).
+- The protected set includes `architecture.yaml`, the generated architecture tests, project references (`<ProjectReference>`) in `.csproj` files (package references and other settings stay editable), build settings that affect the gates (for example warnings as errors in `Directory.Build.props`), the inclusion of the test projects in the solution, ArchShell's hook configuration and configuration file, the generated CI workflow and `CODEOWNERS` file, the toolchain pins (SDK and analyzer versions), the recorded trust capability (FR-64), confirmed feature plans (FR-45), generated contract code (FR-48), generated composition files (FR-57), the generated policy file (FR-60), the domain vocabulary (FR-58), and the confirmation records themselves (FR-53).
 - The confirmation flows are charter growth (4.6), vocabulary proposals (FR-58), feature plan confirmation and extension (FR-45, FR-46), contract confirmation and revision (FR-49, FR-50), and breaking-change confirmation (FR-51).
-- In-session hooks block tampering early; the authoritative check is `archshell verify` in CI (FR-41), which the agent cannot reach.
+- In-session hooks block tampering early, before the agent's file-edit tools write; writes made through shell commands are caught by the full gates (FR-21). The authoritative check is `archshell verify` in CI (FR-41), which the agent cannot reach.
 - An agent cannot pass a failing gate by loosening a rule or editing a generated test.
 - The block names the changed file and points to the confirmation flow that can change it.
 
@@ -553,15 +569,29 @@ Every human confirmation (charter growth, feature plan and its extensions, contr
 - A record names the flow, the feature or growth it belongs to, the confirmed content (or its fingerprint), and the developer who confirmed it.
 - The in-session confirmation creates the record but does not approve the change. The authoritative approval is a human review of the pull request that contains it: the records live under paths that `CODEOWNERS` assigns to human owners.
 - ArchShell generates a `CODEOWNERS` file that assigns the charter files (`architecture.yaml`, ADRs, generated architecture tests), feature plans, generated contract code, and confirmation records to human owners, so a charter change cannot merge without their approval (with branch protection, FR-41). The rest of the protected set (FR-14) needs no `CODEOWNERS` entry: any change to it must match a confirmation record (FR-41), and a record cannot merge without an owner's approval.
+- Records are append-only: a later confirmation adds a new record and never edits an earlier one.
 - An agent that creates or edits a record by any means (including shell commands) cannot merge it without a human owner's approval.
 - The agent commits and opens pull requests under its own GitHub identity (a bot or machine account), separate from every human owner, so a human always approves, including on solo projects. Setup documentation covers creating this identity and giving it no admin rights.
+
+#### FR-61: Reconciliation after merge
+Generated files are never merged by hand. After a merge conflict, `archshell reconcile` regenerates them from the confirmed plans, records, and vocabulary of both sides.
+**Consequences (testable):**
+- When two branches make incompatible decisions (the same module, member, contract, synonym, or feature name), the decision already on the default branch wins; the other feature re-derives through the normal flow (plan extension, contract revision, or breaking-change confirmation).
+- A feature-name collision renames the later feature.
+- An incompatible pair that already reached the default branch makes `archshell verify` fail and names both features; nothing is chosen automatically.
+
+#### FR-64: Trust capability
+During setup, ArchShell checks whether the platform can enforce owner approval (for example, private repositories on some plans cannot) and records the result.
+**Consequences (testable):**
+- If approval cannot be enforced, `archshell verify` still runs and reports *trust: unenforced* on every run; ArchShell never claims a guarantee the platform does not give.
+- `archshell doctor` re-checks the capability on request.
 
 ## 5. Non-functional requirements
 
 - **NFR-1 Per-edit latency:** per-edit checks (FR-20) complete in ≤ 3 seconds on a typical developer machine.
 - **NFR-2 Platforms:** Windows, macOS, and Linux.
 - **NFR-3 Toolchain:** .NET 10 LTS or later; Python 3.12 or later as a prerequisite, installable with `pipx` or `uv`.
-- **NFR-4 Determinism:** the same inputs produce the same scores, charter, generated tests, feature plans, scaffolded files, generated contracts, and gate verdicts (FR-2, FR-18, FR-24, FR-45, FR-48).
+- **NFR-4 Determinism:** the same inputs produce the same scores, charter, generated tests, feature plans, scaffolded files, generated contracts, and gate verdicts (FR-2, FR-18, FR-24, FR-45, FR-48), byte for byte on Windows, macOS, and Linux.
 - **NFR-5 No model in CI:** `archshell verify` (FR-41) needs no model and no network beyond package restore.
 - **NFR-6 Privacy:** ArchShell sends project code only to the host's own model.
 - **NFR-7 Model output validation:** every model output, from the host's agent or a provider, is validated against a core-owned schema; invalid output is retried up to 2 times (configurable), then reported as an error.
@@ -618,12 +648,7 @@ These measure whether ArchShell keeps its promise. Adoption metrics are intentio
 
 ## 9. Open questions
 
-Non-blocking; deferred with owner and revisit condition.
-
-1. **Interrupted sessions and concurrent branches** (owner: architecture; revisit: architecture design). `archshell verify` (FR-41) remains the backstop for all three:
-   - How a resumed session restores its workflow state.
-   - How charter growth on two team branches is reconciled at merge.
-   - How two in-progress features that modify the same building block or the same frozen contract are reconciled.
+None open. Open question 1 (interrupted sessions and concurrent branches) is resolved by the architecture spine: resumable state (AD-1), regeneration from inputs and reconciliation (AD-6, AD-7, FR-61).
 
 ## 10. Assumptions index
 
@@ -694,3 +719,7 @@ None open. All assumptions were confirmed by the product owner (latest on 2026-1
 | FR-58 | Domain vocabulary | 4.5 Feature workflow |
 | FR-59 | Confirm only new business decisions | 4.5 Feature workflow |
 | FR-60 | Cross-cutting policies | 4.5 Feature workflow |
+| FR-61 | Reconciliation after merge | 4.9 Change control |
+| FR-62 | Explicit upgrade | 4.7 Extensibility |
+| FR-63 | CI providers | 4.7 Extensibility |
+| FR-64 | Trust capability | 4.9 Change control |
