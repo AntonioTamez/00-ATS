@@ -43,9 +43,10 @@ The initiative follows capability boundaries for a single owner with agent lanes
 
 ## Notes
 
-- Decision: ArchShell code lives in a new repository `archshell` (one repository holding the core, the Claude Code plugin, the .NET pack, and the analyzer), separate from `00-ATS` (user's decision, 2026-11-11).
+- Decision: ArchShell code lives in a new repository `arch-shell` (one repository holding the core, the Claude Code plugin, the .NET pack, and the analyzer), separate from `00-ATS` (user's decision, 2026-11-11).
 - Decision: shared decisions across epics (action protocol, schemas, file classes) are already settled in the architecture spine; no separate decision story (2026-11-11).
 - Decision: epics are cut by capability boundary, in a single dependency chain 1→10; the platform baseline opens (2026-11-13).
 - Decision: an epic before the launch is delivered when merged to `main` with CI green on Windows, Linux, and macOS and published as a pre-release to TestPyPI and GitHub Packages (NuGet); release plumbing and signed tags go in epic-platform-baseline (user's decision, 2026-11-13).
 - Decision: FR-35 LLM providers (`archshell.providers`) are out of Phase 1, per the spec's non-goals (2026-11-13).
 - Decision: `verify` is epic-gates-verify-change-control's interface; epics 6–8 add their checks to it (2026-11-13).
+- Decision: the repository is named `arch-shell`; package and command names stay `archshell` (user's decision, 2026-11-13).

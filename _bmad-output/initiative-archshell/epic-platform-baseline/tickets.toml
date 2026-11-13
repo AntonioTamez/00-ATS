@@ -4,7 +4,7 @@
 id = 1
 type = "story"
 title = "Tracer: repository skeleton with engine, plugin, and CI on three OSes"
-description = "Creates the `archshell` repository with the core, Claude Code plugin, .NET pack, and analyzer packages, where `archshell-engine` answers `done` over stdin/stdout and the plugin invokes it."
+description = "Creates the `arch-shell` repository with the core, Claude Code plugin, .NET pack, and analyzer packages, where `archshell-engine` answers `done` over stdin/stdout and the plugin invokes it."
 verify = "A plugin command shows `done` in Claude Code, and CI is green on Windows, Linux, and macOS."
 covers = ["E2", "E5"]
 after = []

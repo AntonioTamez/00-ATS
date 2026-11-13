@@ -14,7 +14,7 @@ risk: high
 
 ## Description
 
-The `archshell` repository holds the core, the Claude Code plugin, the .NET pack, and the analyzer as separate packages. The engine speaks the closed action protocol and hook sub-protocol, validates every model output against schemas, writes normalized output and append-only confirmation records, and converses in English or Spanish. Every later epic builds on this substrate without changing it.
+The `arch-shell` repository holds the core, the Claude Code plugin, the .NET pack, and the analyzer as separate packages. The engine speaks the closed action protocol and hook sub-protocol, validates every model output against schemas, writes normalized output and append-only confirmation records, and converses in English or Spanish. Every later epic builds on this substrate without changing it.
 
 ## Outcome
 
