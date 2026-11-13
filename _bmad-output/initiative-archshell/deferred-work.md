@@ -4,3 +4,6 @@
 - source_plan: `_bmad-output/initiative-archshell/epic-platform-baseline/story-tracer-repository-skeleton-with-engine-plugin-and-ci-on-thre-plan.md`
   summary: `arch-shell` has no `.gitattributes`, so Windows checkouts with `core.autocrlf` convert files to CRLF, against the spine's LF rule.
   evidence: git warns "LF will be replaced by CRLF" on every file in the tracer diff; the cross-OS byte comparison in story 1.6 needs `* text=auto eol=lf`.
+- source_plan: `_bmad-output/initiative-archshell/epic-platform-baseline/story-claude-code-adapter-loop-for-every-action-type-plan.md`
+  summary: Engine prompt files under `.archshell/state/prompts/` are never deleted.
+  evidence: Each rerun of a flow creates a new uuid file; real workflows need a cleanup rule (e.g. remove on accepted submit or on terminal action).
