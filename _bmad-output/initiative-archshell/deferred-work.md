@@ -7,3 +7,6 @@
 - source_plan: `_bmad-output/initiative-archshell/epic-platform-baseline/story-claude-code-adapter-loop-for-every-action-type-plan.md`
   summary: Engine prompt files under `.archshell/state/prompts/` are never deleted.
   evidence: Each rerun of a flow creates a new uuid file; real workflows need a cleanup rule (e.g. remove on accepted submit or on terminal action).
+- source_plan: `_bmad-output/initiative-archshell/epic-platform-baseline/story-schema-validation-of-model-outputs-with-bounded-retries-plan.md`
+  summary: The `archshell-core` wheel installs a top-level `schemas` package into site-packages, which can collide with any other distribution of that name.
+  evidence: `pyproject.toml` sets `module-name = ["archshell", "schemas"]`, `namespace = true` to keep AD-11's `archshell-core/schemas/` path; moving them to `archshell/schemas/` (package data) removes the collision but changes the documented layout.
