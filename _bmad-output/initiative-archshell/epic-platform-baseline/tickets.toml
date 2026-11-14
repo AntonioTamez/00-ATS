@@ -1,0 +1,153 @@
+# Stories of epic-platform-baseline in build order.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Tracer: repository skeleton with engine, plugin, and CI on three OSes"
+description = "Creates the `arch-shell` repository with the core, Claude Code plugin, .NET pack, and analyzer packages, where `archshell-engine` answers `done` over stdin/stdout and the plugin invokes it."
+verify = "A plugin command shows `done` in Claude Code, and CI is green on Windows, Linux, and macOS."
+covers = ["E2", "E5"]
+after = []
+hitl = true
+risk = "medium"
+references = ["architecture-archshell/architecture-archshell.md#ad-1", "architecture-archshell/architecture-archshell.md#ad-22"]
+notes = []
+
+[[entry]]
+id = 2
+type = "story"
+title = "Action protocol v1 with revision compare-and-swap"
+description = "Implements the six action types of `archshell/action/v1` with action_id, revision, and nonce, and revision compare-and-swap in the stateless engine."
+verify = "A stale revision or a reused nonce is refused with `archshell/error/v1`."
+covers = ["E2"]
+after = [1]
+hitl = false
+risk = "high"
+references = ["architecture-archshell/architecture-archshell.md#ad-2", "architecture-archshell/architecture-archshell.md#ad-20"]
+
+[[entry]]
+id = 3
+type = "story"
+title = "Claude Code adapter loop for every action type"
+description = "Makes the Claude Code plugin execute every action type: ask and confirm with `human_ui`, llm_task with the prompt passed by file, instruct_agent, report, and done."
+verify = "A scripted flow runs all six actions inside Claude Code and reaches `done`."
+covers = ["E2"]
+after = [2]
+hitl = false
+risk = "high"
+references = ["architecture-archshell/architecture-archshell.md#ad-3", "architecture-archshell/architecture-archshell.md#ad-18"]
+
+[[entry]]
+id = 4
+type = "story"
+title = "Hook sub-protocol: guard-write, check-edit, on-stop"
+description = "Adds the engine's `guard-write`, `check-edit`, and `on-stop` verdicts and their one-line forwards in the plugin's `hooks.json`."
+verify = "A test `block` verdict stops a write at PreToolUse in Claude Code."
+covers = ["E2"]
+after = [2]
+hitl = false
+risk = "high"
+references = ["architecture-archshell/architecture-archshell.md#ad-17"]
+
+[[entry]]
+id = 5
+type = "story"
+title = "Schema validation of model outputs with bounded retries"
+description = "Validates every llm_task result against its schema, retrying at most twice (configurable) before reporting."
+verify = "An invalid model output is retried twice, then reported with a typed error."
+covers = ["E3"]
+after = [3]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Emitter and normalizer"
+description = "Provides the Jinja2 StrictUndefined render path and the core normalizer for LF, UTF-8 without BOM, and NFC."
+verify = "The same render produces identical bytes on Windows, Linux, and macOS in CI."
+covers = ["E3"]
+after = [1]
+hitl = false
+risk = "medium"
+references = ["architecture-archshell/architecture-archshell.md#ad-5"]
+
+[[entry]]
+id = 7
+type = "story"
+title = "`.archshell/` layout and config loading"
+description = "Creates and reads the `.archshell/` layout, with `state/` and `txn.json` gitignored."
+verify = "A fixture project gets exactly the specified layout and gitignore entries."
+covers = ["E4"]
+after = [6]
+hitl = false
+risk = "medium"
+references = ["architecture-archshell/architecture-archshell.md#ad-10"]
+
+[[entry]]
+id = 8
+type = "story"
+title = "Confirmation-record writer and schema"
+description = "Writes append-only confirmation records under `records/<feature-slug>/<seq>-<flow>.yaml` against their schema."
+verify = "Writing twice for the same flow appends a new record, never rewrites, and both validate."
+covers = ["E1"]
+after = [7]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 9
+type = "story"
+title = "English and Spanish message catalogs"
+description = "Adds es/en message catalogs so questions and reports follow the developer's language while every generated file stays English."
+verify = "A Spanish request gets Spanish questions and reports, and the files it writes are English."
+covers = ["CAP-14"]
+after = [3]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 10
+type = "story"
+title = "Package boundaries, extension loading, and conformance skeleton"
+description = "Enforces core/adapter/pack boundaries with import-linter, loads extensions by entry point checking `extension_contract`, and adds the conformance-suite skeleton."
+verify = "A core import of the pack fails the build, and the plugin and the pack pass the conformance skeleton."
+covers = ["E4", "E5"]
+after = [1]
+hitl = false
+risk = "medium"
+references = ["architecture-archshell/architecture-archshell.md#ad-14"]
+
+[[entry]]
+id = 11
+type = "story"
+title = "Signed release and pre-release publishing"
+description = "Adds signed tags, the compatibility matrix, and pre-release publishing of the engine to TestPyPI and the analyzer to GitHub Packages (NuGet)."
+verify = "A signed tag publishes both pre-releases and they install in a clean CI job."
+covers = ["E5"]
+after = [1, 10]
+hitl = true
+risk = "high"
+references = ["architecture-archshell/architecture-archshell.md#ad-22"]
+
+[[entry]]
+id = 12
+type = "story"
+title = "Refactor sweep"
+description = "Cleans up what the other stories deferred; scope is set when it starts from their plans and review findings."
+verify = "The suite stays green with no behavior change."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 13
+type = "story"
+title = "End-to-end no-op flow on three OSes"
+description = "Runs a scripted no-op flow through every action, hook, record, and catalog from the Claude Code plugin, proving the epic's Done when."
+verify = "CI is green on Windows, Linux, and macOS with the full flow."
+covers = ["CAP-14", "E1", "E2", "E3", "E4", "E5"]
+after = [12]
+hitl = false
+risk = "medium"
