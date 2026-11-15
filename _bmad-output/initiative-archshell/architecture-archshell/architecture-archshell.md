@@ -193,7 +193,7 @@ src/**/*.csproj                            # seeded; imports generated *.archshe
 - **Binds:** core, all extensions; FR-36, FR-47, NFR-7
 - **Prevents:** packs or hosts inventing file or message formats; language-specific contract data
 - **Rule:**
-  - **Schemas:** every ArchShell file and protocol message declares `schema: archshell/<kind>/v<n>` and is validated with JSON Schema draft 2020-12 from `archshell-core/schemas/`.
+  - **Schemas:** every ArchShell file and protocol message declares `schema: archshell/<kind>/v<n>` and is validated with JSON Schema draft 2020-12 from `archshell-core/archshell/schemas/`.
   - **YAML:** a restricted subset (no anchors, aliases, or tags, read with a safe loader), written only by the core's canonical emitter.
   - **Versioning:** an added optional field keeps the version. Any other change bumps `v<n>` and ships an idempotent migration that `archshell upgrade` runs.
   - **Surface model:** language-neutral, in core schema. Member kinds `operation`, `field`, `constructor`; visibility `public`, `module`, `private`; types from the FR-47 closed type system. Each pack declares its construct mapping in its conformance manifest and owns comparison.
@@ -335,7 +335,7 @@ archshell-core/
   archshell/adapters/
   archshell/engine/      # archshell-engine: next, submit, guard-write, check-edit, on-stop
   archshell/cli/         # archshell: init, verify, reconcile, upgrade, doctor
-  schemas/               # JSON Schemas (archshell/<kind>/v<n>), surface model
+  archshell/schemas/     # JSON Schemas (archshell/<kind>/v<n>), surface model
   migrations/            # idempotent schema migrations for upgrade
   prompts/               # core-owned prompt templates
   catalog/               # pattern cards
@@ -367,6 +367,6 @@ None open. Every PRD delta this spine required was applied to the PRD on 2026-11
 
 ## Deferred
 
-- **Field-level schema shapes:** owned by `archshell-core/schemas/` in code, under AD-11's versioning rules.
+- **Field-level schema shapes:** owned by `archshell-core/archshell/schemas/` in code, under AD-11's versioning rules.
 - **Additional CI providers** (GitLab Premium, Azure DevOps): added through `CiProvider` after launch.
 - **Phase 2 CLI** surface beyond the shared engine commands.
