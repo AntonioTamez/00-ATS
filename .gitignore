@@ -25,3 +25,8 @@ __pycache__/
 .idea/
 Thumbs.db
 .DS_Store
+
+# BMAD
+.claude/skills
+_bmad
+.atl
