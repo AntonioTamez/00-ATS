@@ -10,3 +10,6 @@
 - source_plan: `_bmad-output/initiative-archshell/epic-platform-baseline/story-schema-validation-of-model-outputs-with-bounded-retries-plan.md`
   summary: The `archshell-core` wheel installs a top-level `schemas` package into site-packages, which can collide with any other distribution of that name.
   evidence: `pyproject.toml` sets `module-name = ["archshell", "schemas"]`, `namespace = true` to keep AD-11's `archshell-core/schemas/` path; moving them to `archshell/schemas/` (package data) removes the collision but changes the documented layout.
+- source_plan: `_bmad-output/initiative-archshell/epic-platform-baseline/story-archshell-layout-and-config-loading-plan.md`
+  summary: Move the cursor state file from hand-written sorted-key JSON onto the canonical YAML emitter, `write_text`, and `yaml_read`.
+  evidence: Story 1.6's plan assigned it to 1.7; the user deferred it on 2026-11-14 because it changes a persisted format (existing JSON state files must still load) and would raise the story to high risk.
